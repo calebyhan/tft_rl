@@ -6,11 +6,26 @@ part of the project *will* go stale — re-run the fetch when Set 18
 (Enchanted Wilds, launching 2026-08-26) goes live, or any time you want to
 re-sync with balance patches.
 
-Important constraint: the data-fetch step must run on a machine with normal
-internet access (it can't run from this sandbox, which is locked to package
-registries + GitHub). The coding agent building this should implement the
-fetch/normalize script per the spec below and run it locally / in CI, not
-try to hit communitydragon.org from a locked-down sandbox.
+## Amendments
+
+- **2026-08-01** — Section 2: `ItemDef` gains an optional `params` object, for
+  effect magnitudes that are not stats the wearer gains (Bramble Vest's
+  reflect, Dragon's Claw's reduction). Without it, that whole class of item
+  effect cannot be data-driven. The section also now documents two existing
+  conventions: the `emblem_<TraitId>` effect-id form, and the reserved
+  `targets` key on trait breakpoint params.
+- **2026-08-01 (milestone 8)** — Section 1 rewritten against the *real*
+  CDragon payload rather than assumptions. Several statements below were
+  wrong and are corrected in place: patch pinning uses League patch numbers,
+  the champion list needs a second endpoint to filter out PVE units, and
+  per-star stats are derived rather than published. New section 1.2 records
+  the payload's actual shape. New section 4 defines `config.json` (entry 2.1,
+  now closed).
+
+Important constraint: the data-fetch step needs normal internet access. It is
+*not* runnable from a network-locked sandbox — but it was verified end to end
+from this one, which does have access, so the mappings below are observed
+rather than guessed.
 
 ## 1. Source of truth: Community Dragon (CDragon)
 
@@ -18,17 +33,24 @@ CDragon publishes Riot's TFT game data as JSON, rebuilt from client/LCU
 files (not officially maintained by Riot, but the de facto standard source
 the whole TFT tooling community uses).
 
-Key endpoints (replace `latest` with a specific patch number like `17.8` to
-pin a version instead of always tracking newest):
+Key endpoints. Replace `latest` to pin a version — but note the path segment
+is the **League client patch number** (`15.16`, `16.1`), *not* the TFT set or
+its in-game patch label. `17.8` is not a valid path and returns 404; the fetch
+script turns that into an explanatory error.
 
 - `https://raw.communitydragon.org/latest/cdragon/tft/en_us.json`
   — the main combined file: champions, traits, items, and augments in one
-  document, in Riot's native (somewhat messy) internal shape. This is the
-  best single source — richer than the individual ddragon files.
+  document, in Riot's native (somewhat messy) internal shape. ~26 MB.
 - `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/tftchampions-teamplanner.json`
-  — champion ID list per set, used for things like team-planner codes; not
-  needed for core data but useful for champion ID <-> display-name mapping
-  sanity checks.
+  — **required, not optional.** The main payload cannot tell a shop unit from
+  a PVE monster or summon (Set 17: 83 entries for 63 real units), and this
+  file lists only real units, with their cost as `tier`. It also pairs trait
+  display names with trait ids, which the main payload does not.
+- Data Dragon (`ddragon.leagueoflegends.com`) also publishes simplified
+  `tft-champion.json`, `tft-item.json`, `tft-augments.json` files, but Riot's
+  own docs note ddragon's spell/stat data is **less accurate** than what
+  CDragon derives — prefer CDragon as primary source, use ddragon only for
+  quick sanity cross-checks or image asset paths.
 - Data Dragon (`ddragon.leagueoflegends.com`) also publishes simplified
   `tft-champion.json`, `tft-item.json`, `tft-augments.json` files, but Riot's
   own docs note ddragon's spell/stat data is **less accurate** than what
@@ -38,28 +60,90 @@ pin a version instead of always tracking newest):
 ### 1.1 Fetch script responsibilities (implement as `scripts/fetch_cdragon.py`)
 1. GET the `cdragon/tft/en_us.json` file for a pinned patch (default to
    `latest` if none specified).
-2. The file's top-level shape (verify against the live payload, this can
-   shift) generally groups data under keys like `sets` (map of set number ->
-   champions/traits for that set), `items`. Filter to the target set number
-   (Set 17 = key likely `"17"` or similar under `sets`) since the file
-   contains historical sets too.
+2. Select the set from `setData` (a *list*, not the `sets` map — `sets` also
+   exists but is sparser). Each entry has a `mutator`; the base set is
+   exactly `TFTSet<N>`. Filtering on `number` alone is wrong, because the
+   game-mode variants (`TFTSet17_PVEMODE`, `_TURBO`, `_PAIRS`,
+   `TFTSetEvent5YR`) share the same number.
 3. Normalize each champion entry into the Champion Def schema (Section 2)
    — this means renaming/reshaping Riot's internal field names
    (`apiName`, `stats.hp`, `stats.damage`, `ability.variables`, etc. — exact
    field names must be inspected directly from the fetched payload since
    they aren't publicly documented in a stable schema) into the clean shape
    below.
-4. Normalize traits and items the same way into their Def schemas.
+4. Normalize traits and items the same way into their Def schemas. Note for
+   items specifically:
+   - Riot's item effect variables must be split between `stats` (bonuses the
+     wearer gains) and `params` (everything else) — see Section 2.
+   - Emblems must get `effect_id: "emblem_<TraitId>"`, matching the trait id
+     used in `traits.json`, or the loader will reject them.
 5. Write output to `data/champions.json`, `data/traits.json`,
-   `data/items.json` in this repo, overwriting the sample/starter data.
+   `data/items.json` and `data/VERSION.json`. It must **not** write
+   `data/config.json` — see section 4.
 6. Log any champion/trait/item that failed to parse rather than silently
    dropping it, so gaps are visible.
+7. The loader rejects **unknown fields** as well as missing ones, so the
+   normalizer must drop Riot's extra keys rather than passing them through.
+   That strictness is deliberate (a renamed field fails loudly instead of
+   silently dropping a stat) but expect to hit it while iterating.
 
 Because Riot's raw internal JSON field names are not stable/documented and
 must be discovered empirically from the live payload, budget real
 iteration time for this script — expect to inspect the actual fetched JSON
 structure and adjust field mappings rather than trusting a fixed field list
 written from memory.
+
+### 1.2 What the payload actually looks like
+
+Observed 2026-08-01 against `latest` (Set 17). Recorded because none of it is
+documented by Riot, and every item here cost real inspection time.
+
+**Champions** live at `setData[i].champions`. Relevant fields: `apiName`,
+`name`, `cost`, `role`, `traits` (display names), and a flat `stats` object
+with `hp`, `damage`, `armor`, `magicResist`, `attackSpeed`, `range`,
+`initialMana`, `mana`, `critChance`, `critMultiplier`.
+
+Four things that are *not* as the schema in section 2 might suggest:
+
+- **Stats are single scalars, not per-star arrays.** Riot ships the 1-star
+  value and the game applies a per-star multiplier. The fetch script derives
+  the triples using the LoL wiki's figures — health ×1.8/star (100/180/324%)
+  and attack damage ×1.5/star (100/150/225%). These are *approximations*: real
+  per-champion values can differ slightly.
+- **`role` uses Riot's 13-value taxonomy** (`ADCarry`, `APTank`, `APReaper`,
+  `ADSpecialist`, …), which must be collapsed onto the five roles doc 01
+  sec 3.2 models. This drives `mana_per_attack`, so it feeds combat directly.
+  At least one unit ships `role: null`.
+- **Nulls appear where you would expect a number.** Set 17's Miss Fortune has
+  `damage: null`; `dict.get(key, default)` does not save you, because the key
+  is present. Some units ship `mana: 0` (Caitlyn) or `damage: 0` (LeBlanc,
+  Riven) — all of which the engine's schema rejects.
+- **`ability.variables` is a list of `{name, value}` where `value` has 7
+  entries.** Star levels 1–3 are at **indices 1, 2, 3**. Index 0 is a
+  placeholder, index 4 an unused 4-star slot, 5–6 padding. Verified across the
+  set: 151 of 168 varying variables rise monotonically over exactly 1..3.
+
+**Traits** live at `setData[i].traits` with `apiName`, `name`, and `effects`
+(a list of `{minUnits, maxUnits, style, variables}` → our breakpoints).
+Champions reference traits by **display name**, and display names are not
+unique — Set 17 has 8 apiNames named "Stargazer". The team-planner file is
+what disambiguates. Some traits have an empty `effects` list (the "Choose
+Trait" placeholder) and must be dropped. Riot does **not** publish
+origin-vs-class, so that split is curated from the lists in section 3.
+
+**Items** live at the top-level `items` list (all sets, ~3680 entries);
+`setData[i].items` holds the apiNames in scope for the set. Fields:
+`apiName`, `name`, `composition` (recipe), `unique`, `associatedTraits`,
+`tags`, and a flat `effects` dict. Notes:
+
+- The 10 basic components carry the literal tag `component`.
+- **Units are inconsistent between keys.** `AD` is already a fraction
+  (`0.35` = +35%) while `AS` and `CritChance` are percentages (`35.0` = 35%).
+  Never map an unrecognised key by guessing its units — leave it in `params`.
+- **`associatedTraits` is empty on real emblems**, and the apiName does not
+  reliably name the trait (`TFT17_Item_FavoredEmblemItem` is the *Arbiter*
+  emblem). Match on the display name: `"<Trait> Emblem"`.
+- Many `tags` and some `effects` keys are untranslated hashes (`{d8d00bcc}`).
 
 ## 2. Clean schema definitions (what the engine actually consumes)
 
@@ -130,6 +214,12 @@ written from memory.
     "attack_damage": 65,
     "crit_chance": 0.20
   },
+  "params": {},                     // magnitudes the effect needs that are NOT
+                                     // stats the wearer gains (see below).
+                                     // Infinity Edge needs none — its numbers
+                                     // are all stats. Bramble Vest, by
+                                     // contrast, would carry
+                                     // {"reflect": 80, "max_attacker_range": 1}
   "effect_id": "infinity_edge_crit_amp", // hook for conditional/on-hit logic
                                           // beyond flat stats; null if the
                                           // item is pure stats
@@ -139,6 +229,33 @@ written from memory.
                                      // | "radiant" | "emblem" | "consumable"
 }
 ```
+
+**`params` vs `stats`** (*added 2026-08-01*). An effect implementation reads
+`stats` overlaid with `params`, with `params` winning on key collisions:
+
+- `stats` are bonuses the wearer actually gains, and are applied to derived
+  stats whether or not the `effect_id` is implemented. Where an effect's
+  magnitude *is* one of those bonuses, it should read the stat directly —
+  Spear of Shojin's bonus mana per attack is its `mana: 15` stat.
+- `params` carry numbers that are not stats: Bramble Vest's reflected damage,
+  Dragon's Claw's magic-damage reduction, a proc chance, a duration. Without
+  this field those effects have nowhere to read their numbers from and cannot
+  be data-driven at all, which is why the schema was extended. It mirrors
+  `AbilityDef.params` and `TraitBreakpoint.params`, which already work this way.
+- Setting `params` without an `effect_id` is a validation error — nothing
+  would ever read them.
+
+Two further conventions the engine relies on, both chosen to avoid adding more
+fields to this schema:
+
+- **Emblems** declare the trait they grant via `effect_id: "emblem_<TraitId>"`
+  (e.g. `"emblem_Sniper"`). The loader validates that the trait exists. The
+  fetch script must normalise real emblems into this form.
+- **Trait breakpoint params** may set the reserved key `targets`, either
+  `"trait_members"` (default — the bonus applies only to units with the trait)
+  or `"team"` (it applies to the whole board). Any breakpoint param whose key
+  names a modelled stat is applied as a flat bonus automatically, so a purely
+  statistical trait needs no Python at all.
 
 The `effect_id` / ability `effect_id` fields are intentionally an
 indirection layer: the JSON says *which* code hook implements the behavior,
@@ -155,6 +272,15 @@ Pulled directly from the LoL Wiki's live Set 17 page (2026-07-31) so the
 coding agent has a concrete, correct checklist rather than an invented one.
 Use these to sanity-check the fetch script's output — if the champion/trait/
 item counts don't roughly match, the parser is misconfigured.
+
+> **Amended 2026-08-01.** Riot's live data disagrees with the wiki on the
+> champion count: the fetch script normalises **63** shop units, not the 52
+> listed in 3.3 below. The trait lists in 3.1/3.2 do reconcile exactly
+> (20 origins + 15 classes = 35 traits, matching the fetch output), and the
+> component list in 3.4 matches to the letter. Where the two disagree, Riot's
+> payload wins — the wiki page lags balance patches. The lists are still worth
+> keeping as an order-of-magnitude check: a parser that emits 12 or 300
+> champions is broken regardless of which source is right.
 
 ### 3.1 Origins (traits)
 Anima, Arbiter, Bulwark, Dark Lady, Dark Star, Doomer, Eradicator,
@@ -242,10 +368,43 @@ milestone since they're set-specific event mechanics, not core econ/combat.
 | 4    | 10 |
 | 5    | 9  |
 
-Exact per-champion cost assignment (which of the 52 champions above are
-1-cost vs 5-cost) must come from the CDragon payload's `cost` field per
-champion — don't guess this from champion "feel," it changes with balance
-patches.
+Exact per-champion cost assignment (which champions are 1-cost vs 5-cost)
+must come from the CDragon payload's `cost` field per champion — don't guess
+this from champion "feel," it changes with balance patches. The team-planner
+file's `tier` is the same number and makes a good cross-check; the two agreed
+on all 63 units when this was last run.
+
+## 4b. `data/config.json` — the constants file
+
+*Added 2026-08-01, closing judgement entry 2.1.* The engine consumes a fifth
+data file that earlier revisions of this document did not define. Doc 03
+sec 2.7/2.8 requires the shop-odds and XP tables be data rather than code, and
+no other file has a home for them.
+
+**The fetch script does not write this file, and must not.** Riot publishes
+none of it: searching the entire 26 MB payload for `shopOdds`, `poolSize`,
+`xpTable` or `rerollCost` returns zero hits, and `setData` carries only
+champions, traits, items and augments. These values are instead
+community-documented — stable across sets and heavily datamined — so they are
+curated by hand and a re-fetch must never clobber them.
+
+Top-level keys: `shop_odds` (level → 5 probabilities summing to 1.0),
+`pool_sizes`, `xp_to_next_level`, `max_level`, `passive_xp_per_round`,
+`xp_purchase_gold`, `xp_purchase_amount`, `base_income`, `income_ramp`,
+`interest_per_gold`, `interest_cap`, `streak_bonus`, `pvp_win_gold`,
+`reroll_cost`, `shop_slots`, `shop_draw_weighting`, `bench_size`,
+`max_items_per_unit`, `starting_gold`, `starting_hp`, `role_mana_per_attack`,
+`stage_base_damage`, `star_damage_multiplier`, `round_structure`, `combat`,
+plus two bookkeeping blocks:
+
+- **`provenance`** — classifies every constant as `riot_published` (currently
+  empty), `community_documented`, or `engine_artifact` (values with no
+  real-world referent at all, like `combat.tick_seconds`). This exists so a
+  future maintainer can tell at a glance which numbers a re-fetch could ever
+  improve and which are ours forever.
+- **`unverified`** — free-text notes naming tables whose exact values are not
+  confirmed. The loader logs these at startup, so an approximation can never
+  quietly harden into an assumed fact.
 
 ## 5. Starter sample dataset (for immediate engine bring-up)
 
@@ -260,7 +419,12 @@ in real data later requires no code changes — only a file replacement.
 
 ## 6. Versioning
 
-Store a `data/VERSION.json` with `{"set": 17, "patch": "17.8", "fetched_at":
-"<iso timestamp>"}` written by the fetch script, so the engine/RL env can
-log which data version it trained/ran against — useful once Set 18 lands
-and old checkpoints need to be understood as "Set 17 data."
+Store a `data/VERSION.json` with `{"set": 17, "patch": "<cdragon path>",
+"fetched_at": "<iso timestamp>", "source": "<url>"}` written by the fetch
+script, so the engine/RL env can log which data version it trained/ran
+against — useful once Set 18 lands and old checkpoints need to be understood
+as "Set 17 data."
+
+`patch` records the CDragon path segment that was requested, so it reads
+`"latest"` on an unpinned fetch. That is honest but not reproducible: pin a
+League patch number (see section 1) when a run needs to be repeatable.

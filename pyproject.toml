@@ -1,0 +1,32 @@
+[project]
+name = "tft-rl"
+version = "0.1.0"
+description = "Teamfight Tactics simulator and reinforcement-learning environment"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+# Added at milestone 6-7 (rl/env.py, PPO training).
+rl = ["gymnasium>=1.0", "sb3-contrib>=2.4", "numpy>=1.26", "tensorboard>=2.16"]
+# Milestone 8's scripts/fetch_cdragon.py deliberately uses stdlib urllib, so
+# the data fetch needs no third-party dependency at all.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+markers = ["slow: longer-running evaluation tests"]
+filterwarnings = ["error::DeprecationWarning"]
+
+[tool.setuptools.packages.find]
+include = ["engine*", "rl*"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+# Correctness rules; the engine deliberately uses explicit `typing` imports and
+# quoted forward refs, so the stylistic modernisation rules stay off.
+select = ["E4", "E7", "E9", "F", "I", "B"]
+ignore = ["E501"]

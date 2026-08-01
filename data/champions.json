@@ -1,0 +1,3497 @@
+[
+  {
+    "id": "TFT17_Aatrox",
+    "display_name": "Aatrox",
+    "cost": 1,
+    "traits": [
+      "TFT17_DRX",
+      "TFT17_ResistTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 90.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Stellar Slash",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Aatrox",
+      "params": {
+        "HealHP": 0.1,
+        "HealAP": [
+          325.0,
+          400.0,
+          650.0
+        ],
+        "DamageAD": [
+          80.0,
+          120.0,
+          180.0
+        ],
+        "DamagePercentArmor": [
+          1.8,
+          2.7,
+          4.05
+        ],
+        "NOVAModifier": 0.65
+      }
+    }
+  },
+  {
+    "id": "TFT17_Briar",
+    "display_name": "Briar",
+    "cost": 1,
+    "traits": [
+      "TFT17_AnimaSquad",
+      "TFT17_Primordian",
+      "TFT17_AssassinTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Fish Frenzy",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Briar",
+      "params": {
+        "PercentMissingHealth": 1.0,
+        "ADDamage": [
+          120.0,
+          180.0,
+          285.0
+        ],
+        "APDamage": [
+          10.0,
+          15.0,
+          25.0
+        ],
+        "PercentBonusDamage": 0.5,
+        "AS": [
+          2.0,
+          2.0,
+          2.5
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Caitlyn",
+    "display_name": "Caitlyn",
+    "cost": 1,
+    "traits": [
+      "TFT17_DRX",
+      "TFT17_Fateweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        500.0,
+        900.0,
+        1620.0
+      ],
+      "armor": 15.0,
+      "magic_resist": 15.0,
+      "attack_damage": [
+        65.0,
+        97.5,
+        146.25
+      ],
+      "attack_speed": 0.55,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Aim For The Head",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Caitlyn",
+      "params": {
+        "ProcChance": 15.0,
+        "Damage": [
+          190.0,
+          285.0,
+          540.0
+        ],
+        "BonusDamage": [
+          20.0,
+          30.0,
+          45.0
+        ],
+        "NovaMarkDamageAmp": 0.1,
+        "NovaMarkThreshold": 0.5,
+        "NovaHeadshotModifier": 0.5
+      }
+    }
+  },
+  {
+    "id": "TFT17_Chogath",
+    "display_name": "Cho'Gath",
+    "cost": 1,
+    "traits": [
+      "TFT17_DarkStar",
+      "TFT17_HPTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 70.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Accretion",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Chogath",
+      "params": {
+        "PercentMaximumHealthDamage": 0.08,
+        "BonusDamage": [
+          210.0,
+          290.0,
+          420.0
+        ],
+        "BonusHealthOnKill": [
+          30.0,
+          40.0,
+          70.0
+        ],
+        "HPToTier2": 1000.0,
+        "HPToTier3": 2000.0,
+        "BonusHealthPerCast": [
+          12.0,
+          18.0,
+          33.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Ezreal",
+    "display_name": "Ezreal",
+    "cost": 1,
+    "traits": [
+      "TFT17_Timebreaker",
+      "TFT17_RangedTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        450.0,
+        810.0,
+        1458.0
+      ],
+      "armor": 15.0,
+      "magic_resist": 15.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Temporal Shot",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Ezreal",
+      "params": {
+        "ADDamage": [
+          170.0,
+          255.0,
+          380.0
+        ],
+        "APDamage": [
+          14.0,
+          21.0,
+          32.0
+        ],
+        "DroneDamage": [
+          8.0,
+          12.0,
+          18.0
+        ],
+        "TakedownsToDrone": 7.0,
+        "TakedownsToForm3": 60.0,
+        "TakedownTimerThreshold": 5.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Leona",
+    "display_name": "Leona",
+    "cost": 1,
+    "traits": [
+      "TFT17_ADMIN",
+      "TFT17_ShieldTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 50.0,
+      "max_mana": 110.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Shield of Daybreak",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Leona",
+      "params": {
+        "ShieldAmount": [
+          420.0,
+          480.0,
+          620.0
+        ],
+        "Damage": [
+          100.0,
+          150.0,
+          225.0
+        ],
+        "StunDuration": [
+          1.75,
+          1.75,
+          2.0
+        ],
+        "DefenseToDamageRatio": [
+          1.2,
+          1.8,
+          2.7
+        ],
+        "ShieldDuration": 4.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Lissandra",
+    "display_name": "Lissandra",
+    "cost": 1,
+    "traits": [
+      "TFT17_DarkStar",
+      "TFT17_SummonTrait",
+      "TFT17_APTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        450.0,
+        810.0,
+        1458.0
+      ],
+      "armor": 15.0,
+      "magic_resist": 15.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Dark Matter",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Lissandra",
+      "params": {
+        "Damage": [
+          250.0,
+          375.0,
+          600.0
+        ],
+        "SecondaryDamage": [
+          50.0,
+          75.0,
+          115.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Nasus",
+    "display_name": "Nasus",
+    "cost": 1,
+    "traits": [
+      "TFT17_SpaceGroove",
+      "TFT17_ShieldTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 60.0,
+      "max_mana": 120.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Groovin' Susan",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Nasus",
+      "params": {
+        "MaxHealth": [
+          300.0,
+          400.0,
+          600.0
+        ],
+        "Duration": 6.0,
+        "DamageAP": [
+          30.0,
+          45.0,
+          70.0
+        ],
+        "DamageHealth": 0.02
+      }
+    }
+  },
+  {
+    "id": "TFT17_Poppy",
+    "display_name": "Poppy",
+    "cost": 1,
+    "traits": [
+      "TFT17_Astronaut",
+      "TFT17_ResistTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Huddle Up!",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Poppy",
+      "params": {
+        "Shield": [
+          400.0,
+          475.0,
+          575.0
+        ],
+        "ShieldDuration": 4.0,
+        "Resists": [
+          15.0,
+          25.0,
+          60.0
+        ],
+        "MeepShield": [
+          125.0,
+          160.0,
+          210.0
+        ],
+        "MeepsPerAstro": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_RekSai",
+    "display_name": "Rek'Sai",
+    "cost": 1,
+    "traits": [
+      "TFT17_Primordian",
+      "TFT17_HPTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Upheaval",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_RekSai",
+      "params": {
+        "PercentMaximumHealthHealing": 0.065,
+        "APHealing": [
+          200.0,
+          220.0,
+          260.0
+        ],
+        "Damage": [
+          80.0,
+          120.0,
+          180.0
+        ],
+        "StunDuration": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Talon",
+    "display_name": "Talon",
+    "cost": 1,
+    "traits": [
+      "TFT17_Stargazer",
+      "TFT17_AssassinTrait"
+    ],
+    "role": "Assassin",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        35.0,
+        52.5,
+        78.75
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Diviner's Judgment",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Talon",
+      "params": {
+        "HexDistance": 3.0,
+        "BleedDuration": 18.0,
+        "ADBleedDamage": [
+          400.0,
+          600.0,
+          1100.0
+        ],
+        "APBleedDamage": [
+          60.0,
+          90.0,
+          135.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Teemo",
+    "display_name": "Teemo",
+    "cost": 1,
+    "traits": [
+      "TFT17_SpaceGroove",
+      "TFT17_SummonTrait"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        450.0,
+        810.0,
+        1458.0
+      ],
+      "armor": 15.0,
+      "magic_resist": 15.0,
+      "attack_damage": [
+        15.0,
+        22.5,
+        33.75
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Double Time",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Teemo",
+      "params": {
+        "HitDamage": [
+          30.0,
+          45.0,
+          100.0
+        ],
+        "MagicDamage": [
+          70.0,
+          105.0,
+          190.0
+        ],
+        "PoisonDuration": 6.0,
+        "GrooveStacks": 5.0,
+        "AttackSpeed": 1.5,
+        "ActiveAttacks": 3.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_TwistedFate",
+    "display_name": "Twisted Fate",
+    "cost": 1,
+    "traits": [
+      "TFT17_Stargazer",
+      "TFT17_Fateweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        500.0,
+        900.0,
+        1620.0
+      ],
+      "armor": 15.0,
+      "magic_resist": 15.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Fate's Gambit",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_TwistedFate",
+      "params": {
+        "DamageMin": [
+          205.0,
+          305.0,
+          460.0
+        ],
+        "DamageMax": [
+          450.0,
+          675.0,
+          1015.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Veigar",
+    "display_name": "Veigar",
+    "cost": 1,
+    "traits": [
+      "TFT17_Astronaut",
+      "TFT17_APTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        500.0,
+        900.0,
+        1620.0
+      ],
+      "armor": 15.0,
+      "magic_resist": 15.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 10.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Meepteor Shower",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Veigar",
+      "params": {
+        "Damage": [
+          330.0,
+          495.0,
+          750.0
+        ],
+        "MiniMeepsPerAstro": 2.0,
+        "MiniDamage": [
+          31.0,
+          47.0,
+          70.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Akali",
+    "display_name": "Akali",
+    "cost": 2,
+    "traits": [
+      "TFT17_DRX",
+      "TFT17_MeleeTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        750.0,
+        1350.0,
+        2430.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Star Strike",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Akali",
+      "params": {
+        "NumShurikens": 5.0,
+        "DamageAP": [
+          4.0,
+          6.0,
+          9.0
+        ],
+        "DamageAD": [
+          39.0,
+          59.0,
+          88.0
+        ],
+        "SecondaryDamageModifier": 0.4,
+        "ArmorShred": 1.0,
+        "ArmorShredCrit": 2.0,
+        "NovaDamagePerSecond": [
+          14.0,
+          18.0,
+          25.0
+        ],
+        "NovaShurikenBonusDamage": 0.12
+      }
+    }
+  },
+  {
+    "id": "TFT17_Belveth",
+    "display_name": "Bel'Veth",
+    "cost": 2,
+    "traits": [
+      "TFT17_Primordian",
+      "TFT17_ASTrait",
+      "TFT17_MeleeTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        750.0,
+        1350.0,
+        2430.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        47.0,
+        70.5,
+        105.75
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 2,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Tidal Slashes",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Belveth",
+      "params": {
+        "ADDamage": [
+          22.0,
+          33.0,
+          50.0
+        ],
+        "APDamage": [
+          3.0,
+          5.0,
+          7.0
+        ],
+        "BaseNumSlashes": 12.0,
+        "BonusASBreakpoint": 25.0,
+        "SlashDuration": 2.0,
+        "NumProcsPerSimulatedAttack": 4.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Gnar",
+    "display_name": "Gnar",
+    "cost": 2,
+    "traits": [
+      "TFT17_Astronaut",
+      "TFT17_HPTank",
+      "TFT17_RangedTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 20.0,
+      "magic_resist": 20.0,
+      "attack_damage": [
+        48.0,
+        72.0,
+        108.0
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 5.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Slingshot Maneuver",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Gnar",
+      "params": {
+        "DamageAD": [
+          225.0,
+          340.0,
+          560.0
+        ],
+        "DamageAP": [
+          20.0,
+          30.0,
+          45.0
+        ],
+        "DamageReductionPerHit": 0.75,
+        "NumMeepsPerAstro": 1.0,
+        "MeepPercentBAD": 0.23,
+        "MeepASScaling": 0.4
+      }
+    }
+  },
+  {
+    "id": "TFT17_Gragas",
+    "display_name": "Gragas",
+    "cost": 2,
+    "traits": [
+      "TFT17_PsyOps",
+      "TFT17_HPTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        950.0,
+        1710.0,
+        3078.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Chemical Rage",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Gragas",
+      "params": {
+        "DURATION": 2.0,
+        "HEALING": [
+          415.0,
+          470.0,
+          630.0
+        ],
+        "Damage": [
+          200.0,
+          300.0,
+          450.0
+        ],
+        "CCDuration": 2.0,
+        "HealingPercentHealth": 0.085,
+        "ASSlow": 0.3
+      }
+    }
+  },
+  {
+    "id": "TFT17_Gwen",
+    "display_name": "Gwen",
+    "cost": 2,
+    "traits": [
+      "TFT17_SpaceGroove",
+      "TFT17_AssassinTrait"
+    ],
+    "role": "Assassin",
+    "stats": {
+      "health": [
+        750.0,
+        1350.0,
+        2430.0
+      ],
+      "armor": 50.0,
+      "magic_resist": 50.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 2,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Dance n' Dice",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Gwen",
+      "params": {
+        "GrooveThreshold": 0.4,
+        "Damage": [
+          145.0,
+          220.0,
+          410.0
+        ],
+        "AreaDamage": [
+          75.0,
+          110.0,
+          215.0
+        ],
+        "ResetDamage": 0.65
+      }
+    }
+  },
+  {
+    "id": "TFT17_IvernMinion",
+    "display_name": "Meepsie",
+    "cost": 2,
+    "traits": [
+      "TFT17_Astronaut",
+      "TFT17_SummonTrait",
+      "TFT17_FlexTrait"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        950.0,
+        1710.0,
+        3078.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        65.0,
+        97.5,
+        146.25
+      ],
+      "attack_speed": 0.55,
+      "attack_range": 1,
+      "starting_mana": 50.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Meep Impact",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_IvernMinion",
+      "params": {
+        "HealingPercentHealth": 0.08,
+        "HealingAP": [
+          380.0,
+          430.0,
+          600.0
+        ],
+        "HealDuration": 3.0,
+        "Damage": [
+          160.0,
+          240.0,
+          360.0
+        ],
+        "StunDuration": [
+          1.5,
+          1.75,
+          2.0
+        ],
+        "PercentEffects": 0.5,
+        "HealingAndShieldingPerAstro": 0.12,
+        "MeepsPerAstro": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Jax",
+    "display_name": "Jax",
+    "cost": 2,
+    "traits": [
+      "TFT17_Stargazer",
+      "TFT17_ResistTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        950.0,
+        1710.0,
+        3078.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 20.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Counter Star-ike",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Jax",
+      "params": {
+        "Duration": 3.0,
+        "ArmorMRScale": [
+          0.75,
+          1.15,
+          1.7
+        ],
+        "AttackRadius": 1.0,
+        "StunDuration": [
+          1.0,
+          1.25,
+          1.5
+        ],
+        "FlatDR": [
+          20.0,
+          25.0,
+          30.0
+        ],
+        "ShieldAP": [
+          400.0,
+          450.0,
+          500.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Jinx",
+    "display_name": "Jinx",
+    "cost": 2,
+    "traits": [
+      "TFT17_AnimaSquad",
+      "TFT17_ASTrait"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 20.0,
+      "magic_resist": 20.0,
+      "attack_damage": [
+        55.0,
+        82.5,
+        123.75
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 20.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Explosive Attitude",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Jinx",
+      "params": {
+        "BaseBullets": 16.0,
+        "ASPerBullet": 0.35,
+        "ADDamage": [
+          29.0,
+          44.0,
+          70.0
+        ],
+        "TotalSpellTime": 1.0,
+        "BulletTravelDistance": 1500.0,
+        "APDamage": [
+          3.0,
+          5.0,
+          7.0
+        ],
+        "MinimumNumTargets": 2.0,
+        "RocketsPerLaunchAttack": 6.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Milio",
+    "display_name": "Milio",
+    "cost": 2,
+    "traits": [
+      "TFT17_Timebreaker",
+      "TFT17_Fateweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 20.0,
+      "magic_resist": 20.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Mega Time Kick",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Milio",
+      "params": {
+        "Damage": [
+          255.0,
+          380.0,
+          575.0
+        ],
+        "BounceDamage": [
+          85.0,
+          130.0,
+          190.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Mordekaiser",
+    "display_name": "Mordekaiser",
+    "cost": 2,
+    "traits": [
+      "TFT17_DarkStar",
+      "TFT17_ManaTrait",
+      "TFT17_ShieldTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        950.0,
+        1710.0,
+        3078.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Indestructible",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Mordekaiser",
+      "params": {
+        "InitialShield": [
+          350.0,
+          450.0,
+          625.0
+        ],
+        "ShieldPerProc": [
+          75.0,
+          100.0,
+          115.0
+        ],
+        "DamagePerProc": [
+          45.0,
+          70.0,
+          100.0
+        ],
+        "HealRefund": 0.4,
+        "Duration": 4.0,
+        "AugmentedDuration": 6.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Pantheon",
+    "display_name": "Pantheon",
+    "cost": 2,
+    "traits": [
+      "TFT17_Timebreaker",
+      "TFT17_HPTank",
+      "TFT17_APTrait"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 20.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Advanced Defences",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Pantheon",
+      "params": {
+        "APShield": [
+          275.0,
+          300.0,
+          500.0
+        ],
+        "Duration": 4.0,
+        "Durability": 0.15,
+        "TrueDamagePerSecond": [
+          30.0,
+          45.0,
+          70.0
+        ],
+        "PercentHealthShield": 0.06
+      }
+    }
+  },
+  {
+    "id": "TFT17_Pyke",
+    "display_name": "Pyke",
+    "cost": 2,
+    "traits": [
+      "TFT17_PsyOps",
+      "TFT17_FlexTrait"
+    ],
+    "role": "Assassin",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Marked for Death",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Pyke",
+      "params": {
+        "SpearDamage": [
+          60.0,
+          90.0,
+          135.0
+        ],
+        "AoEDamage": [
+          120.0,
+          180.0,
+          360.0
+        ],
+        "TargetDamage": [
+          210.0,
+          315.0,
+          720.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Zoe",
+    "display_name": "Zoe",
+    "cost": 2,
+    "traits": [
+      "TFT17_ADMIN",
+      "TFT17_ManaTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 20.0,
+      "magic_resist": 20.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Paddle Star",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Zoe",
+      "params": {
+        "Damage": [
+          68.0,
+          102.0,
+          180.0
+        ],
+        "SecondaryDamage": [
+          36.0,
+          54.0,
+          88.0
+        ],
+        "NumRedirects": 4.0,
+        "AugmentedNumRedirects": 5.0,
+        "BaseSpeed": 1600.0,
+        "SpeedPerBounce": 800.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Aurora",
+    "display_name": "Aurora",
+    "cost": 3,
+    "traits": [
+      "TFT17_AnimaSquad",
+      "TFT17_FlexTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 20.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Hopped-Up Hacks",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Aurora",
+      "params": {
+        "SplitDamage": [
+          400.0,
+          600.0,
+          960.0
+        ],
+        "Damage": [
+          80.0,
+          120.0,
+          190.0
+        ],
+        "HexPercent": 0.1,
+        "HexDuration": 4.0,
+        "SpellHexRadius": 2.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Diana",
+    "display_name": "Diana",
+    "cost": 3,
+    "traits": [
+      "TFT17_ADMIN",
+      "TFT17_ASTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 50.0,
+      "magic_resist": 50.0,
+      "attack_damage": [
+        1.0,
+        1.5,
+        2.25
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Pale Cascade",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Diana",
+      "params": {
+        "ASDuration": 4.0,
+        "Shield": [
+          230.0,
+          280.0,
+          450.0
+        ],
+        "ShieldPercent": [
+          0.05,
+          0.07,
+          0.1
+        ],
+        "NumAttacks": 3.0,
+        "BaseAttackDamagePercent": 0.5,
+        "AttackSpeed": 0.5,
+        "CleaveDamage": [
+          100.0,
+          150.0,
+          240.0
+        ],
+        "ShieldDuration": 3.0,
+        "BaseDamage": [
+          60.0,
+          90.0,
+          160.0
+        ],
+        "BonusDamageToAttacks": [
+          52.0,
+          78.0,
+          135.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Fizz",
+    "display_name": "Fizz",
+    "cost": 3,
+    "traits": [
+      "TFT17_Astronaut",
+      "TFT17_AssassinTrait"
+    ],
+    "role": "Assassin",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 55.0,
+      "magic_resist": 55.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.85,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 20.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Meep Bait",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Fizz",
+      "params": {
+        "DashDamage": [
+          140.0,
+          210.0,
+          310.0
+        ],
+        "BiteDamageAP": [
+          185.0,
+          280.0,
+          445.0
+        ],
+        "BiteDamageMeep": [
+          75.0,
+          115.0,
+          180.0
+        ],
+        "MeepsPerAstro": 1.0,
+        "MegaMeepStunDuration": 1.25,
+        "SecondaryDamage": 0.5
+      }
+    }
+  },
+  {
+    "id": "TFT17_Illaoi",
+    "display_name": "Illaoi",
+    "cost": 3,
+    "traits": [
+      "TFT17_AnimaSquad",
+      "TFT17_ShieldTank",
+      "TFT17_SummonTrait"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 50.0,
+      "magic_resist": 50.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Test of Spirit",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Illaoi",
+      "params": {
+        "Shield": [
+          450.0,
+          525.0,
+          650.0
+        ],
+        "Duration": 3.0,
+        "HealthDrain": [
+          55.0,
+          85.0,
+          130.0
+        ],
+        "NumEnemies": 3.0,
+        "Damage": [
+          80.0,
+          120.0,
+          180.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Kaisa",
+    "display_name": "Kai'Sa",
+    "cost": 3,
+    "traits": [
+      "TFT17_DarkStar",
+      "TFT17_AssassinTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Bullet Cluster",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Kaisa",
+      "params": {
+        "BaseNumMissiles": 16.0,
+        "HexRange": 2.0,
+        "ADDamage": [
+          30.0,
+          45.0,
+          72.0
+        ],
+        "APDamage": [
+          3.0,
+          5.0,
+          7.0
+        ],
+        "SpellDuration": 1.0,
+        "ManaPerKill": 10.0,
+        "PercentTargetedMissiles": 0.5
+      }
+    }
+  },
+  {
+    "id": "TFT17_Lulu",
+    "display_name": "Lulu",
+    "cost": 3,
+    "traits": [
+      "TFT17_Stargazer",
+      "TFT17_APTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 55.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "It's Raining Stars",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Lulu",
+      "params": {
+        "Damage": [
+          150.0,
+          225.0,
+          360.0
+        ],
+        "NumEnemies": 3.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Maokai",
+    "display_name": "Maokai",
+    "cost": 3,
+    "traits": [
+      "TFT17_DRX",
+      "TFT17_HPTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Grasp of Convergence",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Maokai",
+      "params": {
+        "PassiveRatio": 0.5,
+        "Damage": [
+          100.0,
+          150.0,
+          225.0
+        ],
+        "StunDuration": [
+          1.5,
+          1.5,
+          1.75
+        ],
+        "NovaStunDuration": [
+          1.5,
+          1.5,
+          1.75
+        ],
+        "NovaHealthDamage": 0.08
+      }
+    }
+  },
+  {
+    "id": "TFT17_MissFortune",
+    "display_name": "Miss Fortune",
+    "cost": 3,
+    "traits": [
+      "TFT17_MissFortuneUniqueTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Gun Goddess Arsenal",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_MissFortune",
+      "params": {
+        "Tier1Damage": 2.0,
+        "Tier2Damage": 2.5,
+        "Tier3Damage": 3.3,
+        "Tier4Damage": [
+          4.5,
+          4.5,
+          9.0
+        ],
+        "Tier5Damage": [
+          6.0,
+          6.0,
+          60.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Ornn",
+    "display_name": "Ornn",
+    "cost": 3,
+    "traits": [
+      "TFT17_SpaceGroove",
+      "TFT17_ResistTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        950.0,
+        1710.0,
+        3078.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Disco Inferno",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Ornn",
+      "params": {
+        "Shield": [
+          125.0,
+          200.0,
+          500.0
+        ],
+        "ShieldDuration": 3.0,
+        "Damage": [
+          180.0,
+          270.0,
+          430.0
+        ],
+        "GrooveDuration": 2.5
+      }
+    }
+  },
+  {
+    "id": "TFT17_Rhaast",
+    "display_name": "Rhaast",
+    "cost": 3,
+    "traits": [
+      "TFT17_RhaastUniqueTrait"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1200.0,
+        2160.0,
+        3888.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 90.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Divine Scythe",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Rhaast",
+      "params": {
+        "Duration": 2.0,
+        "Durability": 0.2,
+        "HealAmount": [
+          500.0,
+          550.0,
+          650.0
+        ],
+        "KnockupDuration": 1.0,
+        "Damage": [
+          120.0,
+          180.0,
+          300.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Samira",
+    "display_name": "Samira",
+    "cost": 3,
+    "traits": [
+      "TFT17_SpaceGroove",
+      "TFT17_RangedTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 65.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Jump and Jive",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Samira",
+      "params": {
+        "PassiveAD": [
+          45.0,
+          68.0,
+          115.0
+        ],
+        "PassiveAP": [
+          10.0,
+          15.0,
+          25.0
+        ],
+        "GrooveDuration": 3.0,
+        "Damage": [
+          375.0,
+          560.0,
+          900.0
+        ],
+        "StunDuration": 0.75
+      }
+    }
+  },
+  {
+    "id": "TFT17_Urgot",
+    "display_name": "Urgot",
+    "cost": 3,
+    "traits": [
+      "TFT17_Mecha",
+      "TFT17_HPTank",
+      "TFT17_MeleeTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        600.0,
+        1080.0,
+        1944.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 2,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Unstoppable Dreadnought",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Urgot",
+      "params": {
+        "ShotgunDamage": [
+          85.0,
+          125.0,
+          200.0
+        ],
+        "ShotgunCooldown": 5.0,
+        "ShieldAmount": [
+          150.0,
+          175.0,
+          200.0
+        ],
+        "ShieldDuration": 3.0,
+        "FalloffPerHex": 0.3
+      }
+    }
+  },
+  {
+    "id": "TFT17_Viktor",
+    "display_name": "Viktor",
+    "cost": 3,
+    "traits": [
+      "TFT17_PsyOps",
+      "TFT17_ManaTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 20.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Psionic Storm",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Viktor",
+      "params": {
+        "Duration": 4.0,
+        "AugmentedDuration": 5.0,
+        "Damage": [
+          200.0,
+          300.0,
+          530.0
+        ],
+        "RadiusIncreasePerSecond": 0.3,
+        "FalloffPerHex": 0.6
+      }
+    }
+  },
+  {
+    "id": "TFT17_AurelionSol",
+    "display_name": "Aurelion Sol",
+    "cost": 4,
+    "traits": [
+      "TFT17_Mecha",
+      "TFT17_ManaTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 6,
+      "starting_mana": 15.0,
+      "max_mana": 75.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Deathbeam",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_AurelionSol",
+      "params": {
+        "Duration": 3.0,
+        "AugmentedDuration": 4.0,
+        "DamagePerSecond": [
+          335.0,
+          505.0,
+          2000.0
+        ],
+        "MagicPen": 0.3,
+        "DamageReductionPerTarget": 0.8
+      }
+    }
+  },
+  {
+    "id": "TFT17_Corki",
+    "display_name": "Corki",
+    "cost": 4,
+    "traits": [
+      "TFT17_Astronaut",
+      "TFT17_Fateweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 60.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Asteroid Blaster",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Corki",
+      "params": {
+        "BaseMissiles": 21.0,
+        "MissileAD": [
+          28.0,
+          42.0,
+          280.0
+        ],
+        "MissileAP": [
+          5.0,
+          7.0,
+          24.0
+        ],
+        "ProcChance": 20.0,
+        "ProcDamageMult": 3.5,
+        "MissilesPerLaunchAttack": 5.0,
+        "BaseMeepCooldown": 8.0,
+        "CooldownReductionPerAstro": 1.0,
+        "MeepDamage": [
+          110.0,
+          165.0,
+          900.0
+        ],
+        "CDRPerMeep": 0.1
+      }
+    }
+  },
+  {
+    "id": "TFT17_Galio",
+    "display_name": "The Mighty Mech",
+    "cost": 4,
+    "traits": [
+      "TFT17_Mecha",
+      "TFT17_FlexTrait"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        70.0,
+        105.0,
+        157.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Gravity Matrix",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Galio",
+      "params": {
+        "HexRange": 2.0,
+        "Durability": [
+          0.2,
+          0.2,
+          0.6
+        ],
+        "DurabilityDuration": 4.0,
+        "ARMARScaling": [
+          0.8,
+          1.2,
+          30.0
+        ],
+        "Heal": [
+          900.0,
+          1300.0,
+          3000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Karma",
+    "display_name": "Karma",
+    "cost": 4,
+    "traits": [
+      "TFT17_DarkStar",
+      "TFT17_FlexTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 10.0,
+      "max_mana": 55.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Singularity",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Karma",
+      "params": {
+        "Damage": [
+          630.0,
+          945.0,
+          5000.0
+        ],
+        "SecondaryDamage": [
+          180.0,
+          270.0,
+          1000.0
+        ],
+        "BaseHexRange": 1.0,
+        "NumCastsToExpand": 2.0,
+        "HexPerExpansion": 1.0,
+        "MaximumHexes": 8.0,
+        "NumEnemies": [
+          2.0,
+          2.0,
+          4.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Kindred",
+    "display_name": "Kindred",
+    "cost": 4,
+    "traits": [
+      "TFT17_DRX",
+      "TFT17_ASTrait"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        58.0,
+        87.0,
+        130.5
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Cosmic Pursuit",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Kindred",
+      "params": {
+        "MaxMarks": 3.0,
+        "NumTargets": [
+          3.0,
+          3.0,
+          5.0
+        ],
+        "SpellDamage": [
+          75.0,
+          115.0,
+          600.0
+        ],
+        "ADDamage": [
+          115.0,
+          175.0,
+          900.0
+        ],
+        "APDamage": [
+          10.0,
+          15.0,
+          100.0
+        ],
+        "HexDistance": 1.0,
+        "NovaRepeatTimer": 4.5,
+        "NovaDamageAmp": 0.15
+      }
+    }
+  },
+  {
+    "id": "TFT17_Leblanc",
+    "display_name": "LeBlanc",
+    "cost": 4,
+    "traits": [
+      "TFT17_ADMIN",
+      "TFT17_SummonTrait"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Fracture Reality",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Leblanc",
+      "params": {
+        "BasicAttackDamage": [
+          66.0,
+          99.0,
+          250.0
+        ],
+        "CloneDamageMultiplier": [
+          0.25,
+          0.25,
+          1.5
+        ],
+        "BoltDamage": [
+          95.0,
+          145.0,
+          750.0
+        ],
+        "NumClones": 5.0,
+        "NumAttacks": 5.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_MasterYi",
+    "display_name": "Master Yi",
+    "cost": 4,
+    "traits": [
+      "TFT17_PsyOps",
+      "TFT17_MeleeTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 65.0,
+      "magic_resist": 65.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.85,
+      "attack_range": 1,
+      "starting_mana": 20.0,
+      "max_mana": 60.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Psi Strikes",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_MasterYi",
+      "params": {
+        "PassiveDamage": [
+          70.0,
+          105.0,
+          550.0
+        ],
+        "DamageAD": [
+          55.0,
+          85.0,
+          600.0
+        ],
+        "DamageAP": [
+          20.0,
+          30.0,
+          200.0
+        ],
+        "Omnivamp": 0.1,
+        "AttackSpeed": 0.7,
+        "Duration": 5.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Morgana",
+    "display_name": "Morgana",
+    "cost": 4,
+    "traits": [
+      "TFT17_MorganaUniqueTrait",
+      "TFT17_ManaTrait"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 70.0,
+      "magic_resist": 70.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 45.0,
+      "max_mana": 95.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Dark Form",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Morgana",
+      "params": {
+        "APHealthGain": [
+          550.0,
+          650.0,
+          2500.0
+        ],
+        "PercentHPHealthGain": [
+          0.15,
+          0.15,
+          0.5
+        ],
+        "HealthGainDuration": 3.0,
+        "NumEnemies": 3.0,
+        "NumAllies": 2.0,
+        "APDamage": [
+          100.0,
+          150.0,
+          3000.0
+        ],
+        "APHealing": [
+          125.0,
+          185.0,
+          3000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Nami",
+    "display_name": "Nami",
+    "cost": 4,
+    "traits": [
+      "TFT17_SpaceGroove",
+      "TFT17_APTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 20.0,
+      "max_mana": 65.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Bubble Pop",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Nami",
+      "params": {
+        "Damage": [
+          460.0,
+          690.0,
+          5000.0
+        ],
+        "NumProjectiles": 3.0,
+        "FirstBounceDamage": [
+          125.0,
+          185.0,
+          1000.0
+        ],
+        "GrooveDuration": 3.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Nunu",
+    "display_name": "Nunu & Willump",
+    "cost": 4,
+    "traits": [
+      "TFT17_Stargazer",
+      "TFT17_ShieldTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 145.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Calamity",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Nunu",
+      "params": {
+        "Shield": [
+          475.0,
+          575.0,
+          2000.0
+        ],
+        "InitialDamage": [
+          120.0,
+          180.0,
+          2000.0
+        ],
+        "StunDuration": [
+          1.5,
+          1.75,
+          8.0
+        ],
+        "FollowupDamage": [
+          100.0,
+          150.0,
+          2000.0
+        ],
+        "LockoutTime": 2.5,
+        "ShieldDuration": 4.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Rammus",
+    "display_name": "Rammus",
+    "cost": 4,
+    "traits": [
+      "TFT17_Astronaut",
+      "TFT17_ResistTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 20.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Gravitational Spin",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Rammus",
+      "params": {
+        "ShieldAP": [
+          675.0,
+          825.0,
+          2000.0
+        ],
+        "ShieldDuration": 4.0,
+        "DamageAP": [
+          50.0,
+          75.0,
+          700.0
+        ],
+        "DamageArmor": [
+          0.5,
+          0.75,
+          11.0
+        ],
+        "AttacksPerPassiveTrigger": 20.0,
+        "PassivePercentArmor": [
+          0.2,
+          0.3,
+          5.0
+        ],
+        "FlatDRPerMeep": 3.0,
+        "MeepsPerAstro": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Riven",
+    "display_name": "Riven",
+    "cost": 4,
+    "traits": [
+      "TFT17_Timebreaker",
+      "TFT17_AssassinTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.85,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 20.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Time Warp",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Riven",
+      "params": {
+        "PassiveDamage": [
+          75.0,
+          115.0,
+          300.0
+        ],
+        "DashRange": 1.0,
+        "Shield": [
+          100.0,
+          150.0,
+          1200.0
+        ],
+        "ShieldDuration": 2.0,
+        "Damage": [
+          100.0,
+          150.0,
+          1000.0
+        ],
+        "WaveDamage": [
+          180.0,
+          270.0,
+          2000.0
+        ],
+        "SpecialCastCount": 3.0,
+        "ThirdCastConeHexRange": 3.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_TahmKench",
+    "display_name": "Tahm Kench",
+    "cost": 4,
+    "traits": [
+      "TFT17_TahmKenchUniqueTrait",
+      "TFT17_HPTank"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        75.0,
+        112.5,
+        168.75
+      ],
+      "attack_speed": 0.5,
+      "attack_range": 1,
+      "starting_mana": 50.0,
+      "max_mana": 110.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Tounge Lash",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_TahmKench",
+      "params": {
+        "PercentHealingToShield": 0.4,
+        "HealHP": 0.085,
+        "HealAP": [
+          300.0,
+          360.0,
+          1500.0
+        ],
+        "DamageHP": 0.02,
+        "DamageAP": [
+          45.0,
+          60.0,
+          1500.0
+        ],
+        "HPThreshold": 0.35,
+        "ShieldDuration": 4.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Xayah",
+    "display_name": "Xayah",
+    "cost": 4,
+    "traits": [
+      "TFT17_Stargazer",
+      "TFT17_RangedTrait"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        49.0,
+        73.5,
+        110.25
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Stellar Ricochet",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Xayah",
+      "params": {
+        "AttackNumEnemies": [
+          3.0,
+          3.0,
+          5.0
+        ],
+        "PassivePercentReducedDamage": [
+          0.6,
+          0.6,
+          0.3
+        ],
+        "ADDamage": [
+          45.0,
+          68.0,
+          900.0
+        ],
+        "APDamage": [
+          6.0,
+          9.0,
+          60.0
+        ],
+        "ActivePercentReducedDamage": 0.2,
+        "RecallFeatherTargets": 3.0,
+        "AttackSpeed": 0.75,
+        "Duration": 4.0,
+        "NumAttacks": 6.0,
+        "PrimaryTargetBonusDamage": [
+          25.0,
+          40.0,
+          200.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Bard",
+    "display_name": "Bard",
+    "cost": 5,
+    "traits": [
+      "TFT17_Astronaut",
+      "TFT17_ManaTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.85,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 65.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Ultra Friendly Object",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Bard",
+      "params": {
+        "DamagePerSecond": [
+          240.0,
+          360.0,
+          3000.0
+        ],
+        "SplitDamagePerSecond": [
+          135.0,
+          205.0,
+          1500.0
+        ],
+        "Duration": 4.0,
+        "AugmentedDuration": 5.0,
+        "AbductChance": [
+          0.15,
+          0.2,
+          1.0
+        ],
+        "PVEAbductionChanceModifier": 1.0,
+        "MeepsPerMeep": 1.0,
+        "TankDamageIncrease": 0.3,
+        "SecondaryHexRange": 1.0,
+        "CanAbductSecondaryTargets": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Blitzcrank",
+    "display_name": "Blitzcrank",
+    "cost": 5,
+    "traits": [
+      "TFT17_BlitzcrankUniqueTrait",
+      "TFT17_SpaceGroove",
+      "TFT17_ShieldTank"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1000.0,
+        1800.0,
+        3240.0
+      ],
+      "armor": 50.0,
+      "magic_resist": 50.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.9,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 120.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Party Crasher",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Blitzcrank",
+      "params": {
+        "BoltCooldown": [
+          2.0,
+          2.0,
+          0.5
+        ],
+        "BoltDamage": [
+          60.0,
+          90.0,
+          150.0
+        ],
+        "UppercutDamage": [
+          150.0,
+          225.0,
+          999.0
+        ],
+        "ExplosionDamage": [
+          175.0,
+          265.0,
+          5000.0
+        ],
+        "GrooveDurationPerTarget": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Fiora",
+    "display_name": "Fiora",
+    "cost": 5,
+    "traits": [
+      "TFT17_FioraUniqueTrait",
+      "TFT17_AnimaSquad",
+      "TFT17_MeleeTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1200.0,
+        2160.0,
+        3888.0
+      ],
+      "armor": 65.0,
+      "magic_resist": 65.0,
+      "attack_damage": [
+        80.0,
+        120.0,
+        180.0
+      ],
+      "attack_speed": 0.9,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 70.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Perfect Bladework",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Fiora",
+      "params": {
+        "NumAttacks": 2.0,
+        "VitalDamage": [
+          37.0,
+          56.0,
+          777.0
+        ],
+        "PercentHealing": 0.15,
+        "NumVitals": 6.0,
+        "AuraHealing": [
+          200.0,
+          250.0,
+          999.0
+        ],
+        "AuraDuration": 5.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Graves",
+    "display_name": "Graves",
+    "cost": 5,
+    "traits": [
+      "TFT17_GravesTrait"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 60.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Collateral Damage",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Graves",
+      "params": {
+        "NumProjectiles": 5.0,
+        "PassivePercentBAD": 0.33,
+        "Damage": [
+          390.0,
+          585.0,
+          5555.0
+        ],
+        "SecondaryDamageAD": [
+          135.0,
+          200.0,
+          3333.0
+        ],
+        "SecondaryDamageAP": [
+          30.0,
+          45.0,
+          777.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Jhin",
+    "display_name": "Jhin",
+    "cost": 5,
+    "traits": [
+      "TFT17_DarkStar",
+      "TFT17_JhinUniqueTrait",
+      "TFT17_RangedTrait"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        80.0,
+        120.0,
+        180.0
+      ],
+      "attack_speed": 0.9,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 44.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Space Opera",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Jhin",
+      "params": {
+        "FixedAS": [
+          0.9,
+          0.9,
+          1.4
+        ],
+        "PercentBonusASToConvert": 0.01,
+        "ADConversionRate": 0.75,
+        "NumHands": 4.0,
+        "NumAttacks": 4.0,
+        "APDamage": [
+          4.0,
+          6.0,
+          44.0
+        ],
+        "ADDamage": [
+          41.0,
+          62.0,
+          644.0
+        ],
+        "FinalShotPercentDamageIncrease": 2.44,
+        "PercentDamageReductionPerTargetHit": 0.44
+      }
+    }
+  },
+  {
+    "id": "TFT17_Shen",
+    "display_name": "Shen",
+    "cost": 5,
+    "traits": [
+      "TFT17_ShenUniqueTrait",
+      "TFT17_Timebreaker",
+      "TFT17_ResistTank"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 65.0,
+      "magic_resist": 65.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.9,
+      "attack_range": 1,
+      "starting_mana": 20.0,
+      "max_mana": 70.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Reality Tear",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Shen",
+      "params": {
+        "BonusDamageOnAttack": [
+          25.0,
+          40.0,
+          777.0
+        ],
+        "ShieldHP": 0.15,
+        "ShieldAP": [
+          200.0,
+          250.0,
+          3456.0
+        ],
+        "ShieldDuration": 3.0,
+        "ASSlow": [
+          0.5,
+          0.5,
+          0.99
+        ],
+        "BonusAS": [
+          0.8,
+          0.8,
+          9.99
+        ],
+        "BuffDebuffDuration": 3.0,
+        "DamageHP": 0.01
+      }
+    }
+  },
+  {
+    "id": "TFT17_Sona",
+    "display_name": "Sona",
+    "cost": 5,
+    "traits": [
+      "TFT17_SonaUniqueTrait",
+      "TFT17_PsyOps",
+      "TFT17_SummonTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        35.0,
+        52.5,
+        78.75
+      ],
+      "attack_speed": 0.9,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 25.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Psionic Crush",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Sona",
+      "params": {
+        "DebrisDamage": [
+          300.0,
+          450.0,
+          999.0
+        ],
+        "SlamDamage": [
+          720.0,
+          1100.0,
+          9999.0
+        ],
+        "NumCasts": 5.0,
+        "DebrisRipDamage": [
+          120.0,
+          180.0,
+          999.0
+        ],
+        "StunDuration": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Vex",
+    "display_name": "Vex",
+    "cost": 5,
+    "traits": [
+      "TFT17_VexUniqueTrait",
+      "TFT17_Stargazer"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        15.0,
+        22.5,
+        33.75
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 60.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Lend Me a Hand, Shadow!",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Vex",
+      "params": {
+        "ShadowHandDamage": [
+          27.0,
+          40.0,
+          250.0
+        ],
+        "ShadowHandMagicDamage": [
+          130.0,
+          195.0,
+          1000.0
+        ],
+        "NumActiveStrikes": 3.0,
+        "NumStrikesForPassive": 5.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Zed",
+    "display_name": "Zed",
+    "cost": 5,
+    "traits": [
+      "TFT17_ZedUniqueTrait"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        85.0,
+        127.5,
+        191.25
+      ],
+      "attack_speed": 0.85,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Quantum Clone",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Zed",
+      "params": {
+        "HPPenalty": [
+          0.25,
+          0.35,
+          0.4
+        ],
+        "ManaCostIncrease": 30.0
+      }
+    }
+  }
+]

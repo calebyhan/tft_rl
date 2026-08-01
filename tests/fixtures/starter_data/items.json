@@ -1,0 +1,283 @@
+[
+  {
+    "id": "TFT_Item_BFSword",
+    "display_name": "B.F. Sword",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "attack_damage": 10
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_ChainVest",
+    "display_name": "Chain Vest",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "armor": 20
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_RecurveBow",
+    "display_name": "Recurve Bow",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "attack_speed_pct": 0.1
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_NeedlesslyLargeRod",
+    "display_name": "Needlessly Large Rod",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "ability_power": 10
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_NegatronCloak",
+    "display_name": "Negatron Cloak",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "magic_resist": 20
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_GiantsBelt",
+    "display_name": "Giant's Belt",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "health": 150
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_SparringGloves",
+    "display_name": "Sparring Gloves",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "crit_chance": 0.2
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_TearOfTheGoddess",
+    "display_name": "Tear of the Goddess",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "mana": 15
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_Spatula",
+    "display_name": "Spatula",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {},
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_Deathblade",
+    "display_name": "Deathblade",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_BFSword"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage": 55
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_InfinityEdge",
+    "display_name": "Infinity Edge",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_damage": 15,
+      "crit_chance": 0.25
+    },
+    "effect_id": "infinity_edge_crit_amp",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_BrambleVest",
+    "display_name": "Bramble Vest",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_ChainVest",
+      "TFT_Item_ChainVest"
+    ],
+    "unique": false,
+    "stats": {
+      "armor": 65
+    },
+    "effect_id": "bramble_vest_thorns",
+    "radiant_version_of": null,
+    "params": {
+      "reflect": 80,
+      "max_attacker_range": 1
+    }
+  },
+  {
+    "id": "TFT_Item_WarmogsArmor",
+    "display_name": "Warmog's Armor",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_GiantsBelt",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": false,
+    "stats": {
+      "health": 600
+    },
+    "effect_id": null,
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_SpearOfShojin",
+    "display_name": "Spear of Shojin",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_TearOfTheGoddess"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage": 15,
+      "mana": 15
+    },
+    "effect_id": "spear_of_shojin_bonus_mana_on_attack",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_RabadonsDeathcap",
+    "display_name": "Rabadon's Deathcap",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NeedlesslyLargeRod",
+      "TFT_Item_NeedlesslyLargeRod"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 50
+    },
+    "effect_id": "rabadons_ability_damage_amp",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_GuinsoosRageblade",
+    "display_name": "Guinsoo's Rageblade",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NeedlesslyLargeRod",
+      "TFT_Item_RecurveBow"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 10,
+      "attack_speed_pct": 0.1
+    },
+    "effect_id": "guinsoos_stacking_attack_speed",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_DragonsClaw",
+    "display_name": "Dragon's Claw",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NegatronCloak",
+      "TFT_Item_NegatronCloak"
+    ],
+    "unique": false,
+    "stats": {
+      "magic_resist": 65
+    },
+    "effect_id": "dragons_claw_magic_damage_reduction",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_SniperEmblem",
+    "display_name": "Sniper Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_RecurveBow",
+      "TFT_Item_Spatula"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_damage": 10
+    },
+    "effect_id": "emblem_Sniper",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_ZenithEdge",
+    "display_name": "Zenith Edge",
+    "is_component": false,
+    "category": "radiant",
+    "recipe": [],
+    "unique": true,
+    "stats": {
+      "attack_damage": 45,
+      "crit_chance": 0.45,
+      "damage_amp": 0.1
+    },
+    "effect_id": "infinity_edge_crit_amp",
+    "radiant_version_of": "TFT_Item_InfinityEdge"
+  }
+]

@@ -11,6 +11,18 @@ Set 17 econ guide, and Set 17 shop-odds aggregator sites, current as of
 2026-07-31 (patch 17.8). Numbers here reflect that patch; re-verify if the
 engine targets a different one.
 
+## Amendments
+
+- **2026-08-01** — Section 3.1 step 3: targeting is **sticky** (a unit holds
+  its target while chasing) rather than re-picking whenever the target is out
+  of range.
+- **2026-08-01** — Section 5: a shop slot draws a random **copy** from the
+  shared pool, so partially bought-out champions become proportionally rarer;
+  previously described as a uniform pick among available champions.
+
+Both changes came out of the implementation review logged in
+`99_judgement_calls.md`; the engine matches this document as amended.
+
 ## 1. Match structure
 
 - 8 players, free-for-all, last one standing (or highest HP when time runs out
@@ -75,11 +87,19 @@ Each unit each tick is in one of: `idle/seeking`, `moving`, `attacking`,
 1. Apply any active status effects (DoTs, HoTs, stuns, shields decaying,
    attack-speed/CC durations ticking down).
 2. If stunned/CC'd (rooted/disarmed as relevant), skip action selection.
-3. Target selection: if current target is dead/out of range and no
-   "locked" targeting effect applies, pick nearest enemy by hex distance
-   (real TFT default targeting is nearest-enemy; some units/items override
-   this to lowest-HP, highest-attack-damage, etc. — model as a per-unit
-   `targeting_rule` field, default `nearest`).
+3. Target selection: targeting is **sticky**. A unit commits to a target and
+   keeps it while chasing, re-picking only when the target dies or becomes
+   unreachable (no path exists to it). When it does re-pick, the default rule
+   is nearest enemy by hex distance; some units/items override this to
+   lowest-HP, highest-attack-damage, etc. — model as a per-unit
+   `targeting_rule` field, default `nearest`.
+   - *Amended 2026-08-01.* This previously read "if current target is dead/out
+     of range ... pick nearest enemy", which makes a chasing unit flip targets
+     every tick as the board shifts. Real TFT holds its target while closing
+     the distance.
+   - Note the `targeting_rule` field lives on the runtime unit, not on
+     `ChampionDef` — doc 02's champion schema has no such field and is kept
+     byte-identical to the source data.
 4. If target is out of attack range: move 1 hex per movement tick toward it
    along the shortest path (simple BFS/A* on the hex grid honoring occupied
    hexes as obstacles) — movement speed is roughly fixed per unit in TFT
@@ -201,8 +221,19 @@ if targeting a different patch; use as the numeric example)
 | 10    | 5%     | 10%    | 20%    | 40%    | 25%    |
 
 - Shop has **5 slots**; each slot rolls its cost tier independently using
-  the row above, then picks uniformly among currently-available (in-pool)
-  champions of that tier.
+  the row above, then draws a random **copy** from the shared pool at that
+  tier. Because a champion's copies are what sit in the pool, a champion with
+  many copies left is proportionally more likely to appear than one that has
+  been largely bought out — this is what makes contesting a unit meaningful.
+  - *Amended 2026-08-01.* This previously read "picks uniformly among
+    currently-available (in-pool) champions of that tier", which makes a
+    champion with 1 copy remaining as likely as one with 30, and so erases the
+    contested-unit dynamic that pool sizes exist to create.
+  - Both readings are implemented behind `config.shop_draw_weighting`
+    (`"by_copies"`, the default, or `"uniform"`) so the alternative can still
+    be measured.
+  - If the rolled tier is fully bought out, the slot comes back **empty**
+    rather than falling back to another tier.
 - Champion pool sizes (shared across all 8 players; copies deplete as
   bought, return to pool on sell/elimination):
 

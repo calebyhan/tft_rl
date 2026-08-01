@@ -1,0 +1,1257 @@
+[
+  {
+    "id": "TFT_Item_BFSword",
+    "display_name": "B.F. Sword",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.1
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_ChainVest",
+    "display_name": "Chain Vest",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "armor": 20.0
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_FryingPan",
+    "display_name": "Frying Pan",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {},
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_GiantsBelt",
+    "display_name": "Giant's Belt",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "health": 150.0
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_NeedlesslyLargeRod",
+    "display_name": "Needlessly Large Rod",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "ability_power": 10.0
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_NegatronCloak",
+    "display_name": "Negatron Cloak",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "magic_resist": 20.0
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_RecurveBow",
+    "display_name": "Recurve Bow",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "attack_speed_pct": 0.1
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_SparringGloves",
+    "display_name": "Sparring Gloves",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {
+      "crit_chance": 0.2
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_Spatula",
+    "display_name": "Spatula",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {},
+    "effect_id": "item_TFT_Item_Spatula",
+    "radiant_version_of": null,
+    "params": {
+      "{fe9818ef}": 5.0
+    }
+  },
+  {
+    "id": "TFT_Item_TearOfTheGoddess",
+    "display_name": "Tear of the Goddess",
+    "is_component": true,
+    "category": "component",
+    "recipe": [],
+    "unique": false,
+    "stats": {},
+    "effect_id": "item_TFT_Item_TearOfTheGoddess",
+    "radiant_version_of": null,
+    "params": {
+      "ManaRegen": 1.0
+    }
+  },
+  {
+    "id": "TFT17_Item_ASTraitEmblemItem",
+    "display_name": "Challenger Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_RecurveBow"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_speed_pct": 0.3
+    },
+    "effect_id": "emblem_TFT17_ASTrait",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_AssassinTraitEmblemItem",
+    "display_name": "Rogue Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": true,
+    "stats": {
+      "crit_chance": 0.2
+    },
+    "effect_id": "emblem_TFT17_AssassinTrait",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_AstronautEmblemItem",
+    "display_name": "Meeple Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_ChainVest"
+    ],
+    "unique": true,
+    "stats": {
+      "armor": 20.0,
+      "magic_resist": 20.0
+    },
+    "effect_id": "emblem_TFT17_Astronaut",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_DRXEmblemItem",
+    "display_name": "N.O.V.A. Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": true,
+    "stats": {
+      "crit_chance": 0.2,
+      "health": 200.0
+    },
+    "effect_id": "emblem_TFT17_DRX",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_DarkStarEmblemItem",
+    "display_name": "Dark Star Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_BFSword"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_damage_pct": 0.18,
+      "ability_power": 18.0
+    },
+    "effect_id": "emblem_TFT17_DarkStar",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_FavoredEmblemItem",
+    "display_name": "Arbiter Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_NegatronCloak"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_speed_pct": 0.3,
+      "armor": 20.0,
+      "magic_resist": 20.0
+    },
+    "effect_id": "emblem_TFT17_ADMIN",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_FlexTraitEmblemItem",
+    "display_name": "Voyager Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_NeedlesslyLargeRod"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_damage_pct": 0.2,
+      "ability_power": 20.0
+    },
+    "effect_id": "emblem_TFT17_FlexTrait",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_HPTankEmblemItem",
+    "display_name": "Brawler Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": true,
+    "stats": {
+      "health": 250.0
+    },
+    "effect_id": "emblem_TFT17_HPTank",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_MeleeTraitEmblemItem",
+    "display_name": "Marauder Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_BFSword"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_damage_pct": 0.2,
+      "omnivamp": 0.1
+    },
+    "effect_id": "emblem_TFT17_MeleeTrait",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_PrimordianEmblemItem",
+    "display_name": "Primordian Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": true,
+    "stats": {
+      "health": 450.0
+    },
+    "effect_id": "emblem_TFT17_Primordian",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_PulsefireEmblemItem",
+    "display_name": "Timebreaker Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_RecurveBow"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_speed_pct": 0.15,
+      "health": 200.0
+    },
+    "effect_id": "emblem_TFT17_Timebreaker",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_ResistTankEmblemItem",
+    "display_name": "Bastion Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_ChainVest"
+    ],
+    "unique": true,
+    "stats": {
+      "armor": 30.0,
+      "magic_resist": 30.0
+    },
+    "effect_id": "emblem_TFT17_ResistTank",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_ShieldTankEmblemItem",
+    "display_name": "Vanguard Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_NegatronCloak"
+    ],
+    "unique": true,
+    "stats": {
+      "armor": 20.0,
+      "magic_resist": 20.0
+    },
+    "effect_id": "emblem_TFT17_ShieldTank",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_SpaceGrooveEmblemItem",
+    "display_name": "Space Groove Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_TearOfTheGoddess"
+    ],
+    "unique": true,
+    "stats": {
+      "health": 200.0
+    },
+    "effect_id": "emblem_TFT17_SpaceGroove",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_StargazerEmblemItem",
+    "display_name": "Stargazer Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_NeedlesslyLargeRod"
+    ],
+    "unique": true,
+    "stats": {
+      "attack_damage_pct": 0.15,
+      "ability_power": 15.0
+    },
+    "effect_id": "emblem_TFT17_Stargazer",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT17_Item_SummonTraitEmblemItem",
+    "display_name": "Shepherd Emblem",
+    "is_component": false,
+    "category": "emblem",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_TearOfTheGoddess"
+    ],
+    "unique": true,
+    "stats": {},
+    "effect_id": "emblem_TFT17_SummonTrait",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_AdaptiveHelm",
+    "display_name": "Adaptive Helm",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NegatronCloak",
+      "TFT_Item_TearOfTheGoddess"
+    ],
+    "unique": false,
+    "stats": {
+      "magic_resist": 20.0
+    },
+    "effect_id": "item_TFT_Item_AdaptiveHelm",
+    "radiant_version_of": null,
+    "params": {
+      "BacklineADAP": 10.0,
+      "FrontlineResists": 30.0,
+      "ManaPercIncrease": 0.15000000596046448,
+      "ManaRegen": 3.0
+    }
+  },
+  {
+    "id": "TFT_Item_ArchangelsStaff",
+    "display_name": "Archangel's Staff",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NeedlesslyLargeRod",
+      "TFT_Item_TearOfTheGoddess"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 30.0
+    },
+    "effect_id": "item_TFT_Item_ArchangelsStaff",
+    "radiant_version_of": null,
+    "params": {
+      "APPerInterval": 20.0,
+      "IntervalSeconds": 5.0,
+      "ManaRegen": 1.0
+    }
+  },
+  {
+    "id": "TFT_Item_Bloodthirster",
+    "display_name": "Bloodthirster",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_NegatronCloak"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.15,
+      "ability_power": 15.0,
+      "magic_resist": 20.0,
+      "omnivamp": 0.2
+    },
+    "effect_id": "item_TFT_Item_Bloodthirster",
+    "radiant_version_of": null,
+    "params": {
+      "HealthThreshold": 40.0,
+      "LifeSteal": 20.0,
+      "ShieldDuration": 5.0,
+      "ShieldHealthPercent": 25.0
+    }
+  },
+  {
+    "id": "TFT_Item_BlueBuff",
+    "display_name": "Blue Buff",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_TearOfTheGoddess",
+      "TFT_Item_TearOfTheGoddess"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.15,
+      "ability_power": 15.0
+    },
+    "effect_id": "item_TFT_Item_BlueBuff",
+    "radiant_version_of": null,
+    "params": {
+      "ManaRegen": 5.0,
+      "ModifiedADAP": 0.10000000149011612
+    }
+  },
+  {
+    "id": "TFT_Item_BrambleVest",
+    "display_name": "Bramble Vest",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_ChainVest",
+      "TFT_Item_ChainVest"
+    ],
+    "unique": false,
+    "stats": {
+      "armor": 50.0
+    },
+    "effect_id": "item_TFT_Item_BrambleVest",
+    "radiant_version_of": null,
+    "params": {
+      "1StarAoEDamage": 100.0,
+      "2StarAoEDamage": 100.0,
+      "3StarAoEDamage": 100.0,
+      "4StarAoEDamage": 100.0,
+      "AutoDamageReduction": 0.05000000074505806,
+      "ICD": 2.0,
+      "PercentMaxHP": 0.05999999865889549,
+      "{6688a0d5}": 100.0
+    }
+  },
+  {
+    "id": "TFT_Item_Crownguard",
+    "display_name": "Crownguard",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NeedlesslyLargeRod",
+      "TFT_Item_ChainVest"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 20.0,
+      "armor": 20.0,
+      "health": 100.0
+    },
+    "effect_id": "item_TFT_Item_Crownguard",
+    "radiant_version_of": null,
+    "params": {
+      "ShieldBonusAP": 25.0,
+      "ShieldDuration": 8.0,
+      "ShieldSize": 25.0
+    }
+  },
+  {
+    "id": "TFT_Item_Deathblade",
+    "display_name": "Deathblade",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_BFSword"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.55
+    },
+    "effect_id": "item_TFT_Item_Deathblade",
+    "radiant_version_of": null,
+    "params": {
+      "BonusDamage": 0.10000000149011612,
+      "{1543aa48}": 0.10000000149011612
+    }
+  },
+  {
+    "id": "TFT_Item_DragonsClaw",
+    "display_name": "Dragon's Claw",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NegatronCloak",
+      "TFT_Item_NegatronCloak"
+    ],
+    "unique": false,
+    "stats": {
+      "magic_resist": 60.0
+    },
+    "effect_id": "item_TFT_Item_DragonsClaw",
+    "radiant_version_of": null,
+    "params": {
+      "HealthRegenInterval": 2.0,
+      "ICD": 0.5,
+      "PercentHealthDamage": 2.5,
+      "PercentMaxHP": 0.05999999865889549
+    }
+  },
+  {
+    "id": "TFT_Item_ForceOfNature",
+    "display_name": "Tactician's Crown",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_Spatula"
+    ],
+    "unique": false,
+    "stats": {},
+    "effect_id": "item_TFT_Item_ForceOfNature",
+    "radiant_version_of": null,
+    "params": {
+      "MaxArmySizeIncrease": 1.0,
+      "PercentGoldChance": 10.0
+    }
+  },
+  {
+    "id": "TFT_Item_FrozenHeart",
+    "display_name": "Protector's Vow",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_TearOfTheGoddess",
+      "TFT_Item_ChainVest"
+    ],
+    "unique": false,
+    "stats": {
+      "armor": 25.0,
+      "magic_resist": 25.0
+    },
+    "effect_id": "item_TFT_Item_FrozenHeart",
+    "radiant_version_of": null,
+    "params": {
+      "CombatStartMana": 20.0,
+      "HealthThreshold": 40.0,
+      "ManaRegen": 1.0,
+      "ShieldDuration": 60.0,
+      "ShieldHealthPercent": 20.0,
+      "TriggerMana": 15.0
+    }
+  },
+  {
+    "id": "TFT_Item_GargoyleStoneplate",
+    "display_name": "Gargoyle Stoneplate",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_ChainVest",
+      "TFT_Item_NegatronCloak"
+    ],
+    "unique": false,
+    "stats": {
+      "armor": 25.0,
+      "health": 100.0,
+      "magic_resist": 25.0
+    },
+    "effect_id": "item_TFT_Item_GargoyleStoneplate",
+    "radiant_version_of": null,
+    "params": {
+      "ArmorPerEnemy": 10.0,
+      "MRPerEnemy": 10.0,
+      "SizeIncrease": 0.07500000298023224,
+      "{4dc0582f}": 20.0
+    }
+  },
+  {
+    "id": "TFT_Item_GuardianAngel",
+    "display_name": "Edge of Night",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_ChainVest"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.1,
+      "ability_power": 10.0,
+      "attack_speed_pct": 0.15,
+      "armor": 20.0
+    },
+    "effect_id": "item_TFT_Item_GuardianAngel",
+    "radiant_version_of": null,
+    "params": {
+      "DamageReduction": 100.0,
+      "HealthThreshold": 60.0,
+      "MissingHealthRestore": 0.20000000298023224,
+      "StealthDuration": 1.0
+    }
+  },
+  {
+    "id": "TFT_Item_GuinsoosRageblade",
+    "display_name": "Guinsoo's Rageblade",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_RecurveBow",
+      "TFT_Item_NeedlesslyLargeRod"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 10.0,
+      "attack_speed_pct": 0.1
+    },
+    "effect_id": "guinsoos_stacking_attack_speed",
+    "radiant_version_of": null,
+    "params": {
+      "AttackSpeedPerStack": 7.0
+    }
+  },
+  {
+    "id": "TFT_Item_HextechGunblade",
+    "display_name": "Hextech Gunblade",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_NeedlesslyLargeRod"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.2,
+      "ability_power": 20.0,
+      "omnivamp": 0.15
+    },
+    "effect_id": "item_TFT_Item_HextechGunblade",
+    "radiant_version_of": null,
+    "params": {
+      "AllyHealing": 0.20000000298023224,
+      "ManaRegen": 1.0,
+      "Omnivamp": 18.0
+    }
+  },
+  {
+    "id": "TFT_Item_InfinityEdge",
+    "display_name": "Infinity Edge",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.35,
+      "crit_chance": 0.35
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_IonicSpark",
+    "display_name": "Ionic Spark",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NeedlesslyLargeRod",
+      "TFT_Item_NegatronCloak"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 15.0,
+      "health": 250.0,
+      "magic_resist": 35.0
+    },
+    "effect_id": "item_TFT_Item_IonicSpark",
+    "radiant_version_of": null,
+    "params": {
+      "Damage": 250.0,
+      "HexRange": 2.0,
+      "MRShred": 30.0,
+      "ManaRatio": 150.0
+    }
+  },
+  {
+    "id": "TFT_Item_JeweledGauntlet",
+    "display_name": "Jeweled Gauntlet",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NeedlesslyLargeRod",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 35.0,
+      "crit_chance": 0.35
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_LastWhisper",
+    "display_name": "Last Whisper",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_RecurveBow",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.15,
+      "attack_speed_pct": 0.2,
+      "crit_chance": 0.2
+    },
+    "effect_id": "item_TFT_Item_LastWhisper",
+    "radiant_version_of": null,
+    "params": {
+      "ArmorBreakDuration": 3.0,
+      "ArmorReductionPercent": 30.0
+    }
+  },
+  {
+    "id": "TFT_Item_Leviathan",
+    "display_name": "Nashor's Tooth",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_RecurveBow",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 15.0,
+      "attack_speed_pct": 0.1,
+      "crit_chance": 0.2,
+      "health": 150.0
+    },
+    "effect_id": "item_TFT_Item_Leviathan",
+    "radiant_version_of": null,
+    "params": {
+      "BaseManaOnHit": 2,
+      "ManaOnCrit": 4.0
+    }
+  },
+  {
+    "id": "TFT_Item_MadredsBloodrazor",
+    "display_name": "Giant Slayer",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_RecurveBow"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.15,
+      "ability_power": 15.0,
+      "attack_speed_pct": 0.15,
+      "damage_amp": 0.15
+    },
+    "effect_id": "item_TFT_Item_MadredsBloodrazor",
+    "radiant_version_of": null,
+    "params": {
+      "{1543aa48}": 0.15000000596046448,
+      "{abb9f4ce}": 25.0
+    }
+  },
+  {
+    "id": "TFT_Item_Morellonomicon",
+    "display_name": "Morellonomicon",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NeedlesslyLargeRod",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 20.0,
+      "health": 150.0
+    },
+    "effect_id": "item_TFT_Item_Morellonomicon",
+    "radiant_version_of": null,
+    "params": {
+      "BurnDuration": 10.0,
+      "BurnPercent": 1.0,
+      "GrievousWoundsPercent": 33.0,
+      "ManaRegen": 1.0,
+      "MonsterCap": 100.0,
+      "TicksPerSecond": 1.0
+    }
+  },
+  {
+    "id": "TFT_Item_NightHarvester",
+    "display_name": "Steadfast Heart",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_ChainVest",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": false,
+    "stats": {
+      "armor": 20.0,
+      "crit_chance": 0.2,
+      "health": 250.0
+    },
+    "effect_id": "item_TFT_Item_NightHarvester",
+    "radiant_version_of": null,
+    "params": {
+      "BaseDurability": 0.05000000074505806,
+      "EmpoweredDurability": 0.15000000596046448,
+      "ThresholdForEmpower": 0.5
+    }
+  },
+  {
+    "id": "TFT_Item_PowerGauntlet",
+    "display_name": "Striker's Flail",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_GiantsBelt",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_speed_pct": 0.1,
+      "crit_chance": 0.2,
+      "health": 150.0
+    },
+    "effect_id": "item_TFT_Item_PowerGauntlet",
+    "radiant_version_of": null,
+    "params": {
+      "BuffDamageAmp": 0.05000000074505806,
+      "Duration": 5.0,
+      "MaxStacks": 4.0,
+      "{1543aa48}": 0.10000000149011612
+    }
+  },
+  {
+    "id": "TFT_Item_Quicksilver",
+    "display_name": "Quicksilver",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_SparringGloves",
+      "TFT_Item_NegatronCloak"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_speed_pct": 0.15,
+      "crit_chance": 0.2,
+      "magic_resist": 20.0
+    },
+    "effect_id": "item_TFT_Item_Quicksilver",
+    "radiant_version_of": null,
+    "params": {
+      "ProcAttackSpeed": 0.029999999329447746,
+      "SpellShieldDuration": 18.0
+    }
+  },
+  {
+    "id": "TFT_Item_RabadonsDeathcap",
+    "display_name": "Rabadon's Deathcap",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NeedlesslyLargeRod",
+      "TFT_Item_NeedlesslyLargeRod"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 55.0
+    },
+    "effect_id": "item_TFT_Item_RabadonsDeathcap",
+    "radiant_version_of": null,
+    "params": {
+      "BonusDamage": 0.15000000596046448,
+      "{1543aa48}": 0.15000000596046448
+    }
+  },
+  {
+    "id": "TFT_Item_RapidFireCannon",
+    "display_name": "Red Buff",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_RecurveBow",
+      "TFT_Item_RecurveBow"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_speed_pct": 0.45
+    },
+    "effect_id": "item_TFT_Item_RapidFireCannon",
+    "radiant_version_of": null,
+    "params": {
+      "BonusDamage": 0.05999999865889549,
+      "BurnPercent": 1.0,
+      "Duration": 5.0,
+      "HealingReductionPct": 33.0,
+      "HexRangeIncrease": 1.0,
+      "{1543aa48}": 0.029999999329447746,
+      "{9f5117db}": 100.0
+    }
+  },
+  {
+    "id": "TFT_Item_RedBuff",
+    "display_name": "Sunfire Cape",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_ChainVest",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": false,
+    "stats": {
+      "armor": 20.0,
+      "health": 150.0
+    },
+    "effect_id": "item_TFT_Item_RedBuff",
+    "radiant_version_of": null,
+    "params": {
+      "BonusPercentHP": 0.07999999821186066,
+      "BurnDuration": 10.0,
+      "BurnPercent": 1.0,
+      "GrievousWoundsPercent": 33.0,
+      "HexRange": 2.0,
+      "ICD": 2.0,
+      "MonsterCap": 100.0
+    }
+  },
+  {
+    "id": "TFT_Item_Redemption",
+    "display_name": "Spirit Visage",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_TearOfTheGoddess",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": false,
+    "stats": {
+      "health": 300.0
+    },
+    "effect_id": "item_TFT_Item_Redemption",
+    "radiant_version_of": null,
+    "params": {
+      "HealTickRate": 1.0,
+      "ManaRegen": 2.0,
+      "MaxHeal": 250.0,
+      "MissingHealthHeal": 0.019999999552965164,
+      "{cd951938}": 0.07999999821186066
+    }
+  },
+  {
+    "id": "TFT_Item_RunaansHurricane",
+    "display_name": "Kraken's Fury",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NegatronCloak",
+      "TFT_Item_RecurveBow"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.1,
+      "attack_speed_pct": 0.1,
+      "magic_resist": 20.0
+    },
+    "effect_id": "item_TFT_Item_RunaansHurricane",
+    "radiant_version_of": null,
+    "params": {
+      "ADOnAttack": 0.03500000014901161,
+      "ASCapstone": 0.15000000596046448,
+      "MaxStacks": 15.0
+    }
+  },
+  {
+    "id": "TFT_Item_SpearOfShojin",
+    "display_name": "Spear of Shojin",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_TearOfTheGoddess"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.15,
+      "ability_power": 15.0
+    },
+    "effect_id": "spear_of_shojin_bonus_mana_on_attack",
+    "radiant_version_of": null,
+    "params": {
+      "FlatManaRestore": 5.0,
+      "ManaRegen": 1.0
+    }
+  },
+  {
+    "id": "TFT_Item_SpectralGauntlet",
+    "display_name": "Evenshroud",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_NegatronCloak",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": false,
+    "stats": {
+      "health": 250.0,
+      "magic_resist": 20.0
+    },
+    "effect_id": "item_TFT_Item_SpectralGauntlet",
+    "radiant_version_of": null,
+    "params": {
+      "ARReductionAmount": 30.0,
+      "BonusResistDuration": 15.0,
+      "BonusResists": 15.0,
+      "HexRange": 2.0
+    }
+  },
+  {
+    "id": "TFT_Item_StatikkShiv",
+    "display_name": "Void Staff",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_RecurveBow",
+      "TFT_Item_TearOfTheGoddess"
+    ],
+    "unique": false,
+    "stats": {
+      "ability_power": 35.0,
+      "attack_speed_pct": 0.15
+    },
+    "effect_id": "item_TFT_Item_StatikkShiv",
+    "radiant_version_of": null,
+    "params": {
+      "MRShred": 30.0,
+      "MRShredDuration": 5.0,
+      "ManaRegen": 1.0
+    }
+  },
+  {
+    "id": "TFT_Item_SteraksGage",
+    "display_name": "Sterak's Gage",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_BFSword",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_damage_pct": 0.45,
+      "health": 300.0
+    },
+    "effect_id": "item_TFT_Item_SteraksGage",
+    "radiant_version_of": null,
+    "params": {
+      "HealthThreshold": 60.0,
+      "PercentHealthShield": 0.4000000059604645,
+      "ShieldDuration": 4.0
+    }
+  },
+  {
+    "id": "TFT_Item_TacticiansRing",
+    "display_name": "Tactician's Cape",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_Spatula",
+      "TFT_Item_FryingPan"
+    ],
+    "unique": false,
+    "stats": {},
+    "effect_id": "item_TFT_Item_TacticiansRing",
+    "radiant_version_of": null,
+    "params": {
+      "MaxArmySizeIncrease": 1.0,
+      "PercentGoldChance": 10.0,
+      "Timer": 10.0
+    }
+  },
+  {
+    "id": "TFT_Item_TacticiansScepter",
+    "display_name": "Tactician's Shield",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_FryingPan",
+      "TFT_Item_FryingPan"
+    ],
+    "unique": false,
+    "stats": {},
+    "effect_id": "item_TFT_Item_TacticiansScepter",
+    "radiant_version_of": null,
+    "params": {
+      "MaxArmySizeIncrease": 1.0,
+      "PercentGoldChance": 10.0
+    }
+  },
+  {
+    "id": "TFT_Item_ThiefsGloves",
+    "display_name": "Thief's Gloves",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_SparringGloves",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": false,
+    "stats": {
+      "crit_chance": 0.2,
+      "health": 150.0
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
+  },
+  {
+    "id": "TFT_Item_TitansResolve",
+    "display_name": "Titan's Resolve",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_ChainVest",
+      "TFT_Item_RecurveBow"
+    ],
+    "unique": false,
+    "stats": {
+      "attack_speed_pct": 0.1,
+      "armor": 20.0
+    },
+    "effect_id": "item_TFT_Item_TitansResolve",
+    "radiant_version_of": null,
+    "params": {
+      "StackCap": 25.0,
+      "StackedAmp": 0.10000000149011612,
+      "StackingAD": 0.019999999552965164,
+      "StackingSP": 2.0
+    }
+  },
+  {
+    "id": "TFT_Item_UnstableConcoction",
+    "display_name": "Hand Of Justice",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_TearOfTheGoddess",
+      "TFT_Item_SparringGloves"
+    ],
+    "unique": false,
+    "stats": {
+      "crit_chance": 0.2
+    },
+    "effect_id": "item_TFT_Item_UnstableConcoction",
+    "radiant_version_of": null,
+    "params": {
+      "AD_NotStatBar": 0.15000000596046448,
+      "AP_NotStatBar": 15.0,
+      "HealthThreshold": 0.5,
+      "ManaRegen": 1.0,
+      "StatOmnivamp_NotStatBar": 0.11999999731779099,
+      "{f23e83fc}": 2.0
+    }
+  },
+  {
+    "id": "TFT_Item_WarmogsArmor",
+    "display_name": "Warmog's Armor",
+    "is_component": false,
+    "category": "advanced",
+    "recipe": [
+      "TFT_Item_GiantsBelt",
+      "TFT_Item_GiantsBelt"
+    ],
+    "unique": false,
+    "stats": {
+      "health": 500.0
+    },
+    "effect_id": "item_TFT_Item_WarmogsArmor",
+    "radiant_version_of": null,
+    "params": {
+      "BonusPercentHP": 0.18000000715255737
+    }
+  }
+]

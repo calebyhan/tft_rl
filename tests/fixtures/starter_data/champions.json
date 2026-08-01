@@ -1,0 +1,383 @@
+[
+  {
+    "id": "TFT17_Poppy",
+    "display_name": "Poppy",
+    "cost": 1,
+    "traits": ["Mecha", "Vanguard"],
+    "role": "Tank",
+    "stats": {
+      "health": [650, 1170, 2106],
+      "armor": 45,
+      "magic_resist": 45,
+      "attack_damage": [45, 68, 101],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 30,
+      "max_mana": 60,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Steadfast Presence",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "shield": [200, 300, 450],
+        "duration": 4.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Kindred",
+    "display_name": "Kindred",
+    "cost": 1,
+    "traits": ["DarkStar", "Sniper"],
+    "role": "Marksman",
+    "stats": {
+      "health": [500, 900, 1620],
+      "armor": 20,
+      "magic_resist": 20,
+      "attack_damage": [45, 68, 101],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0,
+      "max_mana": 70,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Mounting Dread",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "single_target_magic_damage",
+      "params": {
+        "damage": [180, 270, 405],
+        "ap_ratio": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Talon",
+    "display_name": "Talon",
+    "cost": 1,
+    "traits": ["SpaceGroove", "Rogue"],
+    "role": "Assassin",
+    "stats": {
+      "health": [550, 990, 1782],
+      "armor": 25,
+      "magic_resist": 25,
+      "attack_damage": [50, 75, 113],
+      "attack_speed": 0.7,
+      "attack_range": 1,
+      "starting_mana": 0,
+      "max_mana": 70,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Blade's End",
+      "cast_mode": "cooldown",
+      "cooldown_seconds": 6.0,
+      "effect_id": "single_target_physical_damage",
+      "params": {
+        "ad_ratio": [1.8, 2.0, 2.5]
+      }
+    }
+  },
+  {
+    "id": "TFT17_Blitzcrank",
+    "display_name": "Blitzcrank",
+    "cost": 2,
+    "traits": ["Mecha", "Vanguard"],
+    "role": "Tank",
+    "stats": {
+      "health": [800, 1440, 2592],
+      "armor": 50,
+      "magic_resist": 50,
+      "attack_damage": [50, 75, 113],
+      "attack_speed": 0.55,
+      "attack_range": 1,
+      "starting_mana": 30,
+      "max_mana": 70,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Rocket Grab",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "single_target_magic_damage_stun",
+      "params": {
+        "damage": [150, 225, 340],
+        "stun_duration": 1.5
+      }
+    }
+  },
+  {
+    "id": "TFT17_Corki",
+    "display_name": "Corki",
+    "cost": 2,
+    "traits": ["SpaceGroove", "Sniper"],
+    "role": "Marksman",
+    "stats": {
+      "health": [600, 1080, 1944],
+      "armor": 25,
+      "magic_resist": 25,
+      "attack_damage": [50, 75, 113],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0,
+      "max_mana": 60,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Valkyrie Barrage",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "splash_magic_damage",
+      "params": {
+        "damage": [160, 240, 360],
+        "splash_radius": 1,
+        "ap_ratio": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Nasus",
+    "display_name": "Nasus",
+    "cost": 2,
+    "traits": ["Mecha", "Brawler"],
+    "role": "Fighter",
+    "stats": {
+      "health": [750, 1350, 2430],
+      "armor": 40,
+      "magic_resist": 40,
+      "attack_damage": [55, 83, 124],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 30,
+      "max_mana": 80,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Siphoning Strike",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "single_target_physical_damage_heal",
+      "params": {
+        "ad_ratio": [1.6, 1.8, 2.2],
+        "heal_ratio": 0.5
+      }
+    }
+  },
+  {
+    "id": "TFT17_Lulu",
+    "display_name": "Lulu",
+    "cost": 3,
+    "traits": ["SpaceGroove", "Bastion"],
+    "role": "Caster",
+    "stats": {
+      "health": [700, 1260, 2268],
+      "armor": 30,
+      "magic_resist": 30,
+      "attack_damage": [45, 68, 101],
+      "attack_speed": 0.65,
+      "attack_range": 3,
+      "starting_mana": 30,
+      "max_mana": 90,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Wild Growth",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_lowest_health_ally",
+      "params": {
+        "shield": [250, 375, 560],
+        "duration": 5.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Diana",
+    "display_name": "Diana",
+    "cost": 3,
+    "traits": ["DarkStar", "Rogue"],
+    "role": "Assassin",
+    "stats": {
+      "health": [750, 1350, 2430],
+      "armor": 35,
+      "magic_resist": 35,
+      "attack_damage": [60, 90, 135],
+      "attack_speed": 0.7,
+      "attack_range": 1,
+      "starting_mana": 20,
+      "max_mana": 80,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Moonsilver Blade",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "splash_magic_damage",
+      "params": {
+        "damage": [200, 300, 450],
+        "splash_radius": 1,
+        "ap_ratio": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Gragas",
+    "display_name": "Gragas",
+    "cost": 3,
+    "traits": ["Mecha", "Brawler"],
+    "role": "Fighter",
+    "stats": {
+      "health": [900, 1620, 2916],
+      "armor": 45,
+      "magic_resist": 45,
+      "attack_damage": [60, 90, 135],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 40,
+      "max_mana": 100,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Body Slam",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "gragas_body_slam",
+      "params": {
+        "damage": [220, 330, 495],
+        "splash_radius": 1
+      }
+    }
+  },
+  {
+    "id": "TFT17_Jinx",
+    "display_name": "Jinx",
+    "cost": 4,
+    "traits": ["DarkStar", "Sniper"],
+    "role": "Marksman",
+    "stats": {
+      "health": [800, 1440, 2592],
+      "armor": 30,
+      "magic_resist": 30,
+      "attack_damage": [65, 98, 146],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0,
+      "max_mana": 70,
+      "mana_per_attack": 12,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Get Excited!",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "jinx_get_excited",
+      "params": {
+        "damage": [180, 270, 2000],
+        "attack_speed_bonus": 0.75,
+        "duration": 6.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Leona",
+    "display_name": "Leona",
+    "cost": 4,
+    "traits": ["Mecha", "Bastion"],
+    "role": "Tank",
+    "stats": {
+      "health": [1000, 1800, 3240],
+      "armor": 60,
+      "magic_resist": 60,
+      "attack_damage": [60, 90, 135],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 60,
+      "max_mana": 120,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Solar Bulwark",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "shield": [400, 600, 900],
+        "duration": 6.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_AurelionSol",
+    "display_name": "Aurelion Sol",
+    "cost": 5,
+    "traits": ["DarkStar", "SpaceGroove"],
+    "role": "Caster",
+    "stats": {
+      "health": [1000, 1800, 3240],
+      "armor": 40,
+      "magic_resist": 40,
+      "attack_damage": [70, 105, 158],
+      "attack_speed": 0.65,
+      "attack_range": 4,
+      "starting_mana": 30,
+      "max_mana": 110,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Voice of Light",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "line_magic_damage",
+      "params": {
+        "damage": [450, 675, 1500],
+        "ap_ratio": 1.0
+      }
+    }
+  },
+  {
+    "id": "TFT17_Ornn",
+    "display_name": "Ornn",
+    "cost": 5,
+    "traits": ["Mecha", "Vanguard", "Brawler"],
+    "role": "Tank",
+    "stats": {
+      "health": [1200, 2160, 3888],
+      "armor": 70,
+      "magic_resist": 70,
+      "attack_damage": [70, 105, 158],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 50,
+      "max_mana": 130,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Volcanic Rupture",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ornn_volcanic_rupture",
+      "params": {
+        "damage": [300, 450, 675],
+        "stun_duration": 1.5,
+        "forge_item": true
+      }
+    }
+  }
+]

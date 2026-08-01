@@ -1,0 +1,76 @@
+[
+  {
+    "id": "DarkStar",
+    "display_name": "Dark Star",
+    "category": "origin",
+    "breakpoints": [
+      { "count": 2, "effect_id": null, "params": { "ability_power": 15 } },
+      { "count": 4, "effect_id": null, "params": { "ability_power": 35 } },
+      { "count": 6, "effect_id": null, "params": { "ability_power": 70 } }
+    ]
+  },
+  {
+    "id": "Mecha",
+    "display_name": "Mecha",
+    "category": "origin",
+    "breakpoints": [
+      { "count": 2, "effect_id": null, "params": { "targets": "team", "armor": 15, "magic_resist": 15 } },
+      { "count": 4, "effect_id": null, "params": { "targets": "team", "armor": 30, "magic_resist": 30 } },
+      { "count": 6, "effect_id": null, "params": { "targets": "team", "armor": 60, "magic_resist": 60 } }
+    ]
+  },
+  {
+    "id": "SpaceGroove",
+    "display_name": "Space Groove",
+    "category": "origin",
+    "breakpoints": [
+      { "count": 3, "effect_id": "spacegroove_regeneration", "params": { "targets": "team", "heal_per_second": 20 } },
+      { "count": 5, "effect_id": "spacegroove_regeneration", "params": { "targets": "team", "heal_per_second": 55 } }
+    ]
+  },
+  {
+    "id": "Vanguard",
+    "display_name": "Vanguard",
+    "category": "class",
+    "breakpoints": [
+      { "count": 2, "effect_id": null, "params": { "armor": 30 } },
+      { "count": 4, "effect_id": null, "params": { "armor": 80 } }
+    ]
+  },
+  {
+    "id": "Bastion",
+    "display_name": "Bastion",
+    "category": "class",
+    "breakpoints": [
+      { "count": 2, "effect_id": null, "params": { "magic_resist": 25 } },
+      { "count": 4, "effect_id": null, "params": { "magic_resist": 65 } }
+    ]
+  },
+  {
+    "id": "Sniper",
+    "display_name": "Sniper",
+    "category": "class",
+    "breakpoints": [
+      { "count": 2, "effect_id": null, "params": { "attack_range": 1, "damage_amp": 0.10 } },
+      { "count": 4, "effect_id": null, "params": { "attack_range": 2, "damage_amp": 0.25 } }
+    ]
+  },
+  {
+    "id": "Brawler",
+    "display_name": "Brawler",
+    "category": "class",
+    "breakpoints": [
+      { "count": 2, "effect_id": null, "params": { "health": 200 } },
+      { "count": 4, "effect_id": null, "params": { "health": 500 } }
+    ]
+  },
+  {
+    "id": "Rogue",
+    "display_name": "Rogue",
+    "category": "class",
+    "breakpoints": [
+      { "count": 2, "effect_id": null, "params": { "crit_chance": 0.20, "crit_damage": 0.15 } },
+      { "count": 4, "effect_id": null, "params": { "crit_chance": 0.35, "crit_damage": 0.40 } }
+    ]
+  }
+]

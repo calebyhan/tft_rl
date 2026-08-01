@@ -1,0 +1,1232 @@
+[
+  {
+    "id": "TFT17_ADMIN",
+    "display_name": "Arbiter",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_ADMIN_2",
+        "params": {
+          "DamageInstances": 10,
+          "HealthThreshold": 0.4000000059604645,
+          "ManaToSpend": 50,
+          "NumAttacks": 3,
+          "NumSeconds": 4,
+          "ShieldDuration": 4,
+          "{fefec6fb}": 1.0
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_ADMIN_3",
+        "params": {
+          "DamageInstances": 10,
+          "HealthThreshold": 0.4000000059604645,
+          "ManaToSpend": 50,
+          "NumAttacks": 3,
+          "NumSeconds": 4,
+          "ShieldDuration": 4,
+          "{fefec6fb}": 1.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_APTrait",
+    "display_name": "Replicator",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_APTrait_2",
+        "params": {
+          "Effectiveness": 0.2199999988079071
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_APTrait_4",
+        "params": {
+          "Effectiveness": 0.5
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_ASTrait",
+    "display_name": "Challenger",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_ASTrait_2",
+        "params": {
+          "AttackSpeedPercent": 0.15000000596046448,
+          "BurstDuration": 2.5,
+          "BurstPercent": 0.5,
+          "TeamwideAS": 0.10000000149011612
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_ASTrait_3",
+        "params": {
+          "AttackSpeedPercent": 0.2800000011920929,
+          "BurstDuration": 2.5,
+          "BurstPercent": 0.5,
+          "TeamwideAS": 0.10000000149011612
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_ASTrait_4",
+        "params": {
+          "AttackSpeedPercent": 0.41999998688697815,
+          "BurstDuration": 2.5,
+          "BurstPercent": 0.5,
+          "TeamwideAS": 0.10000000149011612
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_ASTrait_5",
+        "params": {
+          "AttackSpeedPercent": 0.550000011920929,
+          "BurstDuration": 2.5,
+          "BurstPercent": 0.5,
+          "TeamwideAS": 0.10000000149011612
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_AnimaSquad",
+    "display_name": "Anima",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_AnimaSquad_3",
+        "params": {
+          "PairsPartnerWinMultiplier": 0.8500000238418579,
+          "TechBreakpoint": 100.0,
+          "TechPerCombat": 20.0,
+          "TechPerCombat_DU": 20,
+          "TechPerDeath_PVE": 1.0,
+          "TechPerKill": 2,
+          "TechPerLoss": 5.0,
+          "TechPerLoss_DU": 5,
+          "TechPerRound_PVE": 20.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_AnimaSquad_5",
+        "params": {
+          "PairsPartnerWinMultiplier": 0.8500000238418579,
+          "TechBreakpoint": 100.0,
+          "TechPerCombat": 20.0,
+          "TechPerCombat_DU": 20,
+          "TechPerDeath_PVE": 1.0,
+          "TechPerKill": 2,
+          "TechPerLoss": 5.0,
+          "TechPerLoss_DU": 5,
+          "TechPerRound_PVE": 20.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_AssassinTrait",
+    "display_name": "Rogue",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_AssassinTrait_2",
+        "params": {
+          "AD": 0.11999999731779099,
+          "AP": 12.0,
+          "Duration": 3.0,
+          "HealthThreshold": 0.5
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_AssassinTrait_3",
+        "params": {
+          "AD": 0.25,
+          "AP": 25.0,
+          "Duration": 3.0,
+          "HealthThreshold": 0.5
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_AssassinTrait_4",
+        "params": {
+          "AD": 0.44999998807907104,
+          "AP": 45.0,
+          "Duration": 3.0,
+          "HealthThreshold": 0.5
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_AssassinTrait_5",
+        "params": {
+          "AD": 0.6000000238418579,
+          "AP": 60.0,
+          "Duration": 3.0,
+          "HealthThreshold": 0.5
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_Astronaut",
+    "display_name": "Meeple",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_Astronaut_3",
+        "params": {
+          "BonusHealth": 100.0,
+          "Meeps": 2.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_Astronaut_5",
+        "params": {
+          "BonusHealth": 350.0,
+          "Meeps": 3.0
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_TFT17_Astronaut_7",
+        "params": {
+          "BonusHealth": 450.0,
+          "Meeps": 4.0
+        }
+      },
+      {
+        "count": 10,
+        "effect_id": "trait_TFT17_Astronaut_10",
+        "params": {
+          "BonusHealth": 550.0,
+          "Meeps": 6.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_BlitzcrankUniqueTrait",
+    "display_name": "Party Animal",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_BlitzcrankUniqueTrait_1",
+        "params": {
+          "HealthThreshold": 0.44999998807907104,
+          "PercentHealthHeal": 0.15000000596046448
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_DRX",
+    "display_name": "N.O.V.A.",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_DRX_2",
+        "params": {
+          "AS": 0.20000000298023224,
+          "BonusTrueDamage": 0.10000000149011612,
+          "Heal": 0.11999999731779099,
+          "ShieldValue": 800.0,
+          "ShredAndSunder": 0.30000001192092896,
+          "TeamAttackDelay": 6.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_DRX_5",
+        "params": {
+          "AS": 0.20000000298023224,
+          "BonusTrueDamage": 0.10000000149011612,
+          "Heal": 0.11999999731779099,
+          "ShieldValue": 800.0,
+          "ShredAndSunder": 0.30000001192092896,
+          "TeamAttackDelay": 6.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_DarkStar",
+    "display_name": "Dark Star",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_DarkStar_2",
+        "params": {
+          "ADAP": 45,
+          "ExecuteHPPercent": 0.07999999821186066,
+          "PercentHealth": 0.25,
+          "SupermassivePercentBonus": 0.699999988079071
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_DarkStar_4",
+        "params": {
+          "ADAP": 45,
+          "ExecuteHPPercent": 0.07999999821186066,
+          "PercentHealth": 0.25,
+          "SupermassivePercentBonus": 0.699999988079071
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_TFT17_DarkStar_6",
+        "params": {
+          "ADAP": 45,
+          "ExecuteHPPercent": 0.07999999821186066,
+          "PercentHealth": 0.25,
+          "SupermassivePercentBonus": 0.699999988079071
+        }
+      },
+      {
+        "count": 9,
+        "effect_id": "trait_TFT17_DarkStar_9",
+        "params": {
+          "ADAP": 45,
+          "ExecuteHPPercent": 0.07999999821186066,
+          "PercentHealth": 0.25,
+          "SupermassivePercentBonus": 0.699999988079071
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_Fateweaver",
+    "display_name": "Fateweaver",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_Fateweaver_2",
+        "params": {}
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_Fateweaver_4",
+        "params": {
+          "CritChance": 0.20000000298023224,
+          "CritDamage": 20.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_FioraUniqueTrait",
+    "display_name": "Divine Duelist",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_FioraUniqueTrait_1",
+        "params": {
+          "DUHeal": 1,
+          "PVEHP": 1,
+          "PVENumWins": 4,
+          "PlayerOmnivamp": 0.15000000596046448
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_FlexTrait",
+    "display_name": "Voyager",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_FlexTrait_2",
+        "params": {
+          "BonusDA": 0.09000000357627869,
+          "ShieldDuration": 15.0,
+          "ShieldHP": 175.0,
+          "{2ad3e251}": 2.0
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_FlexTrait_3",
+        "params": {
+          "BonusDA": 0.15000000596046448,
+          "ShieldDuration": 15.0,
+          "ShieldHP": 250.0,
+          "{2ad3e251}": 2.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_FlexTrait_4",
+        "params": {
+          "BonusDA": 0.18000000715255737,
+          "ShieldDuration": 15.0,
+          "ShieldHP": 350.0,
+          "{2ad3e251}": 2.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_FlexTrait_5",
+        "params": {
+          "BonusDA": 0.2199999988079071,
+          "ShieldDuration": 15.0,
+          "ShieldHP": 500.0,
+          "{2ad3e251}": 2.0
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_TFT17_FlexTrait_6",
+        "params": {
+          "BonusDA": 0.27000001072883606,
+          "ShieldDuration": 15.0,
+          "ShieldHP": 700.0,
+          "{2ad3e251}": 2.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_GravesTrait",
+    "display_name": "Factory New",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_GravesTrait_1",
+        "params": {
+          "NumberOfUpgradesBeforeRoundCostIncrease": 3.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_HPTank",
+    "display_name": "Brawler",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_HPTank_2",
+        "params": {
+          "HealthBonus": 0.25,
+          "TeamwideBonus": 0.05000000074505806
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_HPTank_4",
+        "params": {
+          "HealthBonus": 0.44999998807907104,
+          "TeamwideBonus": 0.05000000074505806
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_TFT17_HPTank_6",
+        "params": {
+          "HealthBonus": 0.6499999761581421,
+          "TeamwideBonus": 0.05000000074505806
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_JhinUniqueTrait",
+    "display_name": "Eradicator",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_JhinUniqueTrait_1",
+        "params": {
+          "PctResists": 0.10000000149011612
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_ManaTrait",
+    "display_name": "Conduit",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_ManaTrait_2",
+        "params": {
+          "ChannelerManaRegen": 3.0,
+          "InnateManaGain": 0.20000000298023224,
+          "TeamManaRegen": 1.0
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_ManaTrait_3",
+        "params": {
+          "ChannelerManaRegen": 5.0,
+          "InnateManaGain": 0.20000000298023224,
+          "TeamManaRegen": 1.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_ManaTrait_4",
+        "params": {
+          "ChannelerManaRegen": 7.0,
+          "InnateManaGain": 0.20000000298023224,
+          "TeamManaRegen": 2.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_ManaTrait_5",
+        "params": {
+          "ChannelerManaRegen": 9.0,
+          "InnateManaGain": 0.20000000298023224,
+          "TeamManaRegen": 2.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_Mecha",
+    "display_name": "Mecha",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_Mecha_3",
+        "params": {
+          "AD": 0.25,
+          "AP": 25.0,
+          "TeamSize": 1,
+          "TransformedPercentHealth": 0.4000000059604645
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_Mecha_4",
+        "params": {
+          "AD": 0.4000000059604645,
+          "AP": 40.0,
+          "TeamSize": 1,
+          "TransformedPercentHealth": 0.4000000059604645
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_TFT17_Mecha_6",
+        "params": {
+          "AD": 0.4000000059604645,
+          "AP": 40.0,
+          "TeamSize": 1,
+          "TransformedPercentHealth": 0.4000000059604645
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_MeleeTrait",
+    "display_name": "Marauder",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_MeleeTrait_2",
+        "params": {
+          "AD": 0.18000000715255737,
+          "MaxPercentHealthShield": 0.25,
+          "Omnivamp": 0.05000000074505806,
+          "TeamwideBonus": 0.05000000074505806
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_MeleeTrait_4",
+        "params": {
+          "AD": 0.3499999940395355,
+          "MaxPercentHealthShield": 0.25,
+          "Omnivamp": 0.07000000029802322,
+          "TeamwideBonus": 0.05000000074505806
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_TFT17_MeleeTrait_6",
+        "params": {
+          "AD": 0.550000011920929,
+          "MaxPercentHealthShield": 0.25,
+          "Omnivamp": 0.10000000149011612,
+          "ShieldAD": 0.20000000298023224,
+          "TeamwideBonus": 0.05000000074505806
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_MissFortuneUniqueTrait",
+    "display_name": "Gun Goddess",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_MissFortuneUniqueTrait_1",
+        "params": {
+          "Allies": 2.0,
+          "DamageAmp": 0.009999999776482582,
+          "FlatDamage": 100.0,
+          "Mana": 2.0,
+          "NumAttacks": 3.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_MorganaUniqueTrait",
+    "display_name": "Dark Lady",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_MorganaUniqueTrait_1",
+        "params": {
+          "Durability": 0.03999999910593033,
+          "TransformedDurability": 0.10000000149011612
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_Primordian",
+    "display_name": "Primordian",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_Primordian_2",
+        "params": {
+          "DamageMultiplier": 1.0,
+          "DamageTakenPercentModifier": 0.07999999821186066,
+          "PercentMoreSwarmlings": 45,
+          "{3ed71f24}": 6
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_Primordian_3",
+        "params": {
+          "DamageMultiplier": 1.4500000476837158,
+          "DamageTakenPercentModifier": 0.07999999821186066,
+          "PercentMoreSwarmlings": 45,
+          "{3ed71f24}": 6
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_PsyOps",
+    "display_name": "Psionic",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_PsyOps_2",
+        "params": {}
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_PsyOps_4",
+        "params": {
+          "{1b889d1c}": 50.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_RangedTrait",
+    "display_name": "Sniper",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_RangedTrait_2",
+        "params": {
+          "PerHexIncrease": 2.0,
+          "PercentDamageIncrease": 18.0
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_RangedTrait_3",
+        "params": {
+          "PerHexIncrease": 3.0,
+          "PercentDamageIncrease": 25.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_RangedTrait_4",
+        "params": {
+          "PerHexIncrease": 4.0,
+          "PercentDamageIncrease": 35.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_ResistTank",
+    "display_name": "Bastion",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_ResistTank_2",
+        "params": {
+          "BonusArmor": 16.0,
+          "BonusMR": 16.0,
+          "Duration": 10.0,
+          "EnhancedTeamwideArmor": 20.0,
+          "StatMultiplier": 2.0,
+          "TeamwideResists": 15.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_ResistTank_4",
+        "params": {
+          "BonusArmor": 40.0,
+          "BonusMR": 40.0,
+          "Duration": 10.0,
+          "EnhancedTeamwideArmor": 20.0,
+          "StatMultiplier": 2.0,
+          "TeamwideResists": 15.0
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_TFT17_ResistTank_6",
+        "params": {
+          "BonusArmor": 60.0,
+          "BonusMR": 60.0,
+          "Duration": 10.0,
+          "EnhancedTeamwideArmor": 20.0,
+          "StatMultiplier": 2.0,
+          "TeamwideResists": 15.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_RhaastUniqueTrait",
+    "display_name": "Redeemer",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_RhaastUniqueTrait_1",
+        "params": {
+          "BonusDefensiveStat1": 2.0,
+          "BonusDefensiveStat2": 2.0,
+          "BonusDefensiveStat3": 2.0,
+          "BonusOffensiveStat1": 0.019999999552965164,
+          "BonusOffensiveStat2": 0.019999999552965164,
+          "BonusOffensiveStat3": 0.019999999552965164
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_ShenUniqueTrait",
+    "display_name": "Bulwark",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_ShenUniqueTrait_1",
+        "params": {
+          "AttackSpeed": 0.10000000149011612,
+          "AttackSpeedDuration": 60.0,
+          "PercentHealthShield": 0.10000000149011612,
+          "ShieldDuration": 60.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_ShieldTank",
+    "display_name": "Vanguard",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_ShieldTank_2",
+        "params": {
+          "DamageReductionPct": 0.05000000074505806,
+          "EnhancedDurability": 0.07999999821186066,
+          "HealthThreshold": 0.5,
+          "ShieldDuration": 10.0,
+          "ShieldPercentAmount": 0.1599999964237213
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_ShieldTank_4",
+        "params": {
+          "DamageReductionPct": 0.05000000074505806,
+          "EnhancedDurability": 0.07999999821186066,
+          "HealthThreshold": 0.5,
+          "ShieldDuration": 10.0,
+          "ShieldPercentAmount": 0.30000001192092896
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_TFT17_ShieldTank_6",
+        "params": {
+          "DamageReductionPct": 0.05000000074505806,
+          "EnhancedDurability": 0.07999999821186066,
+          "HealthThreshold": 0.5,
+          "ShieldDuration": 10.0,
+          "ShieldPercentAmount": 0.4000000059604645
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_SonaUniqueTrait",
+    "display_name": "Commander",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_SonaUniqueTrait_1",
+        "params": {
+          "AS": 0.15000000596046448,
+          "HealthRatio": 0.15000000596046448,
+          "RoundsPerMod": 2.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_SpaceGroove",
+    "display_name": "Space Groove",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_SpaceGroove_1",
+        "params": {}
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_SpaceGroove_3",
+        "params": {
+          "StartOfCombatDuration": 4.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_SpaceGroove_5",
+        "params": {
+          "ADAPPerSecond": 5.0,
+          "StartOfCombatDuration": 4.0
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_TFT17_SpaceGroove_7",
+        "params": {
+          "ADAPPerSecond": 5.0,
+          "EffectBonus": 10.0,
+          "StartOfCombatDuration": 4.0
+        }
+      },
+      {
+        "count": 10,
+        "effect_id": "trait_TFT17_SpaceGroove_10",
+        "params": {
+          "ADAPPerSecond": 10.0,
+          "EffectBonus": 500.0,
+          "StartOfCombatDuration": 60.0,
+          "{32ed1fda}": 800.0,
+          "{3e46e556}": 1500.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_Stargazer",
+    "display_name": "Stargazer",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_Stargazer_3",
+        "params": {
+          "Family_BaseSharePercent": 0.10000000149011612,
+          "Family_HexesToReveal_TOOLTIPONLY": 3,
+          "Family_Stats": 10.0,
+          "Fountain_HealthRegen": 0.03999999910593033,
+          "Fountain_HealthRegen_Teamwide": 0.019999999552965164,
+          "Fountain_StackingADAP": 2.0,
+          "Huntress_AS": 0.30000001192092896,
+          "Huntress_AS_Teamwide": 0.15000000596046448,
+          "Huntress_Heal": 0.05000000074505806,
+          "Medallion_DA": 0.20000000298023224,
+          "Medallion_IncreasePer3Star": 20.0,
+          "Mountain_Health": 0.20000000298023224,
+          "Mountain_RoundsPerEmblem": 5.0,
+          "NumMarks": 3.0,
+          "Serpent_DR": 0.15000000596046448,
+          "Serpent_DR_Teamwide": 0.07999999821186066,
+          "Serpent_Duration": 3,
+          "Serpent_Poison": 0.30000001192092896,
+          "Shield_AS_Teamwide": 8.0,
+          "Shield_CashoutAS": 18.0,
+          "Shield_CashoutHP": 20.0,
+          "Shield_Duration": 10,
+          "Shield_Health_Teamwide": 8.0,
+          "Shield_Interval": 1,
+          "Shield_NumDeaths": 60,
+          "Wolf_ADAP": 10.0,
+          "Wolf_Gold": 1,
+          "Wolf_Health": 0.019999999552965164,
+          "Wolf_Health_Teamwide": 0.07999999821186066,
+          "{326db998}": 0.15000000596046448,
+          "{37204635}": 10.0,
+          "{3d49cc86}": 20.0,
+          "{457fd35a}": 1.0,
+          "{56df89e0}": 1000.0,
+          "{57ccf261}": 0.25,
+          "{74ccce14}": 0.07999999821186066,
+          "{a6419a0b}": 0.5,
+          "{aa686d69}": 10.0,
+          "{abed8603}": 1.2999999523162842,
+          "{b44d11c3}": 0.10000000149011612,
+          "{c32af02f}": 0.05000000074505806,
+          "{e5275a69}": 0.019999999552965164,
+          "{e8338a44}": 0.15000000596046448
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_Stargazer_5",
+        "params": {
+          "Family_BaseSharePercent": 0.10000000149011612,
+          "Family_HexesToReveal_TOOLTIPONLY": 2,
+          "Family_Stats": 35.0,
+          "Fountain_HealthRegen": 0.03999999910593033,
+          "Fountain_HealthRegen_Teamwide": 0.019999999552965164,
+          "Fountain_StackingADAP": 4.0,
+          "Huntress_AS": 0.44999998807907104,
+          "Huntress_AS_Teamwide": 0.15000000596046448,
+          "Huntress_Heal": 0.07999999821186066,
+          "Medallion_DA": 0.30000001192092896,
+          "Medallion_IncreasePer3Star": 20.0,
+          "Mountain_ADAP": 0.11999999731779099,
+          "Mountain_Health": 0.30000001192092896,
+          "Mountain_RoundsPerEmblem": 5.0,
+          "NumMarks": 5.0,
+          "Serpent_DR": 0.20000000298023224,
+          "Serpent_DR_Teamwide": 0.07999999821186066,
+          "Serpent_Duration": 3,
+          "Serpent_Poison": 0.44999998807907104,
+          "Shield_AS_Teamwide": 8.0,
+          "Shield_Duration": 10,
+          "Shield_Health_Teamwide": 8.0,
+          "Shield_Interval": 1,
+          "Shield_NumDeaths": 60,
+          "Wolf_ADAP": 15.0,
+          "Wolf_Gold": 2,
+          "Wolf_Health": 0.07999999821186066,
+          "Wolf_Health_Teamwide": 0.07999999821186066,
+          "{326db998}": 0.25,
+          "{37204635}": 10.0,
+          "{3d49cc86}": 30.0,
+          "{457fd35a}": 2.0,
+          "{56df89e0}": 1000.0,
+          "{57ccf261}": 0.3499999940395355,
+          "{74ccce14}": 0.07999999821186066,
+          "{a6419a0b}": 0.5,
+          "{aa686d69}": 10.0,
+          "{abed8603}": 1.5,
+          "{b44d11c3}": 0.10000000149011612,
+          "{c32af02f}": 0.05000000074505806,
+          "{e5275a69}": 0.029999999329447746,
+          "{e8338a44}": 0.15000000596046448
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_TFT17_Stargazer_7",
+        "params": {
+          "Family_BaseSharePercent": 0.10000000149011612,
+          "Family_EmpoweredSharePercent": 0.30000001192092896,
+          "Family_Stats": 35.0,
+          "Fountain_HealthRegen": 0.03999999910593033,
+          "Fountain_HealthRegen_Teamwide": 0.019999999552965164,
+          "Fountain_StackingADAP": 4.0,
+          "Huntress_AS": 0.6000000238418579,
+          "Huntress_AS_Teamwide": 0.15000000596046448,
+          "Huntress_Heal": 0.10000000149011612,
+          "Medallion_DA": 0.4000000059604645,
+          "Medallion_IncreasePer3Star": 20.0,
+          "Mountain_Health": 0.44999998807907104,
+          "Mountain_Resists": 12.0,
+          "Mountain_RoundsPerEmblem": 5.0,
+          "NumMarks": 7.0,
+          "Serpent_DR": 0.25,
+          "Serpent_DR_Teamwide": 0.07999999821186066,
+          "Serpent_Duration": 3,
+          "Serpent_Poison": 0.6000000238418579,
+          "Shield_AS_Teamwide": 8.0,
+          "Shield_Duration": 10,
+          "Shield_Health_Teamwide": 8.0,
+          "Shield_Interval": 1,
+          "Shield_NumDeaths": 60,
+          "Wolf_ADAP": 25.0,
+          "Wolf_Gold": 4,
+          "Wolf_Health": 0.15000000596046448,
+          "Wolf_Health_Teamwide": 0.07999999821186066,
+          "{326db998}": 0.3499999940395355,
+          "{37204635}": 10.0,
+          "{3d49cc86}": 40.0,
+          "{457fd35a}": 3.0,
+          "{4f055cc9}": 0.009999999776482582,
+          "{56df89e0}": 1000.0,
+          "{57ccf261}": 0.44999998807907104,
+          "{74ccce14}": 0.07999999821186066,
+          "{a6419a0b}": 0.5,
+          "{aa686d69}": 10.0,
+          "{abed8603}": 1.75,
+          "{b44d11c3}": 0.10000000149011612,
+          "{c32af02f}": 0.05000000074505806,
+          "{c4d51662}": 2,
+          "{e5275a69}": 0.03999999910593033,
+          "{e8338a44}": 0.15000000596046448
+        }
+      },
+      {
+        "count": 8,
+        "effect_id": "trait_TFT17_Stargazer_8",
+        "params": {
+          "Family_BaseSharePercent": 0.10000000149011612,
+          "Fountain_HealthRegen": 0.03999999910593033,
+          "Fountain_HealthRegen_Teamwide": 0.019999999552965164,
+          "Huntress_AS_Teamwide": 0.15000000596046448,
+          "Medallion_IncreasePer3Star": 20.0,
+          "Mountain_RoundsPerEmblem": 5.0,
+          "NumMarks": 3.0,
+          "Serpent_DR_Teamwide": 0.07999999821186066,
+          "Serpent_Duration": 3,
+          "Shield_AS_Teamwide": 8.0,
+          "Shield_CashoutAS": 18.0,
+          "Shield_CashoutHP": 20.0,
+          "Shield_Duration": 10,
+          "Shield_Health_Teamwide": 8.0,
+          "Shield_Interval": 1,
+          "Shield_NumDeaths": 60,
+          "Wolf_ADAP": 10.0,
+          "Wolf_Gold": 1,
+          "Wolf_Health": 0.019999999552965164,
+          "Wolf_Health_Teamwide": 0.07999999821186066,
+          "{37204635}": 10.0,
+          "{56df89e0}": 1000.0,
+          "{74ccce14}": 0.07999999821186066,
+          "{a6419a0b}": 0.5,
+          "{aa686d69}": 10.0,
+          "{b44d11c3}": 0.10000000149011612,
+          "{c32af02f}": 0.05000000074505806,
+          "{e8338a44}": 0.15000000596046448
+        }
+      },
+      {
+        "count": 9,
+        "effect_id": "trait_TFT17_Stargazer_9",
+        "params": {
+          "Family_BaseSharePercent": 0.10000000149011612,
+          "Fountain_HealthRegen": 0.03999999910593033,
+          "Fountain_HealthRegen_Teamwide": 0.019999999552965164,
+          "Huntress_AS_Teamwide": 0.15000000596046448,
+          "Medallion_IncreasePer3Star": 20.0,
+          "Mountain_ADAP": 0.11999999731779099,
+          "Mountain_AS": 0.11999999731779099,
+          "Mountain_DR": 0.05999999865889549,
+          "Mountain_Health": 0.11999999731779099,
+          "Mountain_Resists": 12.0,
+          "Mountain_RoundsPerEmblem": 5.0,
+          "Serpent_DR_Teamwide": 0.07999999821186066,
+          "Serpent_Duration": 3,
+          "Shield_AS_Teamwide": 8.0,
+          "Shield_Duration": 10,
+          "Shield_Health_Teamwide": 8.0,
+          "Shield_Interval": 1,
+          "Shield_NumDeaths": 60,
+          "Wolf_Health_Teamwide": 0.07999999821186066,
+          "{37204635}": 10.0,
+          "{56df89e0}": 1000.0,
+          "{74ccce14}": 0.07999999821186066,
+          "{a6419a0b}": 0.5,
+          "{aa686d69}": 10.0,
+          "{b44d11c3}": 0.10000000149011612,
+          "{c32af02f}": 0.05000000074505806,
+          "{e8338a44}": 0.15000000596046448
+        }
+      },
+      {
+        "count": 10,
+        "effect_id": "trait_TFT17_Stargazer_10",
+        "params": {
+          "Family_BaseSharePercent": 0.10000000149011612,
+          "Fountain_HealthRegen": 0.03999999910593033,
+          "Fountain_HealthRegen_Teamwide": 0.019999999552965164,
+          "Huntress_AS_Teamwide": 0.15000000596046448,
+          "Medallion_IncreasePer3Star": 20.0,
+          "Mountain_ADAP": 0.11999999731779099,
+          "Mountain_AS": 0.11999999731779099,
+          "Mountain_DR": 0.05999999865889549,
+          "Mountain_Health": 0.11999999731779099,
+          "Mountain_Resists": 12.0,
+          "Mountain_RoundsPerEmblem": 5.0,
+          "Mountain_StatIncrease": 0.10000000149011612,
+          "Serpent_DR_Teamwide": 0.07999999821186066,
+          "Serpent_Duration": 3,
+          "Shield_AS_Teamwide": 8.0,
+          "Shield_Duration": 10,
+          "Shield_Health_Teamwide": 8.0,
+          "Shield_Interval": 1,
+          "Shield_NumDeaths": 60,
+          "Wolf_Health_Teamwide": 0.07999999821186066,
+          "{37204635}": 10.0,
+          "{56df89e0}": 1000.0,
+          "{74ccce14}": 0.07999999821186066,
+          "{a6419a0b}": 0.5,
+          "{aa686d69}": 10.0,
+          "{b44d11c3}": 0.10000000149011612,
+          "{c32af02f}": 0.05000000074505806,
+          "{e8338a44}": 0.15000000596046448
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_SummonTrait",
+    "display_name": "Shepherd",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_SummonTrait_3",
+        "params": {}
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_TFT17_SummonTrait_5",
+        "params": {}
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_TFT17_SummonTrait_7",
+        "params": {}
+      }
+    ]
+  },
+  {
+    "id": "TFT17_TahmKenchUniqueTrait",
+    "display_name": "Oracle",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_TahmKenchUniqueTrait_1",
+        "params": {
+          "rounds": 3
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_Timebreaker",
+    "display_name": "Timebreaker",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_TFT17_Timebreaker_2",
+        "params": {
+          "AttackSpeed": 0.11999999731779099
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_TFT17_Timebreaker_3",
+        "params": {
+          "AttackSpeed": 0.11999999731779099,
+          "{aaae13a0}": 1.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_TFT17_Timebreaker_4",
+        "params": {
+          "AttackSpeed": 0.11999999731779099,
+          "TimebreakerAdditionalAS": 0.5,
+          "{aaae13a0}": 1.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_VexUniqueTrait",
+    "display_name": "Doomer",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_VexUniqueTrait_1",
+        "params": {
+          "ADAP1": 12.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "TFT17_ZedUniqueTrait",
+    "display_name": "Galaxy Hunter",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_TFT17_ZedUniqueTrait_1",
+        "params": {
+          "BonusAD": 0.4000000059604645
+        }
+      }
+    ]
+  }
+]
