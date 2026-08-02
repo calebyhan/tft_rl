@@ -244,3 +244,21 @@ on):
    retrain; expect to spend time fixing `effect_id` gaps (abilities/items
    not yet implemented) surfaced by the real data's larger champion pool.
 9. **(Stretch) Augments, self-play, full board-scouting observations.**
+   *Built 2026-08-01, measured 2026-08-02.* All three ship behind explicit
+   switches: `engine/augments.py` (+ `data/augments.json`, `PICK_AUGMENT` in
+   the action space), `rl/selfplay.py` (`--self-play`), and
+   `ObservationEncoder(scouting="full")` (`--scouting full`).
+
+   **Two of the three were measured and found not to work** (300 paired
+   episodes, docs/99_judgement_calls.md 19): full scouting is significantly
+   *harmful* (−0.303, t=−2.34) and self-play is inert (−0.147, CI spans zero).
+   Both default off and stay in the tree for re-measurement, not for use.
+
+   Note for anyone acting on **sec 3.1's suggestion that full board scouting is
+   "a reasonable v2 addition"** — it was tried, and it degrades play. It fits
+   the expert better and generalises worse, the same failure the richer
+   champion encoding showed (entry 6b.5). The untested structural idea from
+   that section is the **set/attention encoder**, not a wider flat vector.
+
+   The augment catalog is the one piece of data not sourced from Riot; see doc
+   02 sec 4c for why.

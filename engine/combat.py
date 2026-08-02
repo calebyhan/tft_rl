@@ -381,6 +381,11 @@ class CombatSimulator:
                 # while the unit is stunned, moving or out of range.
                 if unit.cast_timer > 0:
                     unit.cast_timer = max(0.0, unit.cast_timer - dt)
+                # Role passive: Casters regenerate mana over time as well as
+                # on attack, so they keep casting while kiting or stunned.
+                regen = self.config.mana_per_second(unit.champion.role)
+                if regen > 0:
+                    self.grant_mana(unit, regen * dt, reason="role_regen")
 
         self._advance_projectiles(dt)
 
@@ -657,14 +662,30 @@ class CombatSimulator:
         return amount
 
     def _mana_from_damage_taken(
-        self, unit: UnitInstance, pre_mitigation: float, hp_lost: float
+        self,
+        unit: UnitInstance,
+        pre_mitigation: float,
+        hp_lost: float,
+        after_resists: float | None = None,
     ) -> None:
-        """Doc 01 sec 3.2: Tanks build mana from damage taken, capped per hit."""
+        """Doc 01 sec 3.2: Tanks build mana from damage taken, capped per hit.
+
+        What "post-mitigation" means when a shield eats the hit is genuinely
+        ambiguous -- the wiki gives the 1%/3%/42.5 numbers but does not say
+        whether absorbed damage counts. Both readings are selectable via
+        ``damage_mana_post_mitigation_basis`` (doc 99 entry 5.4). Note the 1%
+        pre-mitigation term applies either way, so a fully-shielded tank still
+        generates some mana.
+        """
         if not self.config.generates_mana_from_damage(unit.champion.role):
             return
+        if self.config.damage_mana_post_mitigation_basis == "after_resists":
+            post = hp_lost if after_resists is None else after_resists
+        else:
+            post = hp_lost
         gained = (
             pre_mitigation * self.config.damage_mana_pre_mitigation_pct
-            + hp_lost * self.config.damage_mana_post_mitigation_pct
+            + post * self.config.damage_mana_post_mitigation_pct
         )
         gained = min(gained, self.config.damage_mana_cap_per_instance)
         if gained > 0:
@@ -728,7 +749,9 @@ class CombatSimulator:
             hp=round(target.current_hp, 2),
         )
 
-        self._mana_from_damage_taken(target, pre_mitigation, hp_lost)
+        # ``mitigated`` is the damage that got past armour/MR but before any
+        # shield absorbed it -- the alternative basis for the 3% term.
+        self._mana_from_damage_taken(target, pre_mitigation, hp_lost, mitigated)
         if trigger_effects:
             # Reflect-style effects pass trigger_effects=False when they deal
             # their own damage, so two thorns-carrying units cannot bounce
@@ -736,6 +759,17 @@ class CombatSimulator:
             self._fire_item_triggers(
                 target, EffectTrigger.ON_DAMAGED, target=source, amount=mitigated
             )
+
+        # Omnivamp: heal the attacker for a fraction of damage dealt. Sources
+        # are the wearer's items plus their role's innate share (Fighters get
+        # 10%). Measured on damage that landed, so a fully-absorbed hit heals
+        # nothing (doc 99 entry 9.2).
+        if source is not None and source.alive and hp_lost > 0:
+            omnivamp = source.derived_stats().omnivamp + self.config.omnivamp_for(
+                source.champion.role
+            )
+            if omnivamp > 0:
+                self.heal(source, hp_lost * omnivamp, source_label="omnivamp")
 
         if target.current_hp <= 0:
             self._kill(target, source)

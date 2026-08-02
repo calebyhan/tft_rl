@@ -18,11 +18,12 @@ import random
 from dataclasses import dataclass, field
 from typing import Iterator, Sequence
 
+from engine import augments as augment_hooks
 from engine import economy
 from engine.economy import RoundId, StreakType
 from engine.hexgrid import Board, Hex, axial_to_offset
 from engine.items import ItemError, ItemRegistry
-from engine.schema import GameData, ItemDef
+from engine.schema import AugmentDef, GameData, ItemDef, RealmOffering
 from engine.shop import SharedPool, Shop
 from engine.unit import UnitInstance
 
@@ -54,6 +55,15 @@ class PlayerState:
     board: dict[Hex, UnitInstance] = field(default_factory=dict)
     bench: list[UnitInstance | None] = field(default_factory=list)
     item_bag: list[ItemDef] = field(default_factory=list)
+    augments: list[AugmentDef] = field(default_factory=list)
+    # Set by the match at a reveal round and cleared by :meth:`pick_augment`.
+    augment_offer: tuple[AugmentDef, ...] = ()
+    # Realm-of-the-Gods draft: what is still on the table when this seat's turn
+    # comes, and what it took. The *match* owns the shared line-up; this is the
+    # seat's view of it, and ``taken_offering`` is how the match learns what
+    # was removed without needing a callback into it.
+    realm_offer: tuple[RealmOffering, ...] = ()
+    taken_offering: RealmOffering | None = None
     shop: Shop = field(init=False)
     hex_board: Board = field(default_factory=Board)
 
@@ -81,8 +91,10 @@ class PlayerState:
 
     @property
     def max_board_units(self) -> int:
-        """Units fieldable at the current level (doc 01 sec 4)."""
-        return self.config.board_size_for_level(self.level)
+        """Units fieldable at the current level (doc 01 sec 4), plus augments."""
+        return self.config.board_size_for_level(
+            self.level
+        ) + augment_hooks.extra_board_slots(self.augments)
 
     @property
     def board_units(self) -> list[UnitInstance]:
@@ -372,6 +384,46 @@ class PlayerState:
             raise IllegalAction(str(exc)) from exc
         return item
 
+    def can_equip_from_bag(self, item_id: str, unit: UnitInstance) -> bool:
+        """Whether :meth:`equip_from_bag` would succeed, without mutating.
+
+        The slot cap is not the only rule -- ``validate_loadout`` also forbids
+        stacking a ``unique`` item, and 16 of the shipped items are unique. The
+        RL action mask used to check only the cap, so an agent holding two
+        copies of an emblem was shown a legal EQUIP that then raised
+        :class:`IllegalAction`. Mirroring the real rule here keeps the two in
+        step: the mask asks the engine rather than reimplementing its checks.
+        """
+        if unit not in self.all_units:
+            return False
+        item = next((i for i in self.item_bag if i.id == item_id), None)
+        if item is None:
+            return False
+
+        held_ids = [i.id for i in unit.items]
+        if item.is_component:
+            # equip_from_bag commits to the *first* combinable component it
+            # finds and raises if that combination is illegal -- it does not
+            # fall through to the next one. Mirror that, or the mask would
+            # promise a combine the executor never attempts.
+            for index, held in enumerate(unit.items):
+                if not held.is_component:
+                    continue
+                combined_id = self.registry.combine(held.id, item.id)
+                if combined_id is None:
+                    continue
+                loadout = held_ids[:index] + held_ids[index + 1 :] + [combined_id]
+                return self._loadout_is_legal(loadout)
+
+        return self._loadout_is_legal([*held_ids, item.id])
+
+    def _loadout_is_legal(self, item_ids: list[str]) -> bool:
+        try:
+            self.registry.validate_loadout(item_ids)
+        except ItemError:
+            return False
+        return True
+
     def _take_from_bag(self, item_id: str) -> ItemDef:
         for i, item in enumerate(self.item_bag):
             if item.id == item_id:
@@ -380,6 +432,81 @@ class PlayerState:
 
     def add_item(self, item_id: str) -> None:
         self.item_bag.append(self.registry.get(item_id))
+
+    # -- augments ---------------------------------------------------------
+
+    def offer_augments(self, choices: Sequence[AugmentDef]) -> None:
+        """Present ``choices`` for this player to pick from (doc 01 sec 8)."""
+        self.augment_offer = tuple(choices)
+
+    @property
+    def has_pending_augment(self) -> bool:
+        return bool(self.augment_offer)
+
+    def pick_augment(self, index: int) -> AugmentDef:
+        """Take one of the offered augments and fire its on-pick effect.
+
+        Picking is permanent: augments are never sold or swapped, which is why
+        nothing here mirrors :meth:`sell`.
+        """
+        if not self.augment_offer:
+            raise IllegalAction(f"{self.name} has no augment offer pending")
+        if not 0 <= index < len(self.augment_offer):
+            raise IllegalAction(
+                f"augment choice {index} is out of range "
+                f"(0..{len(self.augment_offer) - 1})"
+            )
+        chosen = self.augment_offer[index]
+        self.augment_offer = ()
+        self.augments.append(chosen)
+        augment_hooks.apply_on_pick(self, chosen)
+        return chosen
+
+    def augment_bonuses(self):
+        """Stat bonuses this player's augments grant to every fielded unit."""
+        return augment_hooks.board_bonuses(self.augments)
+
+    # -- realm of the gods (carousel draft) -------------------------------
+
+    def offer_realm(self, offerings: Sequence[RealmOffering]) -> None:
+        """Present what is still un-taken when this seat's turn arrives."""
+        self.realm_offer = tuple(offerings)
+
+    @property
+    def has_pending_offering(self) -> bool:
+        return bool(self.realm_offer)
+
+    def pick_offering(self, index: int) -> RealmOffering:
+        """Take one offering: its champion to the bench, its component to the bag.
+
+        A full bench does not block the pick -- real TFT always hands you the
+        carousel unit -- so an unplaceable champion is sold immediately for its
+        value instead. Losing the pick entirely would be worse and less
+        faithful than converting it to gold.
+        """
+        if not self.realm_offer:
+            raise IllegalAction(f"{self.name} has no realm offering pending")
+        if not 0 <= index < len(self.realm_offer):
+            raise IllegalAction(
+                f"realm offering {index} is out of range "
+                f"(0..{len(self.realm_offer) - 1})"
+            )
+        chosen = self.realm_offer[index]
+        self.realm_offer = ()
+        self.taken_offering = chosen
+
+        champion = self.data.champions[chosen.champion_id]
+        unit = UnitInstance(champion, 1, registry=self.registry)
+        free = self.free_bench_slots
+        if free:
+            self.bench[free[0]] = unit
+            self._resolve_upgrades(champion.id, None)
+            self._trim_bench_overflow()
+        else:
+            self.gold += unit.sell_value()
+        if chosen.component_id is not None:
+            self.add_item(chosen.component_id)
+        return chosen
 
     # -- shop and XP ------------------------------------------------------
 
@@ -432,6 +559,9 @@ class PlayerState:
         )
         self.gold += breakdown.total
         self.grant_xp(economy.passive_xp_per_round(self.config))
+        # Per-round augment payouts sit outside the income breakdown so the
+        # economy tables stay a faithful record of doc 01 sec 4's rules.
+        augment_hooks.apply_on_round_end(self)
         return breakdown
 
     def record_result(self, won: bool) -> None:
@@ -468,12 +598,14 @@ class PlayerState:
         and re-projected onto whichever half of the battlefield they occupy.
         """
         board = board or self.hex_board
+        owner_bonuses = self.augment_bonuses()
         deployed: list[UnitInstance] = []
         for own_hex in sorted(self.board):
             unit = self.board[own_hex]
             row, col = axial_to_offset(own_hex)
             unit.position = board.to_combat(team, row - board.half_rows, col)
             unit.team = team
+            unit.set_owner_bonuses(owner_bonuses)
             deployed.append(unit)
         return deployed
 

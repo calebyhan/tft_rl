@@ -1,0 +1,92 @@
+[
+  {
+    "id": "aug_fortified_ranks",
+    "display_name": "Fortified Ranks",
+    "tier": "silver",
+    "params": { "health": 100 }
+  },
+  {
+    "id": "aug_sharpened_blades",
+    "display_name": "Sharpened Blades",
+    "tier": "silver",
+    "params": { "attack_damage_pct": 0.1 }
+  },
+  {
+    "id": "aug_arcane_study",
+    "display_name": "Arcane Study",
+    "tier": "silver",
+    "params": { "ability_power": 15 }
+  },
+  {
+    "id": "aug_nest_egg",
+    "display_name": "Nest Egg",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": { "gold": 12 }
+  },
+  {
+    "id": "aug_study_group",
+    "display_name": "Study Group",
+    "tier": "silver",
+    "effect_id": "augment_instant_xp",
+    "params": { "xp": 6 }
+  },
+  {
+    "id": "aug_hardened_ranks",
+    "display_name": "Hardened Ranks",
+    "tier": "gold",
+    "params": { "armor": 25, "magic_resist": 25 }
+  },
+  {
+    "id": "aug_battle_tempo",
+    "display_name": "Battle Tempo",
+    "tier": "gold",
+    "params": { "attack_speed_pct": 0.15 }
+  },
+  {
+    "id": "aug_bulwark",
+    "display_name": "Bulwark",
+    "tier": "gold",
+    "params": { "health": 200 }
+  },
+  {
+    "id": "aug_stipend",
+    "display_name": "Stipend",
+    "tier": "gold",
+    "effect_id": "augment_bonus_income",
+    "params": { "gold": 3 }
+  },
+  {
+    "id": "aug_component_cache",
+    "display_name": "Component Cache",
+    "tier": "gold",
+    "effect_id": "augment_instant_items",
+    "params": { "items": ["TFT_Item_BFSword", "TFT_Item_ChainVest"] }
+  },
+  {
+    "id": "aug_reinforcements",
+    "display_name": "Reinforcements",
+    "tier": "prismatic",
+    "effect_id": "augment_extra_board_slot",
+    "params": { "board_slots": 1 }
+  },
+  {
+    "id": "aug_ascendancy",
+    "display_name": "Ascendancy",
+    "tier": "prismatic",
+    "params": { "health": 300, "attack_damage_pct": 0.2, "ability_power": 30 }
+  },
+  {
+    "id": "aug_treasury",
+    "display_name": "Treasury",
+    "tier": "prismatic",
+    "effect_id": "augment_bonus_income",
+    "params": { "gold": 6 }
+  },
+  {
+    "id": "aug_bloodletting",
+    "display_name": "Bloodletting",
+    "tier": "prismatic",
+    "params": { "omnivamp": 0.15, "durability": 0.1 }
+  }
+]

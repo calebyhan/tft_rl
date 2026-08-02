@@ -395,7 +395,7 @@ Top-level keys: `shop_odds` (level → 5 probabilities summing to 1.0),
 `reroll_cost`, `shop_slots`, `shop_draw_weighting`, `bench_size`,
 `max_items_per_unit`, `starting_gold`, `starting_hp`, `role_mana_per_attack`,
 `stage_base_damage`, `star_damage_multiplier`, `round_structure`, `combat`,
-plus two bookkeeping blocks:
+`augments`, plus two bookkeeping blocks:
 
 - **`provenance`** — classifies every constant as `riot_published` (currently
   empty), `community_documented`, or `engine_artifact` (values with no
@@ -405,6 +405,65 @@ plus two bookkeeping blocks:
 - **`unverified`** — free-text notes naming tables whose exact values are not
   confirmed. The loader logs these at startup, so an approximation can never
   quietly harden into an assumed fact.
+
+The `augments` block schedules augment reveals (doc 01 sec 8):
+
+```json
+"augments": { "rounds": [[2,1],[3,2],[4,2]], "tiers": ["silver","gold","prismatic"], "choices": 3 }
+```
+
+`rounds` and `tiers` are parallel — the *n*-th reveal offers `choices`
+augments of `tiers[n]`. An empty or absent block disables augments entirely,
+which is how the frozen starter fixture keeps loading unchanged.
+
+## 4c. `data/augments.json` — **synthetic, not Riot data**
+
+*Added 2026-08-01 at milestone 9.* A list of
+`{id, display_name, tier, effect_id, params}`. `tier` is one of
+`silver`/`gold`/`prismatic`. As with traits and items, `params` keys naming a
+modelled stat are applied board-wide with no code at all, and `effect_id` keys
+into `engine.augments.AUGMENT_EFFECTS` for anything that is not a stat.
+
+**This is the one data file not sourced from Riot, and the exception is
+deliberate.** The Set 17 CDragon payload carries 43 `TFT17_Augment_*` entries,
+but (a) none of them declares a tier — the closest signal is a roman numeral in
+the icon path, which resolves for only 30 of the 43 — and (b) they are almost
+all bespoke God/carry augments ("Gain a Nasus. Your strongest Nasus becomes an
+Attack Fighter with…"), not the flat-stat and econ augments doc 01 sec 8 says
+to wire up first. Importing them faithfully would yield 43 augments that all
+warn-and-no-op. See docs/99_judgement_calls.md 17.1 for the full survey.
+
+The shipped file is therefore 14 generic archetypes exercising every hook the
+system supports. It is labelled `engine_artifact` in `config.json`'s provenance
+block and listed under `unverified`. The *system* is complete and general —
+importing a real pool is a data edit, not a code change.
+
+The file is required only when `config.augments` schedules reveal rounds, so a
+dataset predating the feature still loads.
+
+## 4d. `data/creeps.json` — PvE monsters and creep waves
+
+*Added 2026-08-02 at milestone 10.* An object (not a list) with two keys:
+
+- **`monsters`** — entries in the *champion* schema. Riot publishes these: the
+  Set 17 payload carries `TFT17_PVE_Minion` / `_Krug` / `_Raptor` / `_Gromp` /
+  `_ElderDragon`, which the `teamplanner` playable-unit filter had been
+  excluding. They legitimately break two champion rules — no traits, and
+  `max_mana: 0` (they never cast) — so the loader parses them in an `is_creep`
+  mode that relaxes exactly those two checks.
+- **`waves`** — `{stage, round, display_name, units, loot}`. `units` are
+  `{creep_id, row, col}` on the creep half-board. `loot` is a list of weighted
+  `{weight, gold, components}` options, one of which is drawn on a win.
+
+Monsters are kept **out of `champions.json` deliberately**: `SharedPool` and
+the shop are built from `GameData.champions`, so a creep listed there would
+become purchasable.
+
+Wave composition and drop rates are **judgement calls**, not Riot data — see
+docs/99_judgement_calls.md 20.2. The monster stats are Riot's.
+
+The file is optional; without it PvE rounds resolve as free wins that drop
+nothing, which is how the frozen starter fixture still runs.
 
 ## 5. Starter sample dataset (for immediate engine bring-up)
 

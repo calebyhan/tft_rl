@@ -1,15 +1,75 @@
 {
   "shop_odds": {
-    "1": [1.0, 0.0, 0.0, 0.0, 0.0],
-    "2": [1.0, 0.0, 0.0, 0.0, 0.0],
-    "3": [0.75, 0.25, 0.0, 0.0, 0.0],
-    "4": [0.55, 0.30, 0.15, 0.0, 0.0],
-    "5": [0.45, 0.33, 0.20, 0.02, 0.0],
-    "6": [0.30, 0.40, 0.25, 0.05, 0.0],
-    "7": [0.19, 0.30, 0.40, 0.10, 0.01],
-    "8": [0.15, 0.20, 0.32, 0.30, 0.03],
-    "9": [0.10, 0.17, 0.25, 0.33, 0.15],
-    "10": [0.05, 0.10, 0.20, 0.40, 0.25]
+    "1": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "2": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "3": [
+      0.75,
+      0.25,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "4": [
+      0.55,
+      0.3,
+      0.15,
+      0.0,
+      0.0
+    ],
+    "5": [
+      0.45,
+      0.33,
+      0.2,
+      0.02,
+      0.0
+    ],
+    "6": [
+      0.3,
+      0.4,
+      0.25,
+      0.05,
+      0.0
+    ],
+    "7": [
+      0.19,
+      0.3,
+      0.4,
+      0.1,
+      0.01
+    ],
+    "8": [
+      0.15,
+      0.2,
+      0.32,
+      0.3,
+      0.03
+    ],
+    "9": [
+      0.1,
+      0.17,
+      0.25,
+      0.33,
+      0.15
+    ],
+    "10": [
+      0.05,
+      0.1,
+      0.2,
+      0.4,
+      0.25
+    ]
   },
   "pool_sizes": {
     "1": 30,
@@ -44,9 +104,18 @@
   "interest_per_gold": 10,
   "interest_cap": 5,
   "streak_bonus": [
-    [3, 1],
-    [5, 2],
-    [6, 3]
+    [
+      3,
+      1
+    ],
+    [
+      5,
+      2
+    ],
+    [
+      6,
+      3
+    ]
   ],
   "pvp_win_gold": 1,
   "reroll_cost": 2,
@@ -61,7 +130,8 @@
     "Marksman": 10,
     "Fighter": 10,
     "Caster": 7,
-    "Tank": 5
+    "Tank": 5,
+    "Specialist": 0
   },
   "stage_base_damage": {
     "1": 0,
@@ -81,7 +151,9 @@
     "players": 8,
     "rounds_per_stage": 7,
     "stage_one_rounds": 4,
-    "pve_rounds_per_stage": [7],
+    "pve_rounds_per_stage": [
+      7
+    ],
     "max_stages": 9
   },
   "combat": {
@@ -92,40 +164,89 @@
     "sudden_death_start_seconds": 30.0,
     "sudden_death_damage_pct_per_second": 0.03,
     "armor_mitigation_constant": 100.0,
-    "damage_mana_roles": ["Tank"],
+    "damage_mana_roles": [
+      "Tank"
+    ],
     "damage_mana_pre_mitigation_pct": 0.01,
     "damage_mana_post_mitigation_pct": 0.03,
-    "damage_mana_cap_per_instance": 42.5
+    "damage_mana_cap_per_instance": 42.5,
+    "damage_mana_post_mitigation_basis": "hp_lost",
+    "role_mana_per_second": {
+      "Caster": 2
+    },
+    "role_omnivamp": {
+      "Fighter": 0.1
+    }
   },
   "provenance": {
     "_comment": "Where each group of constants comes from. scripts/fetch_cdragon.py regenerates champions/traits/items/VERSION only -- it never writes this file, because Riot publishes none of the tables below (see docs/99_judgement_calls.md 2.1).",
     "riot_published": [],
     "community_documented": [
-      "shop_odds", "pool_sizes", "xp_to_next_level", "max_level",
-      "passive_xp_per_round", "xp_purchase_gold", "xp_purchase_amount",
-      "base_income", "income_ramp", "interest_per_gold", "interest_cap",
-      "streak_bonus", "pvp_win_gold", "reroll_cost", "shop_slots",
-      "bench_size", "max_items_per_unit", "starting_gold", "starting_hp",
-      "stage_base_damage", "star_damage_multiplier", "round_structure",
-      "role_mana_per_attack", "combat.armor_mitigation_constant",
-      "combat.damage_mana_roles", "combat.damage_mana_pre_mitigation_pct",
+      "shop_odds",
+      "pool_sizes",
+      "xp_to_next_level",
+      "max_level",
+      "passive_xp_per_round",
+      "xp_purchase_gold",
+      "xp_purchase_amount",
+      "base_income",
+      "income_ramp",
+      "interest_per_gold",
+      "interest_cap",
+      "streak_bonus",
+      "pvp_win_gold",
+      "reroll_cost",
+      "shop_slots",
+      "bench_size",
+      "max_items_per_unit",
+      "starting_gold",
+      "starting_hp",
+      "stage_base_damage",
+      "star_damage_multiplier",
+      "round_structure",
+      "role_mana_per_attack",
+      "combat.armor_mitigation_constant",
+      "combat.damage_mana_roles",
+      "combat.damage_mana_pre_mitigation_pct",
       "combat.damage_mana_post_mitigation_pct",
-      "combat.damage_mana_cap_per_instance"
+      "combat.damage_mana_cap_per_instance",
+      "combat.role_mana_per_second",
+      "combat.role_omnivamp"
     ],
     "engine_artifact": [
-      "shop_draw_weighting", "combat.tick_seconds",
-      "combat.movement_hexes_per_second", "combat.projectile_hexes_per_second",
-      "combat.max_duration_seconds", "combat.sudden_death_start_seconds",
-      "combat.sudden_death_damage_pct_per_second"
+      "augments",
+      "augments.json (the whole file -- see docs/99_judgement_calls.md 17.1: the Set 17 CDragon payload carries no generic augment pool and no tier field, so these are archetypes, not Riot data)",
+      "shop_draw_weighting",
+      "combat.tick_seconds",
+      "combat.movement_hexes_per_second",
+      "combat.projectile_hexes_per_second",
+      "combat.max_duration_seconds",
+      "combat.sudden_death_start_seconds",
+      "combat.sudden_death_damage_pct_per_second",
+      "combat.damage_mana_post_mitigation_basis"
     ]
   },
+  "augments": {
+    "rounds": [[2, 1], [3, 2], [4, 2]],
+    "tiers": ["silver", "gold", "prismatic"],
+    "choices": 3
+  },
+  "realm": {
+    "rounds": [[1, 1], [2, 4], [3, 4], [4, 4]],
+    "cost_tiers": [1, 2, 3, 4],
+    "extra_offerings": 1
+  },
   "unverified": [
+    "augments.rounds (doc 01 sec 9 explicitly flags the 2-1/3-2/4-2 reveal pattern as unconfirmed for the current patch)",
+    "augments (doc 99 entry 17.1: augments.json is a set of generic archetypes, not the real Set 17 pool, which the CDragon payload does not expose)",
     "xp_to_next_level (doc 01 sec 9: exact per-patch XP table unconfirmed)",
     "stage_base_damage (doc 01 sec 9: exact round-damage-by-stage table unconfirmed)",
     "combat.movement_hexes_per_second (doc 01 sec 9: not publicly documented, approximated)",
     "combat.projectile_hexes_per_second (doc 01 sec 3.1: travel time approximated)",
     "combat.armor_mitigation_constant (doc 01 sec 9: exact curve coefficient unconfirmed)",
     "combat.sudden_death_* (doc 01 sec 3.1: stall-breaker shape approximated)",
-    "round_structure.pve_rounds_per_stage (doc 01 sec 1: 'periodic PvE rounds' -- exact schedule not pinned)"
+    "round_structure.pve_rounds_per_stage (doc 01 sec 1: 'periodic PvE rounds' -- exact schedule not pinned)",
+    "combat.damage_mana_post_mitigation_basis (doc 99 entry 5.4: sources give the 1%/3%/42.5 numbers but do not say whether shield-absorbed damage counts toward the post-mitigation term; both readings are implemented)",
+    "role_mana_per_attack.Specialist (doc 99 entry 9.2: Riot states Specialists 'generate resources in their own unique way' without publishing per-champion rules; 0 models the documented Kayle case of generating none)"
   ]
 }

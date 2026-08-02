@@ -216,6 +216,81 @@ def line_magic_damage(ctx) -> None:
             )
 
 
+def _spread_targets(ctx, count: int) -> list:
+    """The primary target plus the nearest other enemies, up to ``count``.
+
+    Ordered by distance from the primary target, with uid as a tie-break so
+    the choice stays deterministic (doc 03 sec 2.4).
+    """
+    from engine.hexgrid import distance
+
+    if ctx.target is None:
+        return []
+    if count <= 1:
+        return [ctx.target]
+    others = [
+        e for e in ctx.sim.enemies_of(ctx.source) if e.uid != ctx.target.uid
+    ]
+    others.sort(key=lambda u: (distance(ctx.target.position, u.position), u.uid))
+    return [ctx.target, *others[: count - 1]]
+
+
+def _multi_hit(ctx, per_hit: float, damage_type, label: str) -> None:
+    """Apply ``hits`` damage instances spread over ``targets`` enemies.
+
+    Many real abilities fire a volley -- "@NumRockets@ rockets, each dealing
+    X" -- and modelling that as a single hit understates a carry's output by
+    the volley size. ``hits`` and ``targets`` both default to 1, so an ability
+    that declares neither behaves exactly like the single-target effects.
+    """
+    hits = max(1, int(ctx.number("hits", 1)))
+    target_count = max(1, int(ctx.number("targets", 1)))
+    if per_hit <= 0:
+        return
+    victims = _spread_targets(ctx, target_count)
+    if not victims:
+        return
+    for index in range(hits):
+        victim = victims[index % len(victims)]
+        if not victim.alive:
+            # Re-pick among the living so a volley is not wasted on a corpse.
+            remaining = [v for v in victims if v.alive]
+            if not remaining:
+                return
+            victim = remaining[index % len(remaining)]
+        ctx.sim.deal_damage(ctx.source, victim, per_hit, damage_type, source_label=label)
+
+
+@register("flat_physical_damage")
+def flat_physical_damage(ctx) -> None:
+    """Physical damage given as a flat number rather than a share of AD.
+
+    Riot uses both forms: ``ADDamage`` is a percentage of the caster's attack
+    damage, while a plain ``Damage`` on a physical ability is an absolute
+    value. Supports ``hits``/``targets`` like the volley effects.
+    """
+    from engine.combat import DamageType
+
+    _multi_hit(ctx, _ability_damage(ctx), DamageType.PHYSICAL, "ability_volley")
+
+
+@register("multi_hit_magic_damage")
+def multi_hit_magic_damage(ctx) -> None:
+    """Flat magic damage per hit, ``hits`` times over ``targets`` enemies."""
+    from engine.combat import DamageType
+
+    _multi_hit(ctx, _ability_damage(ctx), DamageType.MAGIC, "ability_volley")
+
+
+@register("multi_hit_physical_damage")
+def multi_hit_physical_damage(ctx) -> None:
+    """AD-scaled damage per hit, ``hits`` times over ``targets`` enemies."""
+    from engine.combat import DamageType
+
+    per_hit = ctx.source.derived_stats().attack_damage * ctx.number("ad_ratio", 1.0)
+    _multi_hit(ctx, per_hit, DamageType.PHYSICAL, "ability_volley")
+
+
 @register("shield_self")
 def shield_self(ctx) -> None:
     ctx.sim.apply_shield(

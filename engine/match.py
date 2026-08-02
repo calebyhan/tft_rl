@@ -19,12 +19,13 @@ from dataclasses import dataclass, field
 from typing import Callable, Protocol, Sequence
 
 from engine import economy
+from engine.augments import AugmentOffer
 from engine.combat import CombatLog, CombatResult, CombatSimulator
 from engine.economy import RoundId
 from engine.hexgrid import Board, axial_to_offset
 from engine.items import ItemRegistry
 from engine.player import PlayerState
-from engine.schema import GameData
+from engine.schema import CreepWave, GameData, RealmOffering
 from engine.shop import SharedPool
 from engine.unit import UnitInstance
 
@@ -37,6 +38,12 @@ class Policy(Protocol):
     def plan(self, player: PlayerState, context: "PlanningContext") -> None:
         """Take planning-phase actions. Exceptions propagate -- policies should
         use the ``can_*`` predicates rather than relying on caught errors."""
+
+    # Three optional hooks, none required, so every existing policy keeps
+    # working and simply takes the default:
+    #   choose_augment(player, offers) -> int      -- augment reveal
+    #   choose_component(player, offered) -> str   -- low-HP anvil pick
+    #   choose_offering(player, offerings) -> int  -- realm-of-the-gods draft
 
 
 @dataclass
@@ -117,6 +124,7 @@ class Match:
         self.registry = registry or ItemRegistry(data.items, self.config.max_items_per_unit)
         self.board = Board()
         self.pool = SharedPool(data)
+        self.augment_offer = AugmentOffer(data)
         self.players = [
             PlayerState(data, self.registry, player_id=i) for i in range(structure.players)
         ]
@@ -125,6 +133,10 @@ class Match:
         self.placements: dict[int, int] = {}
         self.reports: list[RoundReport] = []
         self._recent_opponents: dict[int, list[int]] = {i: [] for i in range(structure.players)}
+        # Realm draft state: the shared line-up still on the table, and the
+        # seats yet to pick from it, in HP order.
+        self._realm_offerings: list[RealmOffering] = []
+        self._realm_queue: list[int] = []
 
     # -- state ------------------------------------------------------------
 
@@ -151,6 +163,20 @@ class Match:
         )
 
     def play_round(self) -> list[RoundReport]:
+        if self.is_realm_round:
+            self._realm_phase()
+            self._planning_phase(is_pve=False)
+            # A carousel round has no fight (doc 01 sec 1: 2-4/3-4/4-4 sit
+            # between combats), so nobody takes damage and no streak moves --
+            # but income is still paid.
+            for player in self.living_players:
+                player.award_income(self.round_id)
+            self.rounds_played += 1
+            self.round_id = self.round_id.next(
+                self.structure.rounds_in_stage(self.round_id.stage)
+            )
+            return []
+
         is_pve = self.structure.is_pve(self.round_id.stage, self.round_id.round)
         self._planning_phase(is_pve)
         reports = self._combat_phase(is_pve)
@@ -161,13 +187,184 @@ class Match:
         )
         return reports
 
+    # -- realm of the gods (the carousel draft) ---------------------------
+
+    @property
+    def is_realm_round(self) -> bool:
+        return self.config.realm.is_realm_round(
+            self.round_id.stage, self.round_id.round
+        )
+
+    def _realm_phase(self) -> bool:
+        """Run the draft: lowest HP picks first, from one shared line-up.
+
+        This is the only place in the engine where seats **contest** a shared
+        resource in a fixed order -- every other planning action is independent
+        per seat. An early picker genuinely denies a later one, which is what
+        makes the HP ordering a comeback mechanic rather than a formality
+        (doc 01 sec 1, doc 99 entry 21).
+
+        Returns ``True`` if the draft paused waiting on an externally-driven
+        seat (the RL env), which must then call :meth:`resume_realm`.
+        """
+        tier = self.config.realm.cost_tier_at(
+            self.round_id.stage, self.round_id.round
+        )
+        if tier is None:
+            return False
+        order = sorted(self.living_players, key=lambda p: (p.hp, p.player_id))
+        self._realm_offerings = self._generate_offerings(len(order), tier)
+        self._realm_queue = [p.player_id for p in order]
+        return self.resume_realm()
+
+    def resume_realm(self) -> bool:
+        """Advance the draft queue until it finishes or hits a deferring seat."""
+        while self._realm_queue:
+            player = self.players[self._realm_queue[0]]
+
+            # Reconcile a pick already made by an externally-driven seat.
+            if player.taken_offering is not None:
+                self._remove_offering(player.taken_offering)
+                player.taken_offering = None
+                self._realm_queue.pop(0)
+                continue
+
+            if not player.alive or not self._realm_offerings:
+                self._realm_queue.pop(0)
+                player.realm_offer = ()
+                continue
+
+            player.offer_realm(self._realm_offerings)
+            if getattr(self.policies[player.player_id], "defers_realm_pick", False):
+                return True
+
+            self._realm_queue.pop(0)
+            index = self._ask_for_offering(player)
+            player.pick_offering(index)
+            self._remove_offering(player.taken_offering)
+            player.taken_offering = None
+
+        self._release_undrafted()
+        return False
+
+    def _release_undrafted(self) -> None:
+        """Return the un-taken line-up to the shared pool.
+
+        The draft always puts out more offerings than there are seats, so some
+        are always left over. Without this they vanish from the pool for the
+        rest of the game -- a leak the smoke test's pool-conservation invariant
+        caught at exactly ``extra_offerings`` copies per realm round.
+        """
+        for offering in self._realm_offerings:
+            self.pool.return_to_pool(offering.champion_id, 1)
+        self._realm_offerings = []
+
+    def _remove_offering(self, offering: "RealmOffering | None") -> None:
+        if offering is not None and offering in self._realm_offerings:
+            self._realm_offerings.remove(offering)
+
+    def _generate_offerings(self, seats: int, tier: int) -> list["RealmOffering"]:
+        """Draw the shared line-up: one champion per offering, each with a component.
+
+        Champions come out of the **shared pool**, so a drafted unit is one
+        fewer copy available in everyone's shop -- exactly as in TFT. Real
+        carousels put one more champion out than there are players, so the last
+        picker still gets a choice rather than a leftover.
+        """
+        count = seats + self.config.realm.extra_offerings
+        components = tuple(sorted(i.id for i in self.registry.components))
+        offerings: list[RealmOffering] = []
+        for _ in range(count):
+            champion_id = self.pool.draw(tier, self.rng)
+            if champion_id is None:
+                break
+            offerings.append(
+                RealmOffering(
+                    champion_id=champion_id,
+                    component_id=self.rng.choice(list(components)) if components else None,
+                )
+            )
+        return offerings
+
+    def _ask_for_offering(self, player: PlayerState) -> int:
+        """Let the seat's policy choose, defaulting to the first offering."""
+        chooser = getattr(self.policies[player.player_id], "choose_offering", None)
+        if chooser is None:
+            return 0
+        try:
+            index = int(chooser(player, tuple(player.realm_offer)))
+        except (TypeError, ValueError) as exc:
+            log.warning(
+                "policy for player %d returned an unusable offering choice (%s); "
+                "taking the first offering", player.player_id, exc,
+            )
+            return 0
+        if not 0 <= index < len(player.realm_offer):
+            log.warning(
+                "policy for player %d chose offering %d of %d; taking the first",
+                player.player_id, index, len(player.realm_offer),
+            )
+            return 0
+        return index
+
     # -- phases -----------------------------------------------------------
 
     def _planning_phase(self, is_pve: bool) -> None:
         context = PlanningContext(self, self.round_id, self.pool, self.rng, is_pve)
+        tier = self.config.augments.tier_at(self.round_id.stage, self.round_id.round)
         for player in self.living_players:
+            if tier is not None:
+                player.offer_augments(
+                    self.augment_offer.offer(tier, self.rng, exclude=player.augments)
+                )
             player.roll_shop(self.pool, self.rng)
             self.policies[player.player_id].plan(player, context)
+            self._resolve_augment_pick(player)
+
+    def _resolve_augment_pick(self, player: PlayerState) -> None:
+        """Ensure a revealed augment is actually taken.
+
+        Real TFT forces the choice -- there is no "decline". A policy that
+        ignores the offer would otherwise silently fall behind every seat that
+        picked, so an unanswered offer defaults to the first choice. Policies
+        that *do* care implement ``choose_augment`` (see
+        :meth:`_ask_for_augment`).
+        """
+        if not player.has_pending_augment:
+            return
+        # A seat driven from outside the match loop -- the RL env -- picks
+        # through its own action space over several steps, so it must be left
+        # holding the offer. It is responsible for resolving it before combat.
+        if getattr(self.policies[player.player_id], "defers_augment_pick", False):
+            return
+        player.pick_augment(self._ask_for_augment(player))
+
+    def _ask_for_augment(self, player: PlayerState) -> int:
+        """Let the seat's policy choose, falling back to the first offer."""
+        policy = self.policies[player.player_id]
+        chooser = getattr(policy, "choose_augment", None)
+        if chooser is None:
+            return 0
+        try:
+            index = int(chooser(player, tuple(player.augment_offer)))
+        except (TypeError, ValueError) as exc:
+            log.warning(
+                "policy for player %d returned an unusable augment choice (%s); "
+                "defaulting to the first offer",
+                player.player_id,
+                exc,
+            )
+            return 0
+        if not 0 <= index < len(player.augment_offer):
+            log.warning(
+                "policy for player %d chose augment %d of %d offered; "
+                "defaulting to the first offer",
+                player.player_id,
+                index,
+                len(player.augment_offer),
+            )
+            return 0
+        return index
 
     def _combat_phase(self, is_pve: bool) -> list[RoundReport]:
         if is_pve:
@@ -292,13 +489,53 @@ class Match:
         )
 
     def _fight_creeps(self, player: PlayerState) -> RoundReport:
-        """PvE round.
+        """PvE round: a real fight against the round's creep wave.
 
-        Doc 01 sec 1 treats stage 1 as a stubbable fixed sequence; creep boards
-        are not part of the champion data, so v1 resolves PvE as a free win
-        that still pays income and grants no streak. Real creep boards slot in
-        here without touching anything else.
+        Doc 01 sec 1 permitted stubbing stage 1 as a fixed sequence, and that
+        stub used to resolve *every* PvE round as a free win. Two consequences
+        made it untenable: a weak board could never be punished (real TFT lets
+        you lose to Krugs), and nothing ever dropped loot, which left the whole
+        item system unreachable in a real game.
+
+        With no ``creeps.json`` loaded the old free-win behaviour is kept, so a
+        dataset without creep data still runs.
         """
+        wave = self.data.wave_for(self.round_id.stage, self.round_id.round)
+        if wave is None:
+            return self._free_win(player)
+
+        team0 = player.deploy_for_combat(0, self.board)
+        team1 = self._deploy_creeps(wave)
+        result = self._simulate(team0, team1)
+        won = result.winner == 0
+
+        damage = 0
+        if not won:
+            # Doc 01 sec 7: PvE loss damage is "smaller/fixed" rather than
+            # scaled by surviving units, so the stage base is used directly
+            # instead of economy.round_damage's per-survivor formula.
+            damage = self.config.stage_base_damage.get(
+                min(self.round_id.stage, max(self.config.stage_base_damage)), 0
+            )
+        taken = player.take_damage(damage)
+        if won:
+            self._award_loot(player, wave)
+
+        return RoundReport(
+            round_id=self.round_id,
+            player_id=player.player_id,
+            opponent_id=None,
+            is_pve=True,
+            won=won,
+            damage_taken=taken,
+            hp_after=player.hp,
+            gold_after=player.gold,
+            level_after=player.level,
+            combat_duration=result.duration,
+        )
+
+    def _free_win(self, player: PlayerState) -> RoundReport:
+        """The pre-creep-data behaviour: PvE is a walkover paying no loot."""
         return RoundReport(
             round_id=self.round_id,
             player_id=player.player_id,
@@ -311,6 +548,79 @@ class Match:
             level_after=player.level,
             combat_duration=0.0,
         )
+
+    def _deploy_creeps(self, wave: CreepWave) -> list[UnitInstance]:
+        """Build the monster board for ``wave`` on team 1."""
+        units: list[UnitInstance] = []
+        for placement in wave.units:
+            creep = self.data.creeps[placement.creep_id]
+            unit = UnitInstance(creep, 1, registry=self.registry)
+            unit.position = self.board.to_combat(1, placement.row, placement.col)
+            unit.team = 1
+            units.append(unit)
+        return units
+
+    def _award_loot(self, player: PlayerState, wave: CreepWave) -> None:
+        """Pay out a beaten wave's drop (doc 01 sec 5).
+
+        Components are drawn from the component pool. Lower-HP players get a
+        *chosen* component rather than a random one -- Set 17's catch-up rule
+        gives them component anvils on PvE rounds instead of random components
+        (doc 99 entry 20.3). The choice is delegated to the seat's policy via
+        an optional ``choose_component`` hook, defaulting to a random draw.
+        """
+        option = wave.pick_loot(self.rng)
+        if option is None:
+            return
+        if option.gold:
+            player.gold += option.gold
+        if not option.components:
+            return
+        components = tuple(sorted(i.id for i in self.registry.components))
+        if not components:
+            return
+        anvil = self._has_anvil_priority(player)
+        for _ in range(option.components):
+            player.add_item(self._pick_component(player, components, anvil))
+
+    def _has_anvil_priority(self, player: PlayerState) -> bool:
+        """Whether ``player`` is low enough in the standings to get anvils.
+
+        Set 17's stated catch-up rule: players lower in the HP standings
+        receive component anvils rather than random components. Modelled as
+        the bottom half of living players, which is the same population the
+        carousel's lowest-HP-first ordering favours.
+        """
+        living = sorted(self.living_players, key=lambda p: (p.hp, p.player_id))
+        if len(living) < 2:
+            return False
+        cutoff = len(living) // 2
+        return player.player_id in {p.player_id for p in living[:cutoff]}
+
+    def _pick_component(
+        self, player: PlayerState, components: Sequence[str], anvil: bool
+    ) -> str:
+        """A random component, or the policy's choice when it is an anvil."""
+        if not anvil:
+            return self.rng.choice(list(components))
+        chooser = getattr(self.policies[player.player_id], "choose_component", None)
+        if chooser is None:
+            return self.rng.choice(list(components))
+        try:
+            chosen = chooser(player, tuple(components))
+        except (TypeError, ValueError) as exc:
+            log.warning(
+                "policy for player %d returned an unusable component choice (%s); "
+                "drawing at random", player.player_id, exc,
+            )
+            return self.rng.choice(list(components))
+        if chosen not in components:
+            log.warning(
+                "policy for player %d chose component %r, which is not on offer; "
+                "drawing at random", player.player_id, chosen,
+            )
+            return self.rng.choice(list(components))
+        return chosen
 
     def _simulate(
         self, team0: list[UnitInstance], team1: list[UnitInstance]
@@ -336,6 +646,7 @@ class Match:
         Positions are derived from the source's own-frame hexes directly rather
         than by calling ``deploy_for_combat``, which would move the real units.
         """
+        owner_bonuses = source.augment_bonuses()
         clones: list[UnitInstance] = []
         for own_hex in sorted(source.board):
             original = source.board[own_hex]
@@ -348,6 +659,10 @@ class Match:
             row, col = axial_to_offset(own_hex)
             clone.position = self.board.to_combat(team, row - self.board.half_rows, col)
             clone.team = team
+            # A ghost is a copy of the *player*, augments included -- omitting
+            # them would make ghost fights systematically easier than the real
+            # board they are standing in for.
+            clone.set_owner_bonuses(owner_bonuses)
             clones.append(clone)
         return clones
 

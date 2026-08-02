@@ -21,6 +21,7 @@ from scripts.fetch_cdragon import (
     _ability_params,
     _split_item_effects,
     build_dataset,
+    classify_ability,
     normalise_champion,
     normalise_trait,
     playable_champion_ids,
@@ -325,3 +326,281 @@ def test_item_without_modelled_stats_gets_an_explicit_no_effect():
     spatula = next(i for i in data["items"] if i["id"] == "TFT_Item_Spatula")
     assert spatula["effect_id"] == "no_effect"
     assert spatula["is_component"] is True
+
+
+# --------------------------------------------------------------------------
+# Ability classification (milestone 8b)
+#
+# Structure comes from Riot's description markup rather than from variable
+# names, which are inconsistent (240 distinct keys across 63 champions). The
+# refusal cases matter most: a mis-assigned ability looks perfectly healthy
+# while silently corrupting combat.
+# --------------------------------------------------------------------------
+
+
+def test_magic_damage_is_read_as_a_flat_number():
+    """Veigar: verified against Riot's own text -- 330/495/750 magic damage."""
+    effect, params = classify_ability(
+        "Call down a Meepteor that deals <magicDamage>@ModifiedDamage@ "
+        "(%i:scaleAP%)</magicDamage> magic damage.",
+        {"Damage": [330.0, 495.0, 750.0]},
+    )
+    assert effect == "single_target_magic_damage"
+    assert params["damage"] == [330.0, 495.0, 750.0]
+
+
+def test_physical_damage_is_read_as_a_fraction_of_attack_damage():
+    """Riot stores these as percentages: Briar's 120 means 120% AD."""
+    effect, params = classify_ability(
+        "Deal <physicalDamage>@ModifiedDamage@ (%i:scaleAD%)</physicalDamage> "
+        "physical damage to the target.",
+        {"ADDamage": [120.0, 180.0, 285.0]},
+    )
+    assert effect == "single_target_physical_damage"
+    assert params["ad_ratio"] == [1.2, 1.8, 2.85]
+
+
+def test_damage_type_comes_from_markup_not_from_variable_names():
+    """The same variable name under a different tag must classify differently."""
+    magic, _ = classify_ability("<magicDamage>@X@</magicDamage>", {"Damage": 100.0})
+    physical, _ = classify_ability(
+        "<physicalDamage>@X@</physicalDamage>", {"ADDamage": 100.0, "Damage": 100.0}
+    )
+    assert magic == "single_target_magic_damage"
+    assert physical == "single_target_physical_damage"
+
+
+def test_shield_ability_without_damage_is_classified():
+    effect, params = classify_ability(
+        "Gain <TFTBonus>@ModifiedShield@</TFTBonus> Shield for @ShieldDuration@ seconds.",
+        {"Shield": [400.0, 475.0, 575.0], "ShieldDuration": 4.0},
+    )
+    assert effect == "shield_self"
+    assert params["shield"] == [400.0, 475.0, 575.0]
+    assert params["duration"] == 4.0
+
+
+def test_stun_requires_an_explicit_duration():
+    with_duration, params = classify_ability(
+        "Deal <magicDamage>@X@</magicDamage> magic damage and stun them.",
+        {"Damage": 100.0, "StunDuration": 1.5},
+    )
+    assert with_duration == "single_target_magic_damage_stun"
+    assert params["stun_duration"] == 1.5
+
+    # No duration variable -- fall back to plain damage rather than invent one.
+    without, params = classify_ability(
+        "Deal <magicDamage>@X@</magicDamage> magic damage and stun them.",
+        {"Damage": 100.0},
+    )
+    assert without == "single_target_magic_damage"
+    assert "stun_duration" not in params
+
+
+def test_passive_plus_active_abilities_are_refused():
+    """The verified failure mode this guard exists for.
+
+    Kindred's ADDamage (115/175/900% AD) belongs to her *passive*; her active
+    fires arrows for 75/115/600% AD. Nothing in the payload distinguishes
+    them, so casting either number would be wrong.
+    """
+    effect, params = classify_ability(
+        "<spellPassive>Passive:</spellPassive> Wolf consumes marks, dealing "
+        "<physicalDamage>@X@ (%i:scaleAD%)</physicalDamage> physical damage."
+        "<spellActive>Active:</spellActive> Fire arrows at the nearest 3 targets.",
+        {"ADDamage": [115.0, 175.0, 900.0]},
+    )
+    assert effect is None
+    assert params == {}
+
+
+def test_ability_with_no_damage_markup_is_refused():
+    """Zed's clone and Miss Fortune's mode select have no modelled equivalent."""
+    effect, params = classify_ability(
+        "Create a clone behind the target with reduced max Health.",
+        {"HPPenalty": 0.5},
+    )
+    assert effect is None
+    assert params == {}
+
+
+def test_damage_type_present_but_no_usable_variable_is_refused():
+    """Better an unimplemented no-op than a cast with an invented magnitude."""
+    effect, _ = classify_ability(
+        "Deal <magicDamage>@X@</magicDamage> magic damage.",
+        {"SomethingElse": 3.0},
+    )
+    assert effect is None
+
+
+def test_classified_abilities_keep_their_raw_variables():
+    """Canonical keys are additive so a future effect can use the originals."""
+    champ = normalise_champion(
+        _champion(
+            ability={
+                "name": "Test",
+                "desc": "Deal <magicDamage>@X@</magicDamage> magic damage.",
+                "variables": [
+                    {"name": "Damage", "value": [0, 100.0, 150.0, 200.0, 0, 0, 0]},
+                    {"name": "Obscure", "value": [0, 7.0, 7.0, 7.0, 0, 0, 0]},
+                ],
+            }
+        ),
+        cost=2, trait_ids=TRAIT_IDS, role_mana=ROLE_MANA,
+    )
+    params = champ["ability"]["params"]
+    assert champ["ability"]["effect_id"] == "single_target_magic_damage"
+    assert params["damage"] == [100.0, 150.0, 200.0]
+    assert params["Obscure"] == 7.0
+
+
+def test_unclassified_ability_keeps_a_stable_placeholder_id():
+    champ = normalise_champion(
+        _champion(
+            ability={"name": "Test", "desc": "Does something odd.", "variables": []}
+        ),
+        cost=2, trait_ids=TRAIT_IDS, role_mana=ROLE_MANA,
+    )
+    assert champ["ability"]["effect_id"] == "ability_TFT17_Jinx"
+
+
+# --------------------------------------------------------------------------
+# Volley detection (doc 99 entry 11.3)
+# --------------------------------------------------------------------------
+
+
+def test_volley_needs_both_a_count_and_an_each_cue():
+    """Verified shape: Bel'Veth's 12 slashes, "dealing X physical damage each"."""
+    effect, params = classify_ability(
+        "Unleash a flurry of @TotalNumSlashes@ slashes at the current target, "
+        "dealing <physicalDamage>@TotalDamage@ (%i:scaleAD%)</physicalDamage> "
+        "physical damage each.",
+        {"BaseNumSlashes": 12.0, "ADDamage": [22.0, 33.0, 50.0]},
+    )
+    assert effect == "multi_hit_physical_damage"
+    assert params["hits"] == 12.0
+    assert params["ad_ratio"] == [0.22, 0.33, 0.5]
+
+
+def test_a_count_without_an_each_cue_is_not_a_volley():
+    """Plenty of abilities carry an unrelated count; never multiply blindly."""
+    effect, params = classify_ability(
+        "Deal <physicalDamage>@X@ (%i:scaleAD%)</physicalDamage> physical damage.",
+        {"NumShurikens": 5.0, "ADDamage": [50.0, 60.0, 70.0]},
+    )
+    assert effect == "single_target_physical_damage"
+    assert "hits" not in params
+
+
+def test_target_counts_are_not_mistaken_for_hit_counts():
+    """NumTargets says how many enemies, not how many hits."""
+    effect, params = classify_ability(
+        "Fire arrows, each dealing <physicalDamage>@X@ (%i:scaleAD%)</physicalDamage> "
+        "physical damage.",
+        {"NumTargets": 3.0, "ADDamage": [50.0, 60.0, 70.0]},
+    )
+    assert params.get("hits") is None
+
+
+def test_per_something_rates_are_not_hit_counts():
+    """NumProcsPerSimulatedAttack is a rate, not a volley size."""
+    effect, params = classify_ability(
+        "Slash, each dealing <physicalDamage>@X@ (%i:scaleAD%)</physicalDamage> "
+        "physical damage.",
+        {"NumProcsPerSimulatedAttack": 4.0, "ADDamage": [50.0, 60.0, 70.0]},
+    )
+    assert "hits" not in params
+    assert effect == "single_target_physical_damage"
+
+
+def test_nearest_n_wording_sets_the_target_count():
+    effect, params = classify_ability(
+        "Strike the nearest 3 targets, each dealing "
+        "<magicDamage>@X@</magicDamage> magic damage.",
+        {"NumTargets": 3.0, "Damage": [100.0, 150.0, 200.0]},
+    )
+    assert effect == "multi_hit_magic_damage"
+    assert params["targets"] == 3.0
+
+
+# --------------------------------------------------------------------------
+# Widened magnitude lookup (doc 99 entry 16)
+#
+# The guard that matters is "unique candidate or decline": several champions
+# carry three damage variables with nothing to say which belongs to the cast.
+# --------------------------------------------------------------------------
+
+
+def test_flat_physical_damage_when_no_ratio_variable_exists():
+    """Rhaast: a plain Damage on a physical ability is an absolute value."""
+    effect, params = classify_ability(
+        "Slash forward, dealing <physicalDamage>@ModifiedDamage@</physicalDamage> "
+        "physical damage to enemies hit.",
+        {"Damage": [120.0, 180.0, 300.0], "Duration": 3.0},
+    )
+    assert effect == "flat_physical_damage"
+    assert params["damage"] == [120.0, 180.0, 300.0]
+    assert params["ap_ratio"] == 0.0, "flat damage must not scale with AP"
+
+
+def test_ad_suffixed_variable_is_read_as_a_ratio():
+    """Corki's MissileAD is [28, 42, 280] -- a percentage of AD, not flat.
+
+    It does not contain the word 'damage', so without this rule the generic
+    fallback picks up MeepDamage, a set-mechanic bonus, instead.
+    """
+    effect, params = classify_ability(
+        "Unleash missiles that deal <physicalDamage>@ModifiedDamage@ "
+        "(%i:scaleAD%)</physicalDamage> physical damage.",
+        {"MissileAD": [28.0, 42.0, 280.0], "MeepDamage": [110.0, 165.0, 900.0]},
+    )
+    assert effect == "single_target_physical_damage"
+    assert params["ad_ratio"] == [0.28, 0.42, 2.8]
+    assert "damage" not in params
+
+
+def test_multiple_damage_variables_are_declined():
+    """Pyke carries SpearDamage, AoEDamage and TargetDamage; nothing says which."""
+    effect, params = classify_ability(
+        "Throw a harpoon dealing <physicalDamage>@X@</physicalDamage> physical damage.",
+        {
+            "SpearDamage": [60.0, 90.0, 135.0],
+            "AoEDamage": [120.0, 180.0, 360.0],
+            "TargetDamage": [210.0, 315.0, 720.0],
+        },
+    )
+    assert effect is None
+    assert params == {}
+
+
+def test_damage_modifiers_are_not_mistaken_for_magnitudes():
+    """NovaMarkDamageAmp and ProcDamageMult modify a damage, they are not one."""
+    effect, params = classify_ability(
+        "Deal <magicDamage>@X@</magicDamage> magic damage.",
+        {"Damage": [100.0, 150.0, 200.0], "NovaMarkDamageAmp": 0.1,
+         "ProcDamageMult": 3.5, "DamageReductionPerTarget": 0.8},
+    )
+    assert effect == "single_target_magic_damage"
+    assert params["damage"] == [100.0, 150.0, 200.0]
+
+
+def test_per_second_damage_becomes_a_volley_over_its_duration():
+    """Aurelion Sol channels a beam dealing X per second for Duration seconds."""
+    effect, params = classify_ability(
+        "Channel a deathbeam for @Duration@ seconds. It deals "
+        "<magicDamage>@ModifiedDamage@</magicDamage> magic damage per second.",
+        {"DamagePerSecond": [335.0, 505.0, 2000.0], "Duration": 3.0},
+    )
+    assert effect == "multi_hit_magic_damage"
+    assert params["damage"] == [335.0, 505.0, 2000.0]
+    assert params["hits"] == 3
+
+
+def test_per_second_damage_without_a_duration_stays_single_hit():
+    """Never invent a channel length."""
+    effect, params = classify_ability(
+        "Deals <magicDamage>@X@</magicDamage> magic damage per second.",
+        {"DamagePerSecond": [100.0, 150.0, 200.0]},
+    )
+    assert effect == "single_target_magic_damage"
+    assert "hits" not in params

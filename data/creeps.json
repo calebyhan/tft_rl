@@ -1,0 +1,335 @@
+{
+  "_comment": "PvE monsters and creep waves. Monster STATS are Riot-published (CDragon TFT17_PVE_*). Wave composition and loot rates are NOT published -- see docs/99_judgement_calls.md 20.",
+  "monsters": [
+    {
+      "id": "TFT17_PVE_Minion",
+      "display_name": "Cosmic Squid",
+      "cost": 1,
+      "traits": [],
+      "role": "Fighter",
+      "stats": {
+        "health": 250.0,
+        "armor": 10.0,
+        "magic_resist": 10.0,
+        "attack_damage": 20.0,
+        "attack_speed": 0.8,
+        "attack_range": 1,
+        "starting_mana": 0,
+        "max_mana": 0,
+        "mana_per_attack": 0,
+        "crit_chance": 0.25,
+        "crit_damage": 1.4
+      },
+      "ability": null
+    },
+    {
+      "id": "TFT17_PVE_Krug",
+      "display_name": "Cosmic Bruiser",
+      "cost": 1,
+      "traits": [],
+      "role": "Fighter",
+      "stats": {
+        "health": 1200.0,
+        "armor": 50.0,
+        "magic_resist": 25.0,
+        "attack_damage": 95.0,
+        "attack_speed": 0.8,
+        "attack_range": 1,
+        "starting_mana": 0,
+        "max_mana": 0,
+        "mana_per_attack": 0,
+        "crit_chance": 0.25,
+        "crit_damage": 1.4
+      },
+      "ability": null
+    },
+    {
+      "id": "TFT17_PVE_Raptor",
+      "display_name": "Cosmic Scrapper",
+      "cost": 1,
+      "traits": [],
+      "role": "Fighter",
+      "stats": {
+        "health": 1200.0,
+        "armor": 25.0,
+        "magic_resist": 25.0,
+        "attack_damage": 100.0,
+        "attack_speed": 1.2,
+        "attack_range": 1,
+        "starting_mana": 0,
+        "max_mana": 0,
+        "mana_per_attack": 0,
+        "crit_chance": 0.25,
+        "crit_damage": 1.4
+      },
+      "ability": null
+    },
+    {
+      "id": "TFT17_PVE_Gromp",
+      "display_name": "Cosmic Gromp",
+      "cost": 1,
+      "traits": [],
+      "role": "Fighter",
+      "stats": {
+        "health": 3000.0,
+        "armor": 30.0,
+        "magic_resist": 30.0,
+        "attack_damage": 350.0,
+        "attack_speed": 0.7,
+        "attack_range": 2,
+        "starting_mana": 0,
+        "max_mana": 0,
+        "mana_per_attack": 0,
+        "crit_chance": 0.25,
+        "crit_damage": 1.4
+      },
+      "ability": null
+    },
+    {
+      "id": "TFT17_PVE_ElderDragon",
+      "display_name": "Cosmic Elder Dragon",
+      "cost": 1,
+      "traits": [],
+      "role": "Fighter",
+      "stats": {
+        "health": 10000.0,
+        "armor": 50.0,
+        "magic_resist": 50.0,
+        "attack_damage": 900.0,
+        "attack_speed": 0.8,
+        "attack_range": 2,
+        "starting_mana": 0,
+        "max_mana": 0,
+        "mana_per_attack": 0,
+        "crit_chance": 0.25,
+        "crit_damage": 1.4
+      },
+      "ability": null
+    }
+  ],
+  "waves": [
+    {
+      "stage": 1,
+      "round": 2,
+      "display_name": "Cosmic Squids",
+      "units": [
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 2
+        },
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 3
+        }
+      ],
+      "loot": [
+        {
+          "weight": 3,
+          "components": 1,
+          "gold": 2
+        },
+        {
+          "weight": 1,
+          "components": 0,
+          "gold": 6
+        }
+      ]
+    },
+    {
+      "stage": 1,
+      "round": 3,
+      "display_name": "Cosmic Squids",
+      "units": [
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 2
+        },
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 3
+        },
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 4
+        }
+      ],
+      "loot": [
+        {
+          "weight": 3,
+          "components": 1,
+          "gold": 2
+        },
+        {
+          "weight": 1,
+          "components": 0,
+          "gold": 6
+        }
+      ]
+    },
+    {
+      "stage": 1,
+      "round": 4,
+      "display_name": "Cosmic Squids",
+      "units": [
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 2
+        },
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 3
+        },
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 4
+        },
+        {
+          "creep_id": "TFT17_PVE_Minion",
+          "row": 1,
+          "col": 1
+        }
+      ],
+      "loot": [
+        {
+          "weight": 3,
+          "components": 1,
+          "gold": 2
+        },
+        {
+          "weight": 1,
+          "components": 0,
+          "gold": 6
+        }
+      ]
+    },
+    {
+      "stage": 2,
+      "round": 7,
+      "display_name": "Cosmic Bruisers",
+      "units": [
+        {
+          "creep_id": "TFT17_PVE_Krug",
+          "row": 1,
+          "col": 2
+        },
+        {
+          "creep_id": "TFT17_PVE_Krug",
+          "row": 1,
+          "col": 3
+        },
+        {
+          "creep_id": "TFT17_PVE_Krug",
+          "row": 1,
+          "col": 4
+        }
+      ],
+      "loot": [
+        {
+          "weight": 3,
+          "components": 1,
+          "gold": 0
+        },
+        {
+          "weight": 1,
+          "components": 0,
+          "gold": 5
+        }
+      ]
+    },
+    {
+      "stage": 3,
+      "round": 7,
+      "display_name": "Cosmic Scrappers",
+      "units": [
+        {
+          "creep_id": "TFT17_PVE_Raptor",
+          "row": 1,
+          "col": 2
+        },
+        {
+          "creep_id": "TFT17_PVE_Raptor",
+          "row": 1,
+          "col": 3
+        },
+        {
+          "creep_id": "TFT17_PVE_Raptor",
+          "row": 1,
+          "col": 4
+        },
+        {
+          "creep_id": "TFT17_PVE_Raptor",
+          "row": 1,
+          "col": 1
+        }
+      ],
+      "loot": [
+        {
+          "weight": 3,
+          "components": 1,
+          "gold": 0
+        },
+        {
+          "weight": 1,
+          "components": 0,
+          "gold": 5
+        }
+      ]
+    },
+    {
+      "stage": 4,
+      "round": 7,
+      "display_name": "Cosmic Gromp",
+      "units": [
+        {
+          "creep_id": "TFT17_PVE_Gromp",
+          "row": 1,
+          "col": 2
+        },
+        {
+          "creep_id": "TFT17_PVE_Gromp",
+          "row": 1,
+          "col": 3
+        }
+      ],
+      "loot": [
+        {
+          "weight": 3,
+          "components": 1,
+          "gold": 0
+        },
+        {
+          "weight": 1,
+          "components": 0,
+          "gold": 5
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "round": 7,
+      "display_name": "Cosmic Elder Dragon",
+      "units": [
+        {
+          "creep_id": "TFT17_PVE_ElderDragon",
+          "row": 1,
+          "col": 2
+        }
+      ],
+      "loot": [
+        {
+          "weight": 1,
+          "components": 2,
+          "gold": 0
+        }
+      ]
+    }
+  ]
+}

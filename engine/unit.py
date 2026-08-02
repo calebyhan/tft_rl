@@ -105,6 +105,7 @@ class UnitInstance:
         self._cached_stats: DerivedStats | None = None
         self._cached_key: int | None = None
         self._trait_bonuses = StatBonuses()
+        self._owner_bonuses = StatBonuses()
 
         for item in items:
             self.equip(item)
@@ -158,6 +159,17 @@ class UnitInstance:
         self._trait_bonuses = bonuses
         self._invalidate()
 
+    def set_owner_bonuses(self, bonuses: StatBonuses) -> None:
+        """Install bonuses that come from the *owning player*, not the board.
+
+        Augments are the case this exists for: they are player-scoped and
+        persist across fights, so they cannot ride on ``set_trait_bonuses``,
+        which combat overwrites at the start of every fight from the board's
+        own trait state.
+        """
+        self._owner_bonuses = bonuses
+        self._invalidate()
+
     def _invalidate(self) -> None:
         """Mark cached stats stale. Every mutation that affects stats calls this."""
         self._version += 1
@@ -167,7 +179,7 @@ class UnitInstance:
         key = self._version
         if self._cached_key != key or self._cached_stats is None:
             bonuses = item_bonuses(self._items).merged_with(
-                self._trait_bonuses, self._status_bonuses()
+                self._trait_bonuses, self._owner_bonuses, self._status_bonuses()
             )
             self._cached_stats = derive_stats(
                 self.champion.stats, self._star_level, bonuses

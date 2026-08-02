@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -59,8 +60,11 @@ STAR_ATTACK_DAMAGE_MULTIPLIER = 1.5
 # Riot's 13 role strings collapsed onto the 5 roles doc 01 sec 3.2 models.
 # This drives mana_per_attack, so it feeds combat directly.
 ROLE_MAP: Mapping[str, str] = {
+    # Riot pairs a damage type (AD/AP/H) with a team role. "Carry" is the
+    # payload's name for Marksman and "Reaper" for Assassin.
     "ADCarry": "Marksman",
     "APCarry": "Marksman",
+    "HCarry": "Marksman",
     "ADReaper": "Assassin",
     "APReaper": "Assassin",
     "ADFighter": "Fighter",
@@ -68,7 +72,12 @@ ROLE_MAP: Mapping[str, str] = {
     "HFighter": "Fighter",
     "ADCaster": "Caster",
     "APCaster": "Caster",
-    "ADSpecialist": "Caster",
+    # Riot's sixth team role: "unique champions" that generate resources
+    # their own way. Previously folded into Caster, which applied
+    # mana-per-attack rules that do not apply to them (doc 99 entry 9.2).
+    "ADSpecialist": "Specialist",
+    "APSpecialist": "Specialist",
+    "HSpecialist": "Specialist",
     "ADTank": "Tank",
     "APTank": "Tank",
 }
@@ -111,6 +120,268 @@ IMPLEMENTED_ITEM_EFFECTS: Mapping[str, str] = {
     "TFT_Item_SpearOfShojin": "spear_of_shojin_bonus_mana_on_attack",
     "TFT_Item_GuinsoosRageblade": "guinsoos_stacking_attack_speed",
 }
+
+
+# --------------------------------------------------------------------------
+# Ability classification
+#
+# Riot names ability variables inconsistently (240 distinct keys across 63
+# Set 17 champions: Damage, APDamage, ADDamage, DamageAP, DamageAD, ...), so
+# guessing an effect from key names alone is unreliable. The *description*
+# carries semantic markup that is far better evidence:
+#
+#   "...dealing <physicalDamage>@TotalDamage@ (%i:scaleAD%)</physicalDamage>"
+#
+# The damage-type tag is authoritative and classifies 60 of 63 abilities; the
+# other 3 genuinely deal no damage. Structure therefore comes from the markup,
+# and only the magnitude lookup falls back on key names -- narrowed by the
+# damage type, so a physical ability never picks up an AP variable.
+#
+# Where the evidence is ambiguous the ability is left unimplemented rather than
+# approximated: a wrong ability looks healthy and silently corrupts combat,
+# whereas an unimplemented one warns once and no-ops (doc 02 sec 2).
+# --------------------------------------------------------------------------
+
+_TAG = re.compile(r"<(\w+)>")
+_MARKUP = re.compile(r"<[^>]+>|&nbsp;|@[^@]+@|%i:\w+%")
+
+# Prose cues, checked against the markup-stripped description.
+_SHIELD_CUE = re.compile(r"\bshield", re.I)
+_HEAL_CUE = re.compile(r"\bheal", re.I)
+_STUN_CUE = re.compile(r"\bstun|\bknock ?up|\bstasis", re.I)
+_AOE_CUE = re.compile(
+    r"\bnearby\b|\bwithin\b|\bhex (?:radius|rift)\b|\ball enemies\b|\bcone\b|\bsplash\b|\barea\b",
+    re.I,
+)
+
+# Magnitude variables, in preference order, per damage type. Magic abilities
+# carry flat damage scaled by AP; physical ones carry a percentage of AD.
+_MAGIC_DAMAGE_KEYS = ("Damage", "MagicDamage", "BaseDamage", "DamageAP", "APDamage")
+_PHYSICAL_DAMAGE_KEYS = ("ADDamage", "DamageAD", "PhysicalDamage")
+_SHIELD_KEYS = ("Shield", "ShieldAmount", "ShieldAP", "BaseShield")
+_SHIELD_DURATION_KEYS = ("ShieldDuration", "Duration")
+_STUN_DURATION_KEYS = ("StunDuration", "CCDuration", "KnockupDuration")
+_SPLASH_RADIUS_KEYS = ("SpellHexRadius", "HexRadius", "HexRange", "HexRadiusBase", "Radius")
+
+# Volley counts. Many abilities fire N projectiles "each dealing X", and
+# modelling that as one hit understates a carry by the volley size (entry
+# 11.3). Only applied when a count variable *and* an "each"-style cue are both
+# present, so a single-hit ability is never silently multiplied.
+_HIT_COUNT_KEYS = ("BaseBullets", "NumBullets")
+# Riot names volley counts `Num<Projectile>` or `BaseNum<Projectile>`
+# (NumShurikens, BaseNumSlashes, BaseNumMissiles, NumProjectiles). Excluded:
+# counts of *targets* rather than hits, and any `...Per...` name, which is a
+# per-something rate rather than a total (NumProcsPerSimulatedAttack).
+_HIT_COUNT_RE = re.compile(
+    r"^(?:Base)?Num(?!Targets|Enemies|Allies|Units|Champions|Procs)[A-Z]\w*$"
+)
+_TARGET_COUNT_KEYS = ("NumTargets", "NumEnemies", "MinimumNumTargets", "NumUnits")
+_EACH_CUE = re.compile(r"\beach\b|\bper (?:rocket|arrow|bullet|attack|missile)\b", re.I)
+_NEAREST_N = re.compile(r"nearest (\d+)|(\d+) (?:nearby )?(?:targets|enemies)", re.I)
+
+
+# Fallback magnitude search, for champions whose damage variable is not one of
+# the common names (AurelionSol's DamagePerSecond, Chogath's BonusDamage,
+# Talon's ADBleedDamage). Names that modify a damage rather than *being* one
+# are excluded, and the search only succeeds when exactly one candidate
+# remains -- several champions carry three damage variables with nothing to say
+# which belongs to the cast (Pyke, Fizz, Sona), and those must stay declined.
+_DAMAGE_NAME = re.compile(r"damage", re.I)
+_NOT_A_MAGNITUDE = re.compile(
+    r"amp|mult|reduction|percent|increase|threshold|ratio|conversion|store|falloff",
+    re.I,
+)
+# A per-second value is a channel: it needs a duration to become a total.
+_PER_SECOND = re.compile(r"persecond$", re.I)
+# Riot encodes AD scaling in a trailing "AD" (MissileAD, BoltAD).
+_AD_SUFFIX = re.compile(r"AD$")
+_DURATION_KEYS = ("Duration", "ChannelDuration", "SpellDuration", "TotalSpellTime")
+
+
+def _sole_damage_param(params: Mapping[str, Any]) -> tuple[str, Any] | None:
+    """The champion's one damage variable, or ``None`` if it is not unique."""
+    candidates = sorted(
+        k
+        for k, v in params.items()
+        if _DAMAGE_NAME.search(k)
+        and not _NOT_A_MAGNITUDE.search(k)
+        and isinstance(v, (int, float, list))
+    )
+    if len(candidates) != 1:
+        return None
+    return candidates[0], params[candidates[0]]
+
+
+def _first_param(params: Mapping[str, Any], names: Sequence[str]) -> tuple[str, Any] | None:
+    for name in names:
+        if name in params:
+            return name, params[name]
+    return None
+
+
+def _scaled(value: Any, factor: float) -> Any:
+    """Apply a factor to a scalar or to each entry of a per-star list."""
+    if isinstance(value, list):
+        return [round(float(v) * factor, 4) for v in value]
+    return round(float(value) * factor, 4)
+
+
+def classify_ability(desc: str, params: Mapping[str, Any]) -> tuple[str | None, dict[str, Any]]:
+    """Pick an ``effect_id`` and canonical params from Riot's description.
+
+    Returns ``(None, {})`` when the evidence does not support a confident
+    mapping, which leaves the ability unimplemented on purpose.
+    """
+    desc = desc or ""
+    tags = set(_TAG.findall(desc))
+    prose = _MARKUP.sub(" ", desc)
+
+    # A champion with both a passive and an active carries damage numbers for
+    # both, and nothing in the payload says which variable belongs to which:
+    # the @Var@ references in the text are computed display names that do not
+    # resolve back to raw variables. Verified failure -- Kindred's ADDamage
+    # (115/175/900% AD) is her *passive*, while her active fires arrows for
+    # 75/115/600% AD. Rather than cast the wrong number, decline.
+    if "spellPassive" in tags and "spellActive" in tags:
+        return None, {}
+
+    if "physicalDamage" in tags:
+        damage_type = "physical"
+    elif "magicDamage" in tags:
+        damage_type = "magic"
+    elif "trueDamage" in tags:
+        damage_type = "true"
+    else:
+        damage_type = None
+
+    has_shield = bool(_SHIELD_CUE.search(prose))
+    has_heal = bool(_HEAL_CUE.search(prose))
+    has_stun = bool(_STUN_CUE.search(prose))
+    has_aoe = bool(_AOE_CUE.search(prose))
+
+    canonical: dict[str, Any] = {}
+
+    # -- damage magnitude -------------------------------------------------
+    damage_found = False
+    flat_physical = False
+    magnitude_key: str | None = None
+    if damage_type == "physical":
+        hit = _first_param(params, _PHYSICAL_DAMAGE_KEYS)
+        if hit is None:
+            # Riot encodes the scaling type in the suffix: Corki's MissileAD
+            # is [28, 42, 280] -- a percentage of AD, exactly like Jinx's
+            # ADDamage. These do not contain the word "damage", so the generic
+            # fallback below would otherwise miss them and pick up an
+            # unrelated variable instead.
+            suffixed = sorted(
+                k for k, v in params.items()
+                if _AD_SUFFIX.search(k) and isinstance(v, (int, float, list))
+            )
+            if len(suffixed) == 1:
+                hit = (suffixed[0], params[suffixed[0]])
+        if hit is not None:
+            # These are percentages of AD (Briar 120/180/285 == 120% AD).
+            canonical["ad_ratio"] = _scaled(hit[1], 0.01)
+            damage_found = True
+            magnitude_key = hit[0]
+        else:
+            # No ratio-named variable: a plain damage number on a physical
+            # ability is an absolute value, not a share of AD.
+            hit = _sole_damage_param(params)
+            if hit is not None:
+                canonical["damage"] = hit[1]
+                canonical["ap_ratio"] = 0.0  # flat: does not scale with AP
+                damage_found = True
+                flat_physical = True
+                magnitude_key = hit[0]
+    elif damage_type in ("magic", "true"):
+        hit = _first_param(params, _MAGIC_DAMAGE_KEYS) or _sole_damage_param(params)
+        if hit is not None:
+            canonical["damage"] = hit[1]
+            canonical["ap_ratio"] = 1.0
+            damage_found = True
+            magnitude_key = hit[0]
+
+    # -- shield -----------------------------------------------------------
+    shield_found = False
+    if has_shield:
+        hit = _first_param(params, _SHIELD_KEYS)
+        if hit is not None:
+            canonical["shield"] = hit[1]
+            duration = _first_param(params, _SHIELD_DURATION_KEYS)
+            canonical["duration"] = duration[1] if duration else 0
+            shield_found = True
+
+    # -- volley size ------------------------------------------------------
+    # Both counts are evidence-gated: a count variable alone is not enough,
+    # since plenty of abilities carry an unrelated count.
+    hits = None
+    if damage_found and _EACH_CUE.search(prose):
+        hit = _first_param(params, _HIT_COUNT_KEYS)
+        if hit is None:
+            # Sorted so the pick is deterministic when a champion declares
+            # more than one count.
+            matches = sorted(
+                k for k in params if _HIT_COUNT_RE.match(k) and "Per" not in k
+            )
+            hit = (matches[0], params[matches[0]]) if matches else None
+        if hit is not None:
+            hits = hit[1]
+    # A channel states damage per second; the total is that times its
+    # duration, delivered as one hit per second.
+    if hits is None and magnitude_key and _PER_SECOND.search(magnitude_key):
+        duration = _first_param(params, _DURATION_KEYS)
+        if duration is not None and not isinstance(duration[1], list):
+            seconds = int(duration[1])
+            if seconds >= 1:
+                hits = seconds
+
+    targets = None
+    if damage_found:
+        hit = _first_param(params, _TARGET_COUNT_KEYS)
+        if hit is not None and _NEAREST_N.search(prose):
+            targets = hit[1]
+
+    # -- pick the effect --------------------------------------------------
+    if damage_found and (hits is not None or targets is not None):
+        # A volley is incompatible with the single-hit stun/splash shapes, so
+        # it takes precedence: getting the magnitude right matters more than
+        # also modelling the rider.
+        if hits is not None:
+            canonical["hits"] = hits
+        if targets is not None:
+            canonical["targets"] = targets
+        if damage_type == "physical":
+            return (
+                "flat_physical_damage" if flat_physical else "multi_hit_physical_damage"
+            ), canonical
+        return "multi_hit_magic_damage", canonical
+    if damage_found and has_stun:
+        stun = _first_param(params, _STUN_DURATION_KEYS)
+        if stun is not None and damage_type != "physical":
+            canonical["stun_duration"] = stun[1]
+            return "single_target_magic_damage_stun", canonical
+    if damage_found and has_aoe and damage_type != "physical":
+        radius = _first_param(params, _SPLASH_RADIUS_KEYS)
+        if radius is not None:
+            canonical["splash_radius"] = radius[1]
+            return "splash_magic_damage", canonical
+    if damage_found and has_heal and damage_type == "physical":
+        # The heal effect is defined as a fraction of damage dealt; only take
+        # it when Riot gives an explicit fraction, never invent one.
+        heal = _first_param(params, ("HealPercent", "PercentHeal", "Omnivamp"))
+        if heal is not None:
+            canonical["heal_ratio"] = _scaled(heal[1], 0.01)
+            return "single_target_physical_damage_heal", canonical
+    if damage_found:
+        if damage_type == "physical":
+            return (
+                "flat_physical_damage" if flat_physical else "single_target_physical_damage"
+            ), canonical
+        return "single_target_magic_damage", canonical
+    if shield_found:
+        return "shield_self", canonical
+    return None, {}
 
 
 class FetchError(RuntimeError):
@@ -280,6 +551,15 @@ def normalise_champion(
         traits.append(tid)
 
     ability = entry.get("ability") or {}
+    raw_params = _ability_params(ability.get("variables") or [])
+    effect_id, canonical = classify_ability(ability.get("desc") or "", raw_params)
+    if effect_id is None:
+        # Unclassifiable: keep a stable per-champion id so the params survive
+        # in the data file and the gap shows up as one warn-once.
+        effect_id = f"ability_{api_name}"
+    # Raw variables are kept alongside the canonical keys so a future effect
+    # implementation has the original numbers to work from.
+    ability_params = {**raw_params, **canonical}
     return {
         "id": api_name,
         "display_name": entry.get("name") or api_name,
@@ -308,11 +588,8 @@ def normalise_champion(
             "name": ability.get("name") or f"{entry.get('name', api_name)} Ability",
             "cast_mode": "mana",
             "cooldown_seconds": None,
-            # No real ability is implemented yet; a stable per-champion id means
-            # the registry warns once and no-ops while the unit still
-            # auto-attacks with correct stats (doc 02 sec 2).
-            "effect_id": f"ability_{api_name}",
-            "params": _ability_params(ability.get("variables") or []),
+            "effect_id": effect_id,
+            "params": ability_params,
         },
     }
 

@@ -16,8 +16,12 @@ STAR_LEVELS = 3
 
 # --- schema vocabulary ---------------------------------------------------
 
+# The six team roles from Riot's role revamp. Doc 01 sec 3.2 lists only five;
+# "Specialist" ("unique champions" that generate resources their own way) is
+# real and Set 17 ships two of them, so leaving it out forced those champions
+# into a role whose mana rules do not apply to them (doc 99 entry 9.2).
 ROLES: frozenset[str] = frozenset(
-    {"Assassin", "Marksman", "Fighter", "Caster", "Tank"}
+    {"Assassin", "Marksman", "Fighter", "Caster", "Tank", "Specialist"}
 )
 CAST_MODES: frozenset[str] = frozenset({"mana", "cooldown"})
 TRAIT_CATEGORIES: frozenset[str] = frozenset({"origin", "class"})
@@ -34,6 +38,13 @@ ITEM_CATEGORIES: frozenset[str] = frozenset(
 # champions" literally: every champion still in the pool is equally likely
 # regardless of how many copies remain.
 SHOP_DRAW_WEIGHTINGS: frozenset[str] = frozenset({"by_copies", "uniform"})
+
+# Augment rarity tiers (doc 01 sec 8). Which tier is offered at which round is
+# configured in ``config.augment_rounds``, not fixed here.
+AUGMENT_TIERS: frozenset[str] = frozenset({"silver", "gold", "prismatic"})
+
+# How the tank damage-mana post-mitigation term treats shields (doc 99 5.4).
+DAMAGE_MANA_BASES: frozenset[str] = frozenset({"hp_lost", "after_resists"})
 
 # Stat keys an ItemDef may grant. Flat keys add to the corresponding unit
 # stat; ``*_pct`` keys are multiplicative/percentage bonuses (TFT items grant
@@ -201,6 +212,169 @@ class ItemDef:
 
 
 @dataclass(frozen=True)
+class RealmOffering:
+    """One pick on the carousel / Realm of the Gods: a champion plus a component.
+
+    Doc 01 sec 1: Set 17 replaced the shared-carousel draft with the Realm of
+    the Gods, but explicitly directs that "the lowest-HP-picks-first spirit of
+    the old carousel is preserved ... model this as its own system". So this is
+    a **contested ordered draft** -- one shared line-up, lowest HP picks first
+    -- rather than Set 17's literal per-player blessing menu (doc 99 21.1).
+    """
+
+    champion_id: str
+    component_id: str | None = None
+
+
+@dataclass(frozen=True)
+class RealmSchedule:
+    """When the draft happens and what it offers (doc 01 sec 1).
+
+    ``rounds`` and ``cost_tiers`` are parallel: the *n*-th draft offers
+    champions of ``cost_tiers[n]``. ``extra_offerings`` is how many more
+    offerings than players there are -- real carousels put 9 champions in front
+    of 8 players, so the last picker still has a choice rather than a leftover.
+    """
+
+    rounds: tuple[tuple[int, int], ...] = ()
+    cost_tiers: tuple[int, ...] = ()
+    extra_offerings: int = 1
+
+    def __post_init__(self) -> None:
+        if len(self.rounds) != len(self.cost_tiers):
+            raise ValueError(
+                f"realm rounds and cost_tiers must be parallel: "
+                f"{len(self.rounds)} rounds against {len(self.cost_tiers)} tiers"
+            )
+        if self.extra_offerings < 0:
+            raise ValueError(
+                f"extra_offerings must be >= 0, got {self.extra_offerings}"
+            )
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.rounds)
+
+    def is_realm_round(self, stage: int, round_: int) -> bool:
+        return (stage, round_) in self.rounds
+
+    def cost_tier_at(self, stage: int, round_: int) -> int | None:
+        for (s, r), tier in zip(self.rounds, self.cost_tiers, strict=True):
+            if (s, r) == (stage, round_):
+                return tier
+        return None
+
+
+@dataclass(frozen=True)
+class CreepPlacement:
+    """One monster and where it stands, in the creep half-board's own frame."""
+
+    creep_id: str
+    row: int
+    col: int
+
+
+@dataclass(frozen=True)
+class LootOption:
+    """One possible drop from a PvE round, chosen by weight.
+
+    Doc 01 sec 5: components come from PvE rounds. Real TFT guarantees a
+    creep round drops "1 or more items, or 5 gold", which is expressible as
+    two weighted options.
+    """
+
+    weight: float
+    gold: int = 0
+    components: int = 0
+
+
+@dataclass(frozen=True)
+class CreepWave:
+    """The monsters fought on one PvE round, and what beating them drops.
+
+    Doc 01 sec 1 allowed stage 1 to be "stubbed" as a fixed sequence; that
+    stub is what made PvE an unconditional free win and left the whole item
+    system unreachable. A wave is a real board, so a weak player can lose it.
+    """
+
+    stage: int
+    round: int
+    display_name: str
+    units: tuple[CreepPlacement, ...]
+    loot: tuple[LootOption, ...] = ()
+
+    def pick_loot(self, rng) -> LootOption | None:
+        """Weighted choice among the drop options, or ``None`` if there are none."""
+        if not self.loot:
+            return None
+        total = sum(option.weight for option in self.loot)
+        if total <= 0:
+            return None
+        roll = rng.random() * total
+        cumulative = 0.0
+        for option in self.loot:
+            cumulative += option.weight
+            if roll < cumulative:
+                return option
+        return self.loot[-1]
+
+
+@dataclass(frozen=True)
+class AugmentDef:
+    """A persistent, player-scoped modifier picked once and kept for the game.
+
+    Doc 01 sec 8: augment effects are bespoke, so each is a small hook rather
+    than a special case in the engine. Two halves, exactly as for traits and
+    items:
+
+    * ``params`` keys that name a modelled stat (:data:`ITEM_STAT_KEYS`) are
+      applied to the player's whole board with no Python at all.
+    * ``effect_id`` keys into :data:`engine.augments.AUGMENT_EFFECTS` for
+      anything that is not a stat -- econ tweaks, free items, extra board
+      slots. An unimplemented id warns once and no-ops, so the stat half of a
+      partially-implemented augment still works (doc 02 sec 2).
+    """
+
+    id: str
+    display_name: str
+    tier: str
+    effect_id: str | None = None
+    params: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class AugmentSchedule:
+    """When augments are offered and from which tier (doc 01 sec 8).
+
+    Doc 01 sec 9 flags the exact reveal rounds as unverified against the live
+    patch, so they are data. ``rounds`` and ``tiers`` are parallel: the *n*-th
+    reveal offers ``choices`` augments of ``tiers[n]``.
+    """
+
+    rounds: tuple[tuple[int, int], ...] = ()
+    tiers: tuple[str, ...] = ()
+    choices: int = 3
+
+    def __post_init__(self) -> None:
+        if len(self.rounds) != len(self.tiers):
+            raise ValueError(
+                f"augment rounds and tiers must be parallel: {len(self.rounds)} "
+                f"rounds against {len(self.tiers)} tiers"
+            )
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.rounds)
+
+    def tier_at(self, stage: int, round_: int) -> str | None:
+        """The tier offered at this round, or ``None`` if it is not a reveal."""
+        for (s, r), tier in zip(self.rounds, self.tiers, strict=True):
+            if (s, r) == (stage, round_):
+                return tier
+        return None
+
+
+@dataclass(frozen=True)
 class CombatConfig:
     """Tick-simulation tunables (doc 01 sec 3).
 
@@ -221,6 +395,21 @@ class CombatConfig:
     damage_mana_pre_mitigation_pct: float
     damage_mana_post_mitigation_pct: float
     damage_mana_cap_per_instance: float
+    # Which quantity the post-mitigation term is measured against when a
+    # shield absorbs part of a hit. Doc 01 sec 3.2 equates "post-mitigation"
+    # with "actual HP lost", which is unambiguous only when no shield is
+    # involved; sources do not settle the shielded case, so both readings are
+    # implemented (doc 99 entry 5.4).
+    #
+    #   "hp_lost"        -- a shield suppresses the 3% term (default)
+    #   "after_resists"  -- the 3% term ignores shields, counting damage that
+    #                       got past armour/MR whether or not HP was lost
+    damage_mana_post_mitigation_basis: str = "hp_lost"
+    # Per-role perks from Riot's role revamp beyond mana-per-attack: Casters
+    # also regenerate mana over time, Fighters carry innate omnivamp
+    # (doc 99 entry 9.2).
+    role_mana_per_second: Mapping[str, float] = field(default_factory=dict)
+    role_omnivamp: Mapping[str, float] = field(default_factory=dict)
 
     @property
     def seconds_per_hex(self) -> float:
@@ -229,6 +418,14 @@ class CombatConfig:
     def generates_mana_from_damage(self, role: str) -> bool:
         """Doc 01 sec 3.2: only Tanks build mana from damage taken."""
         return role in self.damage_mana_roles
+
+    def mana_per_second(self, role: str) -> float:
+        """Passive mana regeneration for a role (Casters gain 2/s)."""
+        return float(self.role_mana_per_second.get(role, 0.0))
+
+    def omnivamp_for(self, role: str) -> float:
+        """Innate omnivamp for a role (Fighters heal for 10% of damage dealt)."""
+        return float(self.role_omnivamp.get(role, 0.0))
 
 
 @dataclass(frozen=True)
@@ -288,6 +485,8 @@ class GameConfig:
     star_damage_multiplier: Mapping[int, int]
     combat: CombatConfig
     round_structure: RoundStructure
+    augments: AugmentSchedule = field(default_factory=AugmentSchedule)
+    realm: RealmSchedule = field(default_factory=RealmSchedule)
     unverified: tuple[str, ...] = ()
 
     def board_size_for_level(self, level: int) -> int:
@@ -317,6 +516,33 @@ class GameData:
     items: Mapping[str, ItemDef]
     config: GameConfig
     version: DataVersion
+    augments: Mapping[str, AugmentDef] = field(default_factory=dict)
+    # Monsters are kept *out* of ``champions`` deliberately: ``SharedPool`` and
+    # the shop are both built from that mapping, so a creep listed there would
+    # become purchasable.
+    creeps: Mapping[str, ChampionDef] = field(default_factory=dict)
+    creep_waves: tuple[CreepWave, ...] = ()
+
+    def wave_for(self, stage: int, round_: int) -> CreepWave | None:
+        """The wave fought at this round.
+
+        Rounds past the last defined wave reuse it, so a long game does not
+        silently fall back to a free win -- which is the bug this whole system
+        exists to fix.
+        """
+        if not self.creep_waves:
+            return None
+        exact = [w for w in self.creep_waves if (w.stage, w.round) == (stage, round_)]
+        if exact:
+            return exact[0]
+        earlier = [w for w in self.creep_waves if (w.stage, w.round) <= (stage, round_)]
+        return max(earlier, key=lambda w: (w.stage, w.round)) if earlier else None
+
+    def augments_of_tier(self, tier: str) -> tuple[AugmentDef, ...]:
+        return tuple(
+            a for a in sorted(self.augments.values(), key=lambda a: a.id)
+            if a.tier == tier
+        )
 
     def champions_by_cost(self, cost: int) -> tuple[ChampionDef, ...]:
         return tuple(c for c in self.champions.values() if c.cost == cost)
