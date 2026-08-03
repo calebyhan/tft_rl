@@ -1,46 +1,213 @@
-# Judgement Calls — TEMPORARY REVIEW DOC
+# Judgement Calls & Learning Journal
 
-Every decision made while building milestones 1–7 that the three spec docs did
-not fully determine. Written to be reviewed and adjusted; **delete or fold into
-docs 01–03 once settled**.
+Every decision this project made that the three spec docs
+([01](01_game_mechanics_reference.md), [02](02_data_schema_and_sourcing.md),
+[03](03_engine_and_rl_architecture.md)) did not determine, and every result
+measured while building it.
 
-## Review status (2026-08-01)
+This started as a temporary review file for milestones 1–7. It is not temporary
+any more: entries 9 onward are the project's record of what was tried, what it
+cost, and what it turned out to mean — including the parts that were wrong.
+**Withdrawn and corrected entries are kept, not deleted.** Several of this
+project's most useful conclusions come from re-checking a number that had
+already been cited three times as fact.
 
-Four decisions were reviewed and settled. ✅ marks a resolved entry.
+## How to read this
+
+The document is in two parts, and they are different kinds of thing:
+
+- **Part I — Standing decisions** (§1–8). A catalogue of judgement calls made
+  where the specs were silent or were deviated from. Reference material, kept
+  current. Mostly tables.
+- **Part II — Journal** (§9–32). Dated entries, newest last. Each one records a
+  question, what was measured, and what changed as a result. Read in order they
+  tell the story of the agent going from 8.000 to parity with its teacher.
+
+**Citing an entry.** Use `doc 99 entry N.M` in code comments and commit
+messages — for example `doc 99 entry 29.1`. Numbers are **stable**: an entry is
+never renumbered, because ~77 comments across the codebase point at them. A
+superseded entry keeps its number and gains a banner naming its successor.
+
+**Status markers** on journal entries:
+
+| | meaning |
+|---|---|
+| ✅ | stands as written |
+| ⚠️ | partly corrected or narrowed by a later entry — read both |
+| ❌ | withdrawn; the later entry supersedes it |
+
+**Flags** on standing decisions:
+
+| | meaning |
+|---|---|
+| 🔴 | deviates from an explicit statement in doc 01/02/03 |
+| 🟠 | invented constant — a number the docs flag unverified or don't give |
+| 🟡 | gap-filled — the docs were silent and a choice was required |
+| ⚪ | deliberately deferred or stubbed |
+
+---
+
+## Lessons
+
+The methodology findings, which generalise past this project. Each is stated
+where it was learned; this is the index to them.
+
+**1. Relational beats descriptive.** Nine milestones of observation work asked
+*how much* information the vector carried. The answer that mattered was *what
+kind*. Every widening that failed added description of entities (the `features`
+encoding: ~1800 extra floats, rejected three times). Every one that worked
+added a *comparison between* entities — identity match against the roster, dot
+product with board trait counts, rank among owned units, threshold against a
+cap. **Twelve floats, four comparisons, 1.266 placement.** (§29.1, §30.4)
+
+**2. A rate is uninterpretable without its achievable maximum.** "BUY sits at
+48%" means nothing until you know whether 48% is bad. Measuring the ceiling
+took one minute and could have invalidated three entries. (§26.4, §28.1)
+
+**3. Measure the label function, not a property of the features.** The 90.7%
+ceiling was wrong because it counted how often the expert's argmax was
+*unambiguous* rather than how often the expert *took* it. Those are different
+questions. (§28.1)
+
+**4. A number measured once, in one regime, becomes a default and then a
+fact.** It happened twice: the 90.7% ceiling survived three entries before
+being re-derived, and `--target-kl 0.02` shipped as a default on evidence from
+a policy that no longer existed. Re-derive before citing. (§28.2, §31.1)
+
+**5. A probe that cannot fit its own training set is a statement about the
+feature set, not the model.** Two investigations turned on this: a 52% train
+accuracy exposed a missing economy gate, a 42.5% exposed a missing rule regime.
+(§28.3, §30.1)
+
+**6. Replication tests precision; it does not test whether the measurement
+answers the question.** The 60k screen's only significant arm was an artefact
+that a 3-seed replication would have confirmed three times over. Duration was
+the test that mattered. (§23.3, §23.5)
+
+**7. Aggregate metrics hide composition.** Overall action match stayed flat at
+51% while placement improved 0.770; a KL arm posted fewer last places *and*
+fewer top-fours at an identical mean. Report the distribution. (§25.4, §29.2,
+§30.3, §31.3)
+
+**8. Favourable tail statistics are not evidence under an unstated
+tail-sensitive objective.** Reading a win-rate rise as "a gain under ranked LP"
+assumed the answer; scoring it properly showed the last-place rise cancelled
+it. (§32.1)
+
+**9. A policy pinned at last place has no outcome variance, so no A/B built on
+it can resolve anything.** Four consecutive experiments were wasted before this
+was noticed. `EvalResult` now warns. (§18.3, §18.5)
+
+**10. Whole-game invariants catch what per-feature tests cannot.** A champion
+pool leak survived 30 passing unit tests and was caught by `smoke_test.py`
+asserting conservation across whole games. (§21.4)
+
+**11. Mutation-test the tests that pin your central claim.** Four tests in this
+project passed against deliberately broken implementations, and two more
+silently skipped on a fixture that could not construct the case. A test that
+asserts nothing is worse than no test, because it reads as coverage. (§29.1,
+§30.2)
+
+**12. Baselines have been invalidated eight times.** Engine changes shift every
+number. Never compare a figure against one from an older commit; re-measure
+both arms together. (§22, §30.5)
+
+---
+
+## Index
+
+### Part I — Standing decisions
+
+| § | Topic | Flag |
+|---|---|---|
+| 1 | Deviations from the specs | 🔴 |
+| 2 | Files and structure the docs didn't specify | 🟡 |
+| 3 | Invented constants, all flagged in `config.unverified` | 🟠 |
+| 4 | Schema conventions that avoid changing doc 02's schema | 🟡 |
+| 5 | Combat mechanics where doc 01 was silent | 🟡 |
+| 6 | Player / match mechanics where the docs were silent | 🟡 |
+| 6b | RL environment (milestone 6) | 🟡 |
+| 6c | Training (milestone 7) | 🟡 🔴 |
+| 7 | Deliberately deferred | ⚪ |
+| 8 | Open items | — |
+
+### Part II — Journal
+
+| § | Date | Entry | Status |
+|---|---|---|---|
+| 9 | 08-01 | Milestone 8 — real Set 17 data | ✅ |
+| 10 | 08-01 | Entry 6b.5 resolved — the scalar index encoding stays | ✅ |
+| 11 | 08-01 | Milestone 8b — real abilities | ✅ |
+| 12 | 08-01 | Base-stat verification against the wiki | ✅ |
+| 13 | 08-01 | Entry 6c.3 resolved — the shaping was reward-hacking | ✅ |
+| 14 | 08-01 | Entry 9.2 resolved — the role model was missing a role and two perks | ✅ |
+| 15 | 08-01 | Entry 6b.1 resolved — the action space is not the bottleneck | ✅ |
+| 16 | 08-01 | Ability coverage — widened magnitude lookup | ✅ |
+| 17 | 08-01 | Milestone 9 — augments, self-play, board scouting | ✅ |
+| 18 | 08-01 | The value head was never trained — and that was not the bottleneck | ✅ |
+| 19 | 08-02 | Milestone 9 measured — scouting hurts, self-play is inert | ❌ 22.2, 22.3, 31.2 |
+| 20 | 08-02 | Item acquisition and real PvE rounds | ✅ |
+| 21 | 08-02 | The Realm of the Gods — an HP-ordered contested draft | ✅ |
+| 22 | 08-02 | The milestone 12 re-measurement | ⚠️ 31 |
+| 23 | 08-02 | Why PPO degrades its warm start — the screen | ⚠️ 31.1 |
+| 24 | 08-02 | DAgger does not close the imitation gap | ⚠️ 27.3, 30.1 |
+| 25 | 08-02 | The bottleneck is BUY, and the observation cannot express it | ⚠️ 27.2, 28.1 |
+| 26 | 08-02 | BUY's ceiling, and 25.2 is untested rather than refuted | ⚠️ 28.1 |
+| 27 | 08-02 | BUY is structural, not informational — the clean test | ⚠️ 28.3, 29 |
+| 28 | 08-02 | Correcting 26.1: the BUY ceiling is 67.7%, not 90.7% | ✅ |
+| 29 | 08-02 | Two relational features close 63% of the imitation gap | ✅ |
+| 30 | 08-02 | Parity with the teacher, from twelve floats | ✅ |
+| 31 | 08-03 | PPO from a parity clone: two verdicts reversed | ✅ |
+| 32 | 08-03 | LP scoring, and a correction to 31.3 | ✅ |
+
+### The arc, in one table
+
+Placement of the agent's own seat against seven scripted bots, n=300. Every row
+is a different engine or observation, so **only adjacent rows are comparable**
+(lesson 12).
+
+| milestone | agent | teacher | what changed |
+|---|---|---|---|
+| 7 | 8.000 | 4.467 | PPO from scratch never leaves last place (§6c.9) |
+| 7 | 6.250 | 4.467 | behaviour cloning + selection state (§6c.10) |
+| 12 | 5.907 | 4.620 | frozen engine: items, PvE, Realm draft (§22) |
+| 16 | 5.533 | 4.620 | 1500-episode label budget (§27.3) |
+| 17 | 5.063 | 4.620 | shop `owned` + `synergy` (§29) |
+| 18 | **4.567** | 4.620 | unit star/cost rank + `board_full` (§30) |
+| 19 | 4.637 | 4.620 | PPO from parity — a null (§31.3, §32.1) |
+
+---
+
+# Part I — Standing decisions
+
+Judgement calls made where the specs were silent, or where the code knowingly
+departs from them. Reference material: kept current, not a historical record.
+✅ marks an entry that has since been settled by review or by measurement, with
+the resolving journal entry named.
+
+### Settled by review (2026-08-01)
+
+Four decisions were reviewed with the project owner and closed.
 
 | Entry | Decision | Outcome |
 |---|---|---|
-| 1.1 | Shop draw weighting | ✅ **Keep `by_copies`.** No code change. **Doc 01 sec 5 should be amended** to describe copy-weighted draws. |
-| 1.2 | Combat re-targeting | ✅ **Switched to sticky targeting.** Code changed. **Doc 01 sec 3.1 step 3 should be amended.** |
-| 3.1 / 3.2 | Invented XP + round-damage tables | ✅ **Leave flagged in `config.unverified`;** try to source real values from CDragon at milestone 8, fall back to these. |
-| 4.4 | Item effect magnitudes | ✅ **Added `params` to `ItemDef`.** **Doc 02 sec 2's item schema should be amended.** |
+| 1.1 | Shop draw weighting | ✅ **Keep `by_copies`.** No code change. Doc 01 sec 5 amended to describe copy-weighted draws. |
+| 1.2 | Combat re-targeting | ✅ **Switched to sticky targeting.** Doc 01 sec 3.1 step 3 amended. |
+| 3.1 / 3.2 | Invented XP + round-damage tables | ✅ **Left flagged in `config.unverified`;** real values sought from CDragon at milestone 8, these kept as fallback. |
+| 4.4 | Item effect magnitudes | ✅ **Added `params` to `ItemDef`.** Doc 02 sec 2's item schema amended. |
 
-**All three doc amendments have been applied** (2026-08-01): doc 01 sec 3.1
-step 3, doc 01 sec 5, and doc 02 sec 2. Both docs carry an `## Amendments`
-section at the top recording what changed and why. The code and the specs now
-agree on these points.
+All three doc amendments were applied. Docs 01 and 02 carry an `## Amendments`
+section recording what changed and why; code and specs agree on these points.
 
-**Entry 2.1 is now closed** (2026-08-01). Direction given: "Riot is the source
-for everything." Investigating the live payload showed that is achievable for
-champions/traits/items but *not* for the economy tables — `shopOdds`,
-`poolSize`, `xpTable` and `rerollCost` have zero occurrences in the full 26 MB
-CDragon document, and `setData` carries only champions, traits, items and
-augments. Follow-up direction: community documentation is good enough for
-those. So `config.json` stays hand-curated, the fetch script is forbidden from
-writing it, and it now carries a `provenance` block classifying every constant
-as `riot_published` / `community_documented` / `engine_artifact`. Doc 02 gains
-section 4b defining its schema.
-
-Section 9 below records the calls made during milestone 8 itself.
-
-Each entry says what was decided, why, and where it came from. Flags:
-
-- 🔴 **Deviates** from an explicit statement in doc 01/02/03.
-- 🟠 **Invented constant** — a number the docs flag as unverified or don't give.
-- 🟡 **Gap-filled** — docs were silent; a choice was required.
-- ⚪ **Deferred/stubbed** — deliberately not built yet.
-
-Priority column: how much a wrong choice here would cost to change later.
+**Entry 2.1 closed the same day.** Direction given: "Riot is the source for
+everything." The live payload showed that is achievable for champions, traits
+and items but *not* for the economy tables — `shopOdds`, `poolSize`, `xpTable`
+and `rerollCost` have zero occurrences in the full 26 MB CDragon document, and
+`setData` carries only champions, traits, items and augments. Follow-up
+direction: community documentation is good enough for those. So `config.json`
+stays hand-curated, the fetch script is forbidden from writing it, and it
+carries a `provenance` block classifying every constant as `riot_published` /
+`community_documented` / `engine_artifact`. Doc 02 gained section 4b.
 
 ---
 
@@ -219,31 +386,61 @@ where that gap appears.
 
 ---
 
-## 8. Highest-priority items to settle
+## 8. Open items
 
-~~1.1 shop draw weighting~~ ✅ settled — keep `by_copies`.
-~~3.1 / 3.2 XP and round-damage tables~~ ✅ settled — revisit at milestone 8.
-~~4.4 item effect magnitudes~~ ✅ settled — `params` added.
-~~1.2 re-target-every-tick~~ ✅ settled — sticky targeting.
-~~6c.10 observation missing selection state~~ ✅ fixed.
+What is actually unresolved, as of entry 32. Everything previously listed here
+has been settled and moved to the closed table below.
 
-~~2.1 config.json schema~~ ✅ settled — stays curated, doc 02 sec 4b added.
+### Open
 
-~~5.4 shields vs tank damage-mana~~ ✅ settled — both readings in config.
-~~6b.5 champion encoding as a scalar index~~ ✅ tested and kept — the "likeliest ceiling on learning" claim did not survive measurement.
-~~9.1 star scaling~~ ✅ verified against Bel'Veth's in-game per-star values.
+Deliberately **unnumbered**. This is a worklist that changes as items close,
+and numbering it invites citations that survive the item they pointed at — a
+stale `8.5` reference in `scripts/fetch_cdragon.py` (it meant 9.5) is what
+prompted `scripts/check_doc_refs.py`. Cite the journal entry, not this list.
+
+| Item | Where |
+|---|---|
+| **The agent is at its teacher and cannot pass it by imitation.** The clone places 4.567 against a 4.620 scripted heuristic. Imitation caps at the teacher by construction, and every PPO configuration tested from that clone is a null or worse. The remaining routes are a better expert or an RL setup unlike any tried. | §31.4, §32.4 |
+| **The scripted expert is deliberately crude.** It ignores champion abilities when valuing units, itemises by a single-carry rule, and positions only by melee/ranged. Raising it raises the imitation ceiling directly — currently the clearest lever on the item above. | §6c.7, §31.4 |
+| **29 of 63 abilities remain unimplemented** — opaque passive/active splits and champions with several indistinguishable damage variables. Each warns once and no-ops; stats still apply. | §9.8, §11.2, §16 |
+| **The augment catalog is not Riot data.** The Set 17 payload carries no usable generic pool and no tier field, so the shipped 14 are archetypes exercising the hooks. The augment *system* is complete. | §17.1 |
+| **Set 17's God Boon / armoury at 4-7 and the two-gods alignment mechanic are not modelled.** Only the carousel-spirit contested draft is. | §21.1, §7.2 |
+| **Single training seed throughout §29–32.** Sufficient for reverting a default to neutral, not for asserting a new claim. | §31.4 |
+| **`nokl` at 120k was noisy** (4.777 / 5.157 / 4.853 / 4.600). A longer multi-seed run would separate drift from progress. | §31.4 |
+
+### Closed
+
+~~1.1 shop draw weighting~~ ✅ keep `by_copies`.
+~~1.2 re-target-every-tick~~ ✅ sticky targeting.
+~~2.1 config.json schema~~ ✅ stays curated; doc 02 sec 4b added.
+~~3.1 / 3.2 XP and round-damage tables~~ ✅ flagged, sought at milestone 8.
+~~4.4 item effect magnitudes~~ ✅ `params` added to `ItemDef`.
+~~5.4 shields vs tank damage-mana~~ ✅ both readings in config.
+~~6b.1 SELECT/PLACE two-step moves~~ ✅ structure is learned perfectly; not the bottleneck (§15).
+~~6b.5 champion encoding as a scalar index~~ ✅ tested and kept; rejected three times over (§10, §26.2, §27.4).
+~~6c.3 board-strength shaping~~ ✅ was reward-hacking; now potential-based (§13).
+~~6c.10 observation missing selection state~~ ✅ fixed (§6c.10).
+~~7.3 augments~~ ✅ system built at milestone 9 (§17).
+~~9.1 star scaling~~ ✅ verified against Bel'Veth's in-game per-star values (§12).
+~~9.2 role mapping~~ ✅ Specialist role added, two role perks implemented (§14).
 ~~11.3 multi-hit abilities~~ ✅ implemented.
-~~6c.3 board-strength shaping~~ ✅ settled — was reward-hacking; now potential-based.
-~~9.2 role mapping~~ ✅ settled — Specialist role added, two role perks implemented.
-~~6b.1 SELECT/PLACE moves~~ ✅ settled — structure is learned perfectly; not the bottleneck.
-~~7.3 augments~~ ✅ settled — system built at milestone 9; catalog is synthetic, see section 17.
+~~17.5 / 17.6 scouting and self-play unmeasured~~ ✅ measured (§19), then both verdicts overturned (§22.2, §22.3, §31.2).
+~~18.2 the untrained critic~~ ✅ fixed; was not the bottleneck (§18, §22.1).
+~~19.3 PPO contributes nothing over BC~~ ✅ superseded — it *degrades* a weak clone (§22.1) and is a null from a good one (§31.3).
+~~22 the imitation gap is compounding off-policy drift~~ ✅ refuted; it was BUY, and BUY was representational (§24.2, §29).
+~~25.2 the observation cannot express the BUY rule~~ ✅ refuted as stated, then vindicated in a different form — raw traits did nothing, the *comparison* did everything (§27.2, §29.1).
+~~26.1 the BUY ceiling is 90.7%~~ ✅ corrected to 67.7% (§28.1).
+~~27.2 a set/attention encoder is needed~~ ✅ not needed for BUY, SELECT or PLACE; derived relational features sufficed (§30.5).
+~~31.3 unleashed PPO is a gain under ranked LP~~ ✅ corrected — it is a null under LP too (§32.1).
 
-Still open:
+---
 
-1. **9.8 / 11.2** 29 of 63 abilities remain unimplemented (down from 35) — opaque passive/active splits and champions with several indistinguishable damage variables. See section 16.
-2. **17.1** The augment catalog is not Riot data — the Set 17 payload carries no usable generic pool and no tier field. See section 17.
-3. ~~**17.5 / 17.6** Full scouting and self-play are unmeasured.~~ ✅ measured in section 19 — scouting is significantly **harmful** (-0.303, t=-2.34), self-play is **inert** (-0.147, CI spans zero).
-4. **19.3** PPO contributes nothing measurable over behaviour cloning (+0.147, t=1.12 at n=300; the earlier +0.370 failed to replicate). The 1.17-placement gap to the scripted teacher is the one large, stable, repeatedly-significant fact. See section 19.
+# Part II — Journal
+
+Dated entries, newest last. Each records a question, what was
+measured, and what changed as a result. Entry numbers are stable and
+cited from code; superseded entries keep their number and carry a
+banner naming the entry that replaced them.
 
 ---
 

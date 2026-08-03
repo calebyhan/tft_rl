@@ -578,7 +578,7 @@ def normalise_champion(
             "starting_mana": _num(stats.get("initialMana"), 0.0),
             # A few units ship mana 0, meaning "not mana-gated" rather than
             # "casts instantly"; the schema requires a positive pool, so fall
-            # back to the usual 100 (see docs/99_judgement_calls.md 8.5).
+            # back to the usual 100 (see doc 99 entry 9.5).
             "max_mana": _num(stats.get("mana"), 0.0) or 100.0,
             "mana_per_attack": float(role_mana[role]),
             "crit_chance": round(_num(stats.get("critChance"), 0.25), 4),

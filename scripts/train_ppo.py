@@ -280,7 +280,7 @@ def behaviour_clone(
     """Warm-start the policy *and the value head* by imitating the scripted heuristic.
 
     With a terminal-only reward an untrained policy places 8th every game, so
-    PPO starts with no gradient (see docs/99_judgement_calls.md 6c.2). Even with
+    PPO starts with no gradient (see doc 99 entry 6c.2). Even with
     shaping, discovering the BUY -> SELECT -> PLACE chain by chance is slow.
     Behaviour cloning puts the policy in the neighbourhood of competent play
     first; PPO then improves from there rather than from nothing.
@@ -554,7 +554,7 @@ def main() -> int:
             "weight on the value-regression term during behaviour cloning. "
             "0 reproduces the old policy-only clone, which left the critic at "
             "explained_variance -0.43 and made PPO degrade its own warm start "
-            "(see docs/99_judgement_calls.md 18)"
+            "(see doc 99 entry 18)"
         ),
     )
     parser.add_argument(
@@ -564,7 +564,7 @@ def main() -> int:
         help=(
             "potential-based shaping is policy-invariant; 'bonus' is the "
             "earlier standing-payment form, kept for comparison "
-            "(see docs/99_judgement_calls.md 6c.3)"
+            "(see doc 99 entry 6c.3)"
         ),
     )
     parser.add_argument(
@@ -574,7 +574,7 @@ def main() -> int:
         help=(
             "how champions are encoded in the observation. 'features' "
             "describes role/stats/traits; 'index' is the legacy ordinal id "
-            "(see docs/99_judgement_calls.md 6b.5)"
+            "(see doc 99 entry 6b.5)"
         ),
     )
     parser.add_argument(

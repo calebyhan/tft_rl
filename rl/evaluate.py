@@ -151,7 +151,7 @@ class EvalResult:
             text += (
                 f"\n  !! FLOOR EFFECT: {self.floor_rate:.0%} of games finish last. "
                 "This result has too little outcome variance to compare against "
-                "-- raise --warm-start (see docs/99_judgement_calls.md 18.5)."
+                "-- raise --warm-start (see doc 99 entry 18.5)."
             )
         return text
 
