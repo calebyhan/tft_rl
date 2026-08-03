@@ -11,6 +11,8 @@ The action space is a flat ``Discrete(n)`` laid out as contiguous blocks:
     [ SELL x (board_hexes + bench_slots) ]
     [ MOVE x (board_hexes + bench_slots)^... ]  -- see below
     [ EQUIP x (item_bag_slots * unit_slots) ]
+    [ PICK_AUGMENT x augment_choices ]
+    [ PICK_OFFERING x realm_offerings ]
     [ REROLL ][ BUY_XP ][ END_PLANNING ]
 
 ``MOVE`` is the only combinatorially awkward one. A full from x to product over
@@ -46,6 +48,8 @@ class ActionKind(IntEnum):
     REROLL = 5
     BUY_XP = 6
     END_PLANNING = 7
+    PICK_AUGMENT = 8
+    PICK_OFFERING = 9
 
 
 @dataclass(frozen=True)
@@ -59,6 +63,8 @@ class Action:
     def __repr__(self) -> str:
         if self.kind in (ActionKind.REROLL, ActionKind.BUY_XP, ActionKind.END_PLANNING):
             return self.kind.name
+        if self.kind in (ActionKind.PICK_AUGMENT, ActionKind.PICK_OFFERING):
+            return f"{self.kind.name}(choice={self.a})"
         if self.kind is ActionKind.EQUIP:
             return f"{self.kind.name}(item={self.a}, unit={self.b})"
         return f"{self.kind.name}({self.a})"
@@ -79,6 +85,17 @@ class ActionSpace:
         self.board_slots = 0  # filled in by bind_board
         self.item_bag_slots = item_bag_slots
         self.config = config
+        # One action per augment choice. Sized from the config even when
+        # augments are disabled, so the observation and action layouts do not
+        # silently change shape with a data edit; the extra actions are simply
+        # never legal.
+        self.augment_choices = config.augments.choices
+        # Sized for the largest line-up the draft can produce: one offering
+        # per seat plus the spares that make the last pick a real choice.
+        self.realm_offerings = (
+            config.round_structure.players + config.realm.extra_offerings
+            if config.realm.enabled else 0
+        )
         self._hexes: tuple[Hex, ...] = ()
 
     def bind_board(self, hexes: tuple[Hex, ...]) -> None:
@@ -94,7 +111,9 @@ class ActionSpace:
         self.select_offset = self.sell_offset + self.unit_slots
         self.place_offset = self.select_offset + self.unit_slots
         self.equip_offset = self.place_offset + self.unit_slots
-        self.reroll_index = self.equip_offset + self.item_bag_slots * self.unit_slots
+        self.augment_offset = self.equip_offset + self.item_bag_slots * self.unit_slots
+        self.offering_offset = self.augment_offset + self.augment_choices
+        self.reroll_index = self.offering_offset + self.realm_offerings
         self.buy_xp_index = self.reroll_index + 1
         self.end_index = self.buy_xp_index + 1
         self.n = self.end_index + 1
@@ -128,6 +147,10 @@ class ActionSpace:
             return Action(ActionKind.BUY_XP)
         if index == self.reroll_index:
             return Action(ActionKind.REROLL)
+        if index >= self.offering_offset:
+            return Action(ActionKind.PICK_OFFERING, index - self.offering_offset)
+        if index >= self.augment_offset:
+            return Action(ActionKind.PICK_AUGMENT, index - self.augment_offset)
         if index >= self.equip_offset:
             offset = index - self.equip_offset
             return Action(ActionKind.EQUIP, offset // self.unit_slots, offset % self.unit_slots)
@@ -151,6 +174,10 @@ class ActionSpace:
                 return self.place_offset + action.a
             case ActionKind.EQUIP:
                 return self.equip_offset + action.a * self.unit_slots + action.b
+            case ActionKind.PICK_AUGMENT:
+                return self.augment_offset + action.a
+            case ActionKind.PICK_OFFERING:
+                return self.offering_offset + action.a
             case ActionKind.REROLL:
                 return self.reroll_index
             case ActionKind.BUY_XP:
@@ -221,12 +248,25 @@ class ActionExecutor:
             for item_index in range(min(len(player.item_bag), space.item_bag_slots)):
                 for slot in range(space.unit_slots):
                     unit = self.unit_at(player, slot)
-                    legal = unit is not None and len(unit.items) < player.config.max_items_per_unit
+                    legal = unit is not None and player.can_equip_from_bag(
+                        player.item_bag[item_index].id, unit
+                    )
                     mask[space.equip_offset + item_index * space.unit_slots + slot] = legal
+
+        for choice in range(min(len(player.augment_offer), space.augment_choices)):
+            mask[space.augment_offset + choice] = True
+        for choice in range(min(len(player.realm_offer), space.realm_offerings)):
+            mask[space.offering_offset + choice] = True
 
         mask[space.reroll_index] = player.gold >= player.config.reroll_cost
         mask[space.buy_xp_index] = player.can_buy_xp()
-        mask[space.end_index] = True
+        # Real TFT does not let you leave an augment unpicked, so ending the
+        # planning phase with an offer outstanding is not an option. Without
+        # this the agent could skip every reveal and never learn the choice
+        # matters -- and the match would then pick for it anyway.
+        mask[space.end_index] = not (
+            player.has_pending_augment or player.has_pending_offering
+        )
         return mask
 
     def _can_place(self, player: PlayerState, slot: int) -> bool:
@@ -282,6 +322,10 @@ class ActionExecutor:
                 self._place(player, action.a)
             case ActionKind.EQUIP:
                 self._equip(player, action.a, action.b)
+            case ActionKind.PICK_AUGMENT:
+                player.pick_augment(action.a)
+            case ActionKind.PICK_OFFERING:
+                player.pick_offering(action.a)
             case ActionKind.REROLL:
                 player.reroll(pool, rng)
             case ActionKind.BUY_XP:

@@ -13,7 +13,7 @@ import random
 from typing import Sequence
 
 from engine.match import PlanningContext
-from engine.player import PlayerState
+from engine.player import IllegalAction, PlayerState
 from engine.traits import trait_counts
 from engine.unit import UnitInstance
 
@@ -82,6 +82,45 @@ class GreedyPolicy:
             self._buy_phase(player, context)
         self._sell_surplus(player, context)
         _fill_board(player, self.rng, key=_strength)
+        # After the board is settled, so items land on units that are actually
+        # fielded rather than on something about to be benched.
+        _equip_phase(player)
+
+    def choose_offering(self, player: PlayerState, offerings: Sequence) -> int:
+        """Draft pick: prefer a copy the board already owns, then raw cost.
+
+        Picking a champion already owned progresses a star-up, which is worth
+        more than a marginally pricier unit -- the same ordering ``_buy_phase``
+        uses, so the bot drafts consistently with how it shops.
+        """
+        owned = {u.champion.id for u in player.all_units}
+        best, best_key = 0, None
+        for index, offering in enumerate(offerings):
+            champion = player.data.champions[offering.champion_id]
+            key = (offering.champion_id in owned, champion.cost)
+            if best_key is None or key > best_key:
+                best, best_key = index, key
+        return best
+
+    def choose_component(self, player: PlayerState, offered: Sequence[str]) -> str:
+        """Anvil pick (low-HP catch-up): finish an item on the carry if possible.
+
+        A component that completes what the carry is already holding is worth
+        far more than a second loose component, so that is preferred; failing
+        that the choice is random, since ranking components against each other
+        needs champion knowledge this bot does not have.
+        """
+        carry = _carry_unit(player)
+        if carry is not None:
+            held = [i for i in carry.items if i.is_component]
+            for component in held:
+                completions = [
+                    c for c in offered
+                    if player.registry.combine(component.id, c) is not None
+                ]
+                if completions:
+                    return self.rng.choice(sorted(completions))
+        return self.rng.choice(sorted(offered))
 
     # -- helpers ----------------------------------------------------------
 
@@ -133,6 +172,47 @@ class NoOpPolicy:
 def _strength(unit: UnitInstance) -> tuple[int, int]:
     """A crude ordering: star level dominates, then champion cost."""
     return (unit.star_level, unit.champion.cost)
+
+
+def _carry_unit(player: PlayerState) -> UnitInstance | None:
+    """The unit a bot funnels items into: its strongest *fielded* one.
+
+    Concentrating items on one carry is the single most important itemisation
+    heuristic in TFT -- three items on one unit beats one item on three -- and
+    it needs no per-champion knowledge.
+    """
+    if not player.board:
+        return None
+    return max(player.board_units, key=_strength)
+
+
+def _equip_phase(player: PlayerState) -> None:
+    """Move bagged items onto the board, concentrating them on the carry.
+
+    Without this the item system is inert: components accumulate in the bag
+    and nothing ever benefits from them. Equipping goes through
+    ``equip_from_bag``, so two components on the same unit auto-combine into
+    the completed item exactly as in TFT.
+    """
+    if not player.board:
+        return
+    cap = player.config.max_items_per_unit
+    # A stable snapshot: equipping mutates item_bag, and a combine can push an
+    # item back into it.
+    for _ in range(len(player.item_bag)):
+        if not player.item_bag:
+            break
+        targets = [u for u in player.board_units if len(u.items) < cap]
+        if not targets:
+            break
+        # Carry first, then the next strongest with room.
+        target = max(targets, key=_strength)
+        try:
+            player.equip_from_bag(player.item_bag[0].id, target)
+        except IllegalAction:
+            # Nothing legal to do with this item right now; stop rather than
+            # spin, and it stays in the bag for a later round.
+            break
 
 
 def _field_one(player: PlayerState, rng: random.Random) -> bool:

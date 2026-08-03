@@ -36,6 +36,10 @@ from rl.opponents import GreedyPolicy
 
 DEFAULT_MAX_ACTIONS_PER_ROUND = 12
 
+# How dense shaping is computed. "potential" is policy-invariant; "bonus"
+# is the earlier standing-payment form, kept only for comparison.
+SHAPING_MODES = ("potential", "bonus")
+
 
 class _AgentSeat:
     """A no-op policy for the agent's seat.
@@ -43,6 +47,11 @@ class _AgentSeat:
     The agent acts through ``env.step``, so when ``Match`` runs the planning
     phase this policy does nothing and simply records that it was called.
     """
+
+    # The agent picks augments and realm offerings through its own actions,
+    # so the match must not resolve either on its behalf.
+    defers_augment_pick = True
+    defers_realm_pick = True
 
     def __init__(self) -> None:
         self.pending_context: PlanningContext | None = None
@@ -68,6 +77,10 @@ class TFTEnv(gym.Env):
         survival_reward_weight: float = 0.01,
         strict_actions: bool = False,
         invalid_action_penalty: float = 0.0,
+        champion_encoding: str = "index",
+        scouting: str = "summary",
+        shaping_mode: str = "potential",
+        shaping_gamma: float = 0.999,
         seed: int | None = None,
         render_mode: str | None = None,
     ) -> None:
@@ -84,6 +97,14 @@ class TFTEnv(gym.Env):
         self.reward_shaping = reward_shaping
         self.board_reward_weight = board_reward_weight
         self.survival_reward_weight = survival_reward_weight
+        if shaping_mode not in SHAPING_MODES:
+            raise ValueError(
+                f"shaping_mode must be one of {SHAPING_MODES}, got {shaping_mode!r}"
+            )
+        self.shaping_mode = shaping_mode
+        # Must match the training gamma for the telescoping guarantee to hold.
+        self.shaping_gamma = shaping_gamma
+        self._last_potential = 0.0
         # A 'good' average unit for normalising board strength: mid-cost, 2-star.
         tiers = sorted(self.config.pool_sizes) or [1]
         self._reference_unit_value = (sum(tiers) / len(tiers)) * 2
@@ -99,7 +120,11 @@ class TFTEnv(gym.Env):
         self.action_space_helper.bind_board(self._board_hexes)
         self.executor = ActionExecutor(self.action_space_helper)
         self.encoder = ObservationEncoder(
-            self.data, len(self._board_hexes), self.n_players - 1
+            self.data,
+            len(self._board_hexes),
+            self.n_players - 1,
+            champion_encoding=champion_encoding,
+            scouting=scouting,
         )
 
         self.action_space = spaces.Discrete(self.action_space_helper.n)
@@ -110,6 +135,7 @@ class TFTEnv(gym.Env):
         self._seed = seed
         self.match: Match | None = None
         self.actions_left = 0
+        self._pending_realm = False
         self._last_hp = 0
         self._episode_reward = 0.0
 
@@ -136,6 +162,7 @@ class TFTEnv(gym.Env):
         # Run the match up to the agent's first planning phase.
         self._begin_planning()
         self._last_hp = self.player.hp
+        self._last_potential = self._potential()
         return self._observe(), self._info()
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
@@ -206,10 +233,17 @@ class TFTEnv(gym.Env):
         """
         assert self.match is not None
         while not self.match.finished and self.player.alive:
-            is_pve = self.match.structure.is_pve(
-                self.match.round_id.stage, self.match.round_id.round
+            match = self.match
+            self._pending_realm = match.is_realm_round
+            if self._pending_realm:
+                # Seats with less HP than the agent draft *before* it; the
+                # draft then pauses on the agent's turn, and resume_realm()
+                # finishes the rest once the agent has picked.
+                match._realm_phase()
+            is_pve = match.structure.is_pve(
+                match.round_id.stage, match.round_id.round
             )
-            self.match._planning_phase(is_pve)
+            match._planning_phase(is_pve)
             self._pending_pve = is_pve
             self.executor.reset()
             self.actions_left = self.max_actions_per_round
@@ -220,6 +254,30 @@ class TFTEnv(gym.Env):
         assert self.match is not None
         match = self.match
         hp_before = self.player.hp
+
+        # The action mask blocks END_PLANNING while an offer is pending, but
+        # exhausting the action budget still lands here. TFT does not allow
+        # declining either kind of pick, so take the first rather than carrying
+        # a live offer into combat.
+        if self.player.has_pending_augment:
+            self.player.pick_augment(0)
+        if self.player.has_pending_offering:
+            self.player.pick_offering(0)
+        if self._pending_realm:
+            # Let the seats above the agent in HP order take what is left.
+            match.resume_realm()
+            # A realm round has no fight; income is still paid.
+            for player in match.living_players:
+                player.award_income(match.round_id)
+            match.rounds_played += 1
+            match.round_id = match.round_id.next(
+                match.structure.rounds_in_stage(match.round_id.stage)
+            )
+            self._last_hp = self.player.hp
+            self._pending_realm = False
+            if not self.reward_shaping:
+                return 0.0
+            return self._shaping_reward(hp_before)
 
         reports = match._combat_phase(self._pending_pve)
         match._resolution_phase(reports)
@@ -233,35 +291,64 @@ class TFTEnv(gym.Env):
             return 0.0
         return self._shaping_reward(hp_before)
 
-    def _shaping_reward(self, hp_before: int) -> float:
-        """Dense per-round shaping (doc 03 sec 3.3).
+    def _potential(self) -> float:
+        """State value used by potential-based shaping: board strength + HP.
 
-        Survival alone is a near-useless signal here: an agent that does
-        nothing and an agent that acts randomly both die on round 13-14, so
-        reward variance across episodes is ~1%, and PPO has effectively no
-        gradient. The dominant term therefore rewards **board strength**, which
-        the agent directly controls and which causally drives winning --
-        doc 03 sec 3.3 lists trait/item progress as acceptable shaping in the
-        same spirit.
-
-        Kept small relative to the terminal reward (bounded by roughly
-        +/-0.05 per round against a terminal reward of 0.125-1.0).
+        Board strength is fielded units weighted by cost and star level,
+        normalised against a plausible strong board for the current level.
         """
         player = self.player
-        hp_lost = max(hp_before - player.hp, 0)
-
-        # Board strength: fielded units weighted by cost and star level,
-        # normalised against a plausible strong board for the current level.
         strength = sum(
             unit.champion.cost * unit.star_level for unit in player.board_units
         )
         reference = max(player.max_board_units * self._reference_unit_value, 1)
-        board_term = self.board_reward_weight * min(strength / reference, 1.5)
-
-        survival_term = self.survival_reward_weight * (
-            1.0 - hp_lost / max(self.config.starting_hp, 1)
+        board = self.board_reward_weight * min(strength / reference, 1.5)
+        survival = self.survival_reward_weight * (
+            player.hp / max(self.config.starting_hp, 1)
         )
-        return board_term + survival_term
+        return board + survival
+
+    def _shaping_reward(self, hp_before: int) -> float:
+        """Dense per-round shaping (doc 03 sec 3.3).
+
+        Sparse terminal reward alone gives PPO almost no gradient: an agent
+        that does nothing and one that acts randomly both die around round
+        13-14, so episode reward variance is ~1%.
+
+        ``shaping_mode="potential"`` (default) uses potential-based shaping,
+        ``F = gamma * phi(s') - phi(s)`` (Ng, Harada & Russell 1999). Because
+        the per-round terms telescope, total shaping over an episode collapses
+        to a boundary term, so it **cannot change which policy is optimal** --
+        it only redistributes credit earlier in the episode.
+
+        ``shaping_mode="bonus"`` is the earlier form: a standing per-round
+        payment for holding a strong board. It is kept for comparison but is
+        **not recommended** -- it was measured rewarding the agent for
+        accruing board value rather than for winning. Over a 150k-step run
+        episode reward rose 22% while average placement stayed flat, and 77%
+        of that gain came from shaping rather than from placing better
+        (doc 99 entry 6c.3).
+        """
+        if self.shaping_mode == "bonus":
+            player = self.player
+            hp_lost = max(hp_before - player.hp, 0)
+            strength = sum(
+                unit.champion.cost * unit.star_level for unit in player.board_units
+            )
+            reference = max(player.max_board_units * self._reference_unit_value, 1)
+            board_term = self.board_reward_weight * min(strength / reference, 1.5)
+            survival_term = self.survival_reward_weight * (
+                1.0 - hp_lost / max(self.config.starting_hp, 1)
+            )
+            return board_term + survival_term
+
+        # Potential-based. A terminal state has potential 0 by convention,
+        # which is what makes the telescoping sum collapse cleanly.
+        terminal = self.match.finished or not self.player.alive
+        after = 0.0 if terminal else self._potential()
+        shaped = self.shaping_gamma * after - self._last_potential
+        self._last_potential = after
+        return shaped
 
     def _terminal_reward(self) -> float:
         """Placement-based terminal reward, ``(9 - placement) / 8``."""

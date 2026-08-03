@@ -213,6 +213,58 @@ def test_equip_becomes_legal_with_an_item_and_a_unit(env):
     assert mask[space.equip_offset + 0 * space.unit_slots + bench_slot]
 
 
+def test_a_unique_item_cannot_be_stacked_and_the_mask_knows_it(env):
+    """Regression: the EQUIP mask checked only the slot cap.
+
+    ``validate_loadout`` also forbids stacking a ``unique`` item, so an agent
+    holding two copies of one was shown a legal EQUIP that then raised
+    ``IllegalAction``. Found in training telemetry -- ``illegal_actions`` was
+    non-zero at two checkpoints of the milestone 12 PPO run, which cannot
+    happen while the mask and the executor agree.
+    """
+    env.reset(seed=1)
+    space = env.action_space_helper
+    env.player.gold = 20
+    stocked = next(i for i, c in enumerate(env.player.shop.slots) if c is not None)
+    env.step(stocked)
+
+    unique = "TFT_Item_InfinityEdge"
+    env.player.add_item(unique)
+    env.player.add_item(unique)
+    bench_slot = space.slot_for_bench(0)
+    unit = env.player.bench[0]
+
+    first = space.equip_offset + 0 * space.unit_slots + bench_slot
+    assert env.action_mask()[first], "the first copy must be equippable"
+    env.step(first)
+    assert [i.id for i in unit.items] == [unique]
+
+    second = space.equip_offset + 0 * space.unit_slots + bench_slot
+    assert not env.action_mask()[second], "stacking a unique item must be masked off"
+    with pytest.raises(IllegalAction):
+        env.player.equip_from_bag(unique, unit)
+
+
+def test_a_full_unit_is_masked_off_even_below_the_unique_rule(env):
+    """The slot cap still applies -- the fix must not have replaced one rule
+    with another."""
+    env.reset(seed=1)
+    space = env.action_space_helper
+    env.player.gold = 20
+    stocked = next(i for i, c in enumerate(env.player.shop.slots) if c is not None)
+    env.step(stocked)
+
+    unit = env.player.bench[0]
+    for item_id in ("TFT_Item_Deathblade", "TFT_Item_InfinityEdge", "TFT_Item_ZenithEdge"):
+        env.player.add_item(item_id)
+        env.player.equip_from_bag(item_id, unit)
+    assert len(unit.items) == env.data.config.max_items_per_unit
+
+    env.player.add_item("TFT_Item_Deathblade")
+    bench_slot = space.slot_for_bench(0)
+    assert not env.action_mask()[space.equip_offset + 0 * space.unit_slots + bench_slot]
+
+
 def test_buy_xp_is_masked_out_at_max_level(env):
     env.reset(seed=1)
     env.player.level = env.data.config.max_level
@@ -569,12 +621,27 @@ def test_shaping_rewards_board_strength(data):
     assert stronger > empty, "fielding units must increase the shaping reward"
 
 
-def test_shaping_penalises_hp_loss(data):
-    env = TFTEnv(data=data, reward_shaping=True)
+def test_bonus_shaping_penalises_hp_loss(data):
+    """Under the bonus form the penalty is read from the ``hp_before`` argument."""
+    env = TFTEnv(data=data, reward_shaping=True, shaping_mode="bonus")
     env.reset(seed=1)
     unhurt = env._shaping_reward(hp_before=env.player.hp)
     hurt = env._shaping_reward(hp_before=env.player.hp + 30)
     assert hurt < unhurt
+
+
+def test_potential_shaping_penalises_hp_loss(data):
+    """Under potential shaping the penalty comes from the drop in phi itself.
+
+    ``hp_before`` is not consulted -- losing HP lowers the potential, so the
+    difference term goes negative on its own.
+    """
+    env = TFTEnv(data=data, reward_shaping=True, shaping_mode="potential")
+    env.reset(seed=1)
+    before = env._potential()
+    env.player.hp -= 30
+    assert env._potential() < before
+    assert env._shaping_reward(hp_before=env.player.hp) < 0
 
 
 def test_shaping_is_off_by_default(data):

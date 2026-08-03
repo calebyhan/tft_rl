@@ -16,6 +16,7 @@ from engine.loader import load_all
 from engine.schema import GameData
 from rl.env import TFTEnv
 from rl.evaluate import (
+    LP_BY_PLACEMENT,
     EvalResult,
     compare,
     end_planning_policy,
@@ -159,3 +160,120 @@ def test_the_scripted_policy_beats_random(env):
     scripted = evaluate(env, scripted_policy(env), seeds=range(10))
     baseline = evaluate(env, random_policy(random.Random(0)), seeds=range(10))
     assert scripted.avg_placement < baseline.avg_placement
+
+
+# --- floor-effect guardrail (doc 99 entry 18.3/18.4) --------------------
+
+
+def _result(placements):
+    from rl.evaluate import EvalResult
+
+    return EvalResult(episodes=len(placements), placements=list(placements))
+
+
+def test_floor_rate_counts_last_place():
+    assert _result([8] * 84 + [4, 5, 6, 7] * 4).floor_rate == pytest.approx(0.84)
+
+
+def test_a_pinned_policy_is_flagged_as_on_the_floor():
+    """The 150-episode warm start that wasted four experiments."""
+    result = _result([8] * 84 + [4] * 3 + [5] * 4 + [6] * 2 + [7] * 7)
+    assert result.on_the_floor
+    assert "FLOOR EFFECT" in result.summary()
+
+
+def test_a_spread_policy_is_not_flagged():
+    """The 400-episode warm start: 33% last place, usable."""
+    spread = [1] * 2 + [2] * 1 + [3] * 8 + [4] * 7 + [5] * 12 + [6] * 14 + [7] * 23 + [8] * 33
+    result = _result(spread)
+    assert not result.on_the_floor
+    assert "FLOOR EFFECT" not in result.summary()
+
+
+def test_scripted_baseline_is_not_flagged():
+    """A competent policy still finishes last sometimes; that is not a floor."""
+    scripted = (
+        [1] * 10 + [2] * 13 + [3] * 11 + [4] * 10
+        + [5] * 13 + [6] * 11 + [7] * 10 + [8] * 22
+    )
+    assert not _result(scripted).on_the_floor
+
+
+def test_ci95_shrinks_with_more_episodes():
+    tight = _result([4, 5] * 200)
+    loose = _result([4, 5] * 5)
+    assert tight.ci95 < loose.ci95
+
+
+def test_ci95_is_zero_for_a_constant_result():
+    assert _result([8] * 50).ci95 == pytest.approx(0.0)
+
+
+def test_ci95_undefined_for_a_single_episode():
+    assert _result([3]).ci95 == 0.0
+
+
+def test_floor_rate_of_an_empty_result_is_zero():
+    assert _result([]).floor_rate == 0.0
+
+
+def test_as_dict_carries_the_diagnostics():
+    d = _result([8] * 10).as_dict()
+    assert "ci95" in d and "floor_rate" in d
+
+
+# --- LP scoring (doc 99 entry 31/32) -------------------------------------
+#
+# Average placement is linear; ranked TFT is not. These pin the properties that
+# make LP a *different* metric rather than a rescaling of the same one -- if it
+# were monotone-equivalent to placement it would add nothing and every past
+# verdict would carry over unchanged.
+
+
+def _result(placements):
+    return EvalResult(episodes=len(placements), placements=list(placements))
+
+
+def test_lp_rewards_the_top_half_and_punishes_the_bottom():
+    assert _result([1]).avg_lp > 0
+    assert _result([4]).avg_lp > 0
+    assert _result([5]).avg_lp < 0
+    assert _result([8]).avg_lp < 0
+
+
+def test_lp_is_convex_toward_first():
+    """1st->2nd must be worth more than 3rd->4th; placement says they are equal."""
+    first_to_second = LP_BY_PLACEMENT[1] - LP_BY_PLACEMENT[2]
+    third_to_fourth = LP_BY_PLACEMENT[3] - LP_BY_PLACEMENT[4]
+    assert first_to_second > third_to_fourth
+
+
+def test_lp_can_disagree_with_average_placement():
+    """The reason the metric exists.
+
+    Two distributions with identical mean placement, one weighted to the tails.
+    If LP ranked them the same, it would be a rescaling and doc 99 31.3's
+    finding would be an artefact of arithmetic rather than a real ambiguity.
+    """
+    flat = _result([4, 4, 5, 5])
+    tails = _result([1, 1, 8, 8])
+    assert flat.avg_placement == pytest.approx(tails.avg_placement)
+    assert flat.avg_lp != pytest.approx(tails.avg_lp)
+
+
+def test_lp_ci_widens_with_spread():
+    tight = _result([4, 4, 5, 5] * 10)
+    wide = _result([1, 1, 8, 8] * 10)
+    assert wide.lp_ci95 > tight.lp_ci95
+
+
+def test_lp_is_zero_for_no_episodes():
+    assert _result([]).avg_lp == 0.0
+    assert _result([]).lp_ci95 == 0.0
+
+
+def test_summary_reports_lp_alongside_placement():
+    """Never instead of: the project's history is measured on placement."""
+    text = _result([1, 2, 3, 4, 5, 6, 7, 8]).summary()
+    assert "avg_placement=" in text
+    assert "lp=" in text
