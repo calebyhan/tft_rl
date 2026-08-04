@@ -98,6 +98,21 @@ ITEM_STAT_MAP: Mapping[str, tuple[str, float]] = {
     "DamageAmp": ("damage_amp", 1.0),
     "StatOmnivamp": ("omnivamp", 1.0),
     "Mana": ("mana", 1.0),
+    "ManaRegen": ("mana_regen", 1.0),
+}
+
+# Riot ships some variables under a hashed name instead of a readable one. They
+# are still stats, and dropping them loses real power: Deathblade and Rabadon's
+# Deathcap carry their entire Damage Amp under ``{1543aa48}`` and nothing else,
+# so both items were delivering only their raw AD/AP (doc 99 entry 34.4).
+#
+# Each was identified by finding an item that carries *both* the hashed key and
+# its readable twin at an identical value -- Giant Slayer publishes
+# ``DamageAmp`` and ``{1543aa48}`` as 0.15 apiece. That duplication is also why
+# an alias is skipped when its canonical key is present: summing them would
+# hand Giant Slayer 30% amp instead of 15%.
+HASHED_STAT_ALIASES: Mapping[str, str] = {
+    "{1543aa48}": "DamageAmp",
 }
 
 # The 10 basic components, identified by Riot's own ``component`` tag.
@@ -120,6 +135,19 @@ IMPLEMENTED_ITEM_EFFECTS: Mapping[str, str] = {
     "TFT_Item_SpearOfShojin": "spear_of_shojin_bonus_mana_on_attack",
     "TFT_Item_GuinsoosRageblade": "guinsoos_stacking_attack_speed",
 }
+
+# Items whose whole behaviour is a *keyword* rather than a numeric variable.
+# Riot ships them with no leftover params at all ("Gain Precision."), so the
+# `leftovers` test below would classify them as no-ops and they would silently
+# be stat sticks -- which is exactly what happened to Infinity Edge and
+# Jeweled Gauntlet (doc 99 entry 36.2).
+KEYWORD_ITEM_EFFECTS: frozenset[str] = frozenset(
+    {
+        "TFT_Item_InfinityEdge",     # Precision: abilities can critically strike
+        "TFT_Item_JeweledGauntlet",  # Precision
+        "TFT_Item_ThiefsGloves",     # equips 2 random items each round
+    }
+)
 
 
 # --------------------------------------------------------------------------
@@ -647,9 +675,16 @@ def _split_item_effects(
     """Split Riot's flat effect dict into modelled stats and leftover params."""
     stats: dict[str, float] = {}
     leftovers: dict[str, Any] = {}
-    for key, value in (effects or {}).items():
+    effects = effects or {}
+    for key, value in effects.items():
         if value is None:
             continue
+        canonical = HASHED_STAT_ALIASES.get(key)
+        if canonical is not None:
+            # The readable twin, when present, carries the same number.
+            if canonical in effects:
+                continue
+            key = canonical
         mapped = ITEM_STAT_MAP.get(key)
         if mapped is None:
             leftovers[key] = value
@@ -679,6 +714,8 @@ def normalise_item(
         effect_id: str | None = f"emblem_{emblem_trait_id}"
     elif api_name in IMPLEMENTED_ITEM_EFFECTS:
         effect_id = IMPLEMENTED_ITEM_EFFECTS[api_name]
+    elif api_name in KEYWORD_ITEM_EFFECTS:
+        effect_id = f"item_{api_name}"
     elif leftovers:
         # Riot variables we do not model yet. A stable per-item id keeps the
         # numbers in the data file and makes the gap visible as a single
@@ -843,7 +880,49 @@ def build_dataset(
     )
 
     items = collect_items(payload, set_entry, trait_ids)
-    return {"champions": champions, "traits": traits, "items": items}
+    summons = collect_summons(set_entry, trait_ids, role_mana)
+    return {
+        "champions": champions,
+        "traits": traits,
+        "items": items,
+        "summons": summons,
+    }
+
+
+# Units that exist in the payload but are never sold: they are created during
+# combat by a trait or an ability. They are kept in their **own** file rather
+# than in champions.json because anything in champions.json feeds the shared
+# champion pool, and a summon entering that pool would break the
+# pool-conservation invariant the smoke test checks (doc 99 entry 35.2).
+# Dark Star's "Mini Black Hole" is deliberately *not* here: Riot ships it as a
+# pseudo-unit with attack_range 0 and crit_damage 0, which is a marker for an
+# execute effect rather than a unit that fights. It is modelled directly in
+# `trait_effects.dark_star` instead (doc 99 entry 35.2).
+SUMMON_UNIT_IDS: Mapping[str, str] = {
+    "TFT17_Summon": "shepherd",  # Bia & Bayin
+}
+
+
+def collect_summons(
+    set_entry: Mapping[str, Any],
+    trait_ids: Mapping[str, str],
+    role_mana: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Normalise the non-shop units that traits and abilities summon."""
+    out = []
+    for entry in set_entry.get("champions") or []:
+        api = entry.get("apiName")
+        if api not in SUMMON_UNIT_IDS:
+            continue
+        summon = normalise_champion(
+            entry, cost=0, trait_ids=trait_ids, role_mana=role_mana
+        )
+        # A summon has no traits of its own -- it must never contribute to a
+        # breakpoint, or Shepherd's own summons would raise Shepherd's tier.
+        summon["traits"] = []
+        summon["summon_role"] = SUMMON_UNIT_IDS[api]
+        out.append(summon)
+    return sorted(out, key=lambda c: c["id"])
 
 
 def write_dataset(
@@ -853,7 +932,7 @@ def write_dataset(
     set_number: int,
     patch: str,
 ) -> None:
-    for name in ("champions", "traits", "items"):
+    for name in ("champions", "traits", "items", "summons"):
         path = out_dir / f"{name}.json"
         path.write_text(json.dumps(dataset[name], indent=2) + "\n", encoding="utf-8")
         log.info("wrote %s (%d entries)", path, len(dataset[name]))

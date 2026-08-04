@@ -19,6 +19,11 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
+# Imported for their registration side effects: each module populates an
+# effect registry at import time, and the loader's coverage warnings are only
+# accurate once every implementation has registered itself.
+from engine import abilities as _abilities  # noqa: F401
+from engine import trait_effects as _trait_effects  # noqa: F401
 from engine.items import EMBLEM_EFFECT_PREFIX, emblem_trait_id
 from engine.schema import (
     AUGMENT_TIERS,
@@ -264,6 +269,7 @@ def _parse_champion(
     *,
     source: str = "champions.json",
     is_creep: bool = False,
+    is_summon: bool = False,
 ) -> ChampionDef | None:
     """Parse a champion, or a PvE monster when ``is_creep``.
 
@@ -285,25 +291,30 @@ def _parse_champion(
         c.add(where, f"id must be a non-empty string, got {champ_id!r}")
         return None
 
-    c.require_keys(where, raw, _CHAMPION_KEYS - {"ability"}, _CHAMPION_KEYS)
+    allowed = _CHAMPION_KEYS | ({"summon_role"} if is_summon else set())
+    c.require_keys(where, raw, _CHAMPION_KEYS - {"ability"}, allowed)
 
     display_name = raw.get("display_name")
     if not isinstance(display_name, str) or not display_name:
         c.add(where, f"display_name must be a non-empty string, got {display_name!r}")
 
     cost = raw.get("cost")
-    if isinstance(cost, bool) or not isinstance(cost, int) or cost < 1:
-        c.add(where, f"cost must be a positive integer, got {cost!r}")
+    # A summon is never bought, so cost 0 is correct for it rather than a typo.
+    floor = 0 if is_summon else 1
+    if isinstance(cost, bool) or not isinstance(cost, int) or cost < floor:
+        c.add(where, f"cost must be an integer >= {floor}, got {cost!r}")
         cost = None
 
     traits = raw.get("traits")
     traits_ok = isinstance(traits, list) and all(
         isinstance(t, str) and t for t in traits
     )
-    if is_creep:
-        # A monster with traits would silently join trait counts in combat.
+    if is_creep or is_summon:
+        # A monster or summon with traits would silently join trait counts --
+        # Shepherd's own summons would raise the Shepherd breakpoint.
         if not traits_ok or traits:
-            c.add(where, f"a creep must declare an empty trait list, got {traits!r}")
+            kind = "creep" if is_creep else "summon"
+            c.add(where, f"a {kind} must declare an empty trait list, got {traits!r}")
     elif not traits_ok or not traits:
         c.add(where, f"traits must be a non-empty list of trait ids, got {traits!r}")
         traits = None
@@ -316,7 +327,9 @@ def _parse_champion(
         c.add(where, f"role must be one of {sorted(ROLES)}, got {role!r}")
         role = None
 
-    stats = _parse_stats(where, raw.get("stats"), c, role, role_mana, is_creep=is_creep)
+    stats = _parse_stats(
+        where, raw.get("stats"), c, role, role_mana, is_creep=is_creep or is_summon
+    )
     ability = _parse_ability(where, raw.get("ability"), c)
 
     if None in (cost, traits, role, stats) or not isinstance(display_name, str):
@@ -329,6 +342,7 @@ def _parse_champion(
         role=role,
         stats=stats,
         ability=ability,
+        summon_role=raw.get("summon_role") if is_summon else None,
     )
 
 
@@ -740,6 +754,31 @@ def _load_creeps(data_dir: Path, config: GameConfig, c: _Collector):
     return creeps, tuple(sorted(waves, key=lambda w: (w.stage, w.round)))
 
 
+def _load_summons(data_dir: Path, config: GameConfig, c: _Collector):
+    """Load ``summons.json``. Absent means summoning traits simply summon nothing."""
+    path = data_dir / "summons.json"
+    if not path.exists():
+        log.info(
+            "no summons.json in %s -- traits and abilities that summon units "
+            "will find none and no-op", data_dir,
+        )
+        return {}
+
+    raw = _read_json(path)
+    if not isinstance(raw, list):
+        c.add("summons.json", f"top level must be a list, got {type(raw).__name__}")
+        return {}
+
+    parsed = [
+        _parse_champion(
+            entry, i, c, config.role_mana_per_attack,
+            source="summons.json", is_summon=True,
+        )
+        for i, entry in enumerate(raw)
+    ]
+    return _index_by_id([s for s in parsed if s], "summons.json", c)
+
+
 def _parse_realm_schedule(raw: Any, c: _Collector, cost_tiers: set[int]) -> RealmSchedule:
     """Parse ``config.realm``. Absent or empty disables the draft."""
     where = "config.json[realm]"
@@ -894,7 +933,6 @@ def _parse_config(raw: Any, c: _Collector) -> GameConfig | None:
     pool_sizes = int_map("pool_sizes", "copy count")
     xp_to_next = int_map("xp_to_next_level", "xp")
     stage_damage = int_map("stage_base_damage", "damage")
-    star_mult = int_map("star_damage_multiplier", "multiplier")
 
     if shop_odds and pool_sizes:
         tiers = len(pool_sizes)
@@ -959,6 +997,8 @@ def _parse_config(raw: Any, c: _Collector) -> GameConfig | None:
         "max_items_per_unit": scalar("max_items_per_unit", 1),
         "starting_gold": scalar("starting_gold", 0),
         "starting_hp": scalar("starting_hp", 1),
+        "damage_per_surviving_unit": scalar("damage_per_surviving_unit", 0),
+        "minimum_round_damage": scalar("minimum_round_damage", 0),
     }
 
     combat = _parse_combat_config(raw.get("combat"), c)
@@ -983,7 +1023,6 @@ def _parse_config(raw: Any, c: _Collector) -> GameConfig | None:
         or pool_sizes is None
         or xp_to_next is None
         or stage_damage is None
-        or star_mult is None
         or combat is None
         or round_structure is None
         or weighting is None
@@ -1013,7 +1052,6 @@ def _parse_config(raw: Any, c: _Collector) -> GameConfig | None:
         role_mana_per_attack=MappingProxyType(role_mana),
         income_ramp=MappingProxyType(income_ramp),
         stage_base_damage=MappingProxyType(stage_damage),
-        star_damage_multiplier=MappingProxyType(star_mult),
         unverified=tuple(unverified),
         **scalars,
     )
@@ -1032,6 +1070,10 @@ _COMBAT_NON_NEGATIVE_KEYS = (
     "sudden_death_damage_pct_per_second",
     "damage_mana_pre_mitigation_pct",
     "damage_mana_post_mitigation_pct",
+    "mana_lock_seconds",
+    "overtime_attack_speed_pct",
+    "overtime_damage_amp",
+    "overtime_healing_reduction",
 )
 
 
@@ -1301,6 +1343,7 @@ def load_all(data_dir: Path | str = DEFAULT_DATA_DIR) -> GameData:
     items = _index_by_id([it for it in parsed_items if it], "items.json", c)
     augments = _load_augments(data_dir, config, c)
     creeps, creep_waves = _load_creeps(data_dir, config, c)
+    summons = _load_summons(data_dir, config, c)
 
     _cross_validate(champions, traits, items, config, c)
 
@@ -1338,6 +1381,7 @@ def load_all(data_dir: Path | str = DEFAULT_DATA_DIR) -> GameData:
         augments=MappingProxyType(augments),
         creeps=MappingProxyType(creeps),
         creep_waves=creep_waves,
+        summons=MappingProxyType(summons),
     )
 
 

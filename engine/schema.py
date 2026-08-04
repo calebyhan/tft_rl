@@ -62,6 +62,7 @@ ITEM_STAT_KEYS: frozenset[str] = frozenset(
         "crit_chance",
         "crit_damage",
         "mana",
+        "mana_regen",
         "attack_range",
         "damage_amp",
         "durability",
@@ -147,6 +148,9 @@ class ChampionDef:
     role: str
     stats: ChampionStats
     ability: AbilityDef | None = None
+    # Set only on entries from ``summons.json``: which trait or ability creates
+    # this unit ("shepherd", "dark_star"). ``None`` for every shop champion.
+    summon_role: str | None = None
 
 
 @dataclass(frozen=True)
@@ -410,6 +414,20 @@ class CombatConfig:
     # (doc 99 entry 9.2).
     role_mana_per_second: Mapping[str, float] = field(default_factory=dict)
     role_omnivamp: Mapping[str, float] = field(default_factory=dict)
+    # After casting, a unit cannot gain mana for this long. Real TFT locks
+    # every champion for 1s; without it tanks convert damage taken into mana
+    # straight through the cast and Casters keep regenerating, which
+    # over-generates mana for exactly the units that already cast most
+    # (doc 99 entry 36.7).
+    mana_lock_seconds: float = 0.0
+    # Overtime is an *acceleration*, not a burn: attack speed and ability
+    # damage are amplified and healing is cut, with damage still going through
+    # resists. The old ramp bypassed mitigation entirely, so armour, MR,
+    # durability, shields and healing were worth nothing for the deciding
+    # seconds of a quarter of all fights (doc 99 entry 36.8).
+    overtime_attack_speed_pct: float = 0.0
+    overtime_damage_amp: float = 0.0
+    overtime_healing_reduction: float = 0.0
 
     @property
     def seconds_per_hex(self) -> float:
@@ -482,7 +500,10 @@ class GameConfig:
     starting_hp: int
     role_mana_per_attack: Mapping[str, float]
     stage_base_damage: Mapping[int, int]
-    star_damage_multiplier: Mapping[int, int]
+    # One damage per surviving enemy unit, regardless of its cost or star
+    # level -- the rule the LoL wiki states (doc 99 entry 36.4).
+    damage_per_surviving_unit: int
+    minimum_round_damage: int
     combat: CombatConfig
     round_structure: RoundStructure
     augments: AugmentSchedule = field(default_factory=AugmentSchedule)
@@ -522,6 +543,18 @@ class GameData:
     # become purchasable.
     creeps: Mapping[str, ChampionDef] = field(default_factory=dict)
     creep_waves: tuple[CreepWave, ...] = ()
+    # Units created during combat by a trait or ability (Shepherd's Bia &
+    # Bayin, Dark Star's black holes). Kept out of ``champions`` for the same
+    # reason as creeps: that mapping builds the shop and the shared pool, and a
+    # summon in it would be purchasable and would leak pool copies.
+    summons: Mapping[str, ChampionDef] = field(default_factory=dict)
+
+    def summon_for(self, role: str) -> ChampionDef | None:
+        """The summon unit registered for a ``summon_role``, if the set has one."""
+        for champion in self.summons.values():
+            if getattr(champion, "summon_role", None) == role:
+                return champion
+        return None
 
     def wave_for(self, stage: int, round_: int) -> CreepWave | None:
         """The wave fought at this round.

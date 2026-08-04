@@ -229,9 +229,22 @@ def test_item_effects_split_into_stats_and_leftovers_with_correct_units():
 
 def test_unmapped_effect_keys_never_become_stats():
     """Guessing an unknown key's units would silently corrupt derived stats."""
-    stats, leftovers = _split_item_effects({"ManaRegen": 1.0, "{fe9818ef}": 5.0})
+    stats, leftovers = _split_item_effects({"BurnDuration": 10.0, "{fe9818ef}": 5.0})
     assert stats == {}
-    assert set(leftovers) == {"ManaRegen", "{fe9818ef}"}
+    assert set(leftovers) == {"BurnDuration", "{fe9818ef}"}
+
+
+def test_hashed_alias_maps_to_its_stat():
+    """Deathblade publishes its whole Damage Amp under a hashed key."""
+    stats, leftovers = _split_item_effects({"AD": 0.55, "{1543aa48}": 0.1})
+    assert stats["damage_amp"] == pytest.approx(0.1)
+    assert "{1543aa48}" not in leftovers
+
+
+def test_hashed_alias_does_not_double_count_its_readable_twin():
+    """Giant Slayer ships both names at 0.15; summing them would give 30%."""
+    stats, _ = _split_item_effects({"DamageAmp": 0.15, "{1543aa48}": 0.15})
+    assert stats["damage_amp"] == pytest.approx(0.15)
 
 
 # --------------------------------------------------------------------------

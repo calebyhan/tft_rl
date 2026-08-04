@@ -235,10 +235,10 @@ def test_sell_value_rejects_nonsense():
 # --- round damage (doc 01 sec 7) ----------------------------------------
 
 
-def test_round_damage_is_stage_base_plus_scaled_survivors(config):
-    """Stage 3 base 5, plus a 2-star 4-cost (8) and a 1-star 1-cost (1)."""
+def test_round_damage_is_stage_base_plus_one_per_survivor(config):
+    """Stage 3 base 5, plus 1 for each of the two survivors."""
     damage = round_damage(config, RoundId(3, 2), [(4, 2), (1, 1)])
-    assert damage == 5 + 8 + 1
+    assert damage == 5 + 2
 
 
 def test_round_damage_grows_with_stage(config):
@@ -248,16 +248,30 @@ def test_round_damage_grows_with_stage(config):
     assert by_stage[0] < by_stage[-1]
 
 
-def test_star_level_multiplies_a_survivors_contribution(config):
-    one = round_damage(config, RoundId(2, 1), [(3, 1)])
-    three = round_damage(config, RoundId(2, 1), [(3, 3)])
+def test_cost_and_star_level_do_not_change_a_survivors_contribution(config):
+    """A 3-star 5-cost costs the loser exactly what a 1-star 1-cost does.
+
+    The engine used to charge `cost x star`, following doc 01 sec 7, which is
+    wrong: the LoL wiki states "1 damage per surviving enemy champion". The old
+    rule inflated damage roughly fourfold and cut games short by ~7 rounds
+    (doc 99 entry 36.4).
+    """
     base = round_damage(config, RoundId(2, 1), [])
-    assert one - base == 3
-    assert three - base == 9
+    cheap = round_damage(config, RoundId(2, 1), [(1, 1)])
+    expensive = round_damage(config, RoundId(2, 1), [(5, 3)])
+    assert cheap - base == 1
+    assert expensive == cheap
+
+
+def test_round_damage_never_falls_below_the_minimum(config):
+    """The wiki gives a floor of 1, which stage 1 with no survivors would miss."""
+    assert round_damage(config, RoundId(1, 1), []) >= config.minimum_round_damage
 
 
 def test_no_survivors_means_only_the_stage_base(config):
-    assert round_damage(config, RoundId(4, 1), []) == config.stage_base_damage[4]
+    assert round_damage(config, RoundId(4, 1), []) == max(
+        config.stage_base_damage[4], config.minimum_round_damage
+    )
 
 
 def test_very_late_stages_clamp_to_the_last_configured_row(config):

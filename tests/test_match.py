@@ -270,9 +270,19 @@ def test_earlier_elimination_means_a_worse_placement(data, registry):
     result = match.run()
     ordered = sorted(elimination_round, key=lambda pid: elimination_round[pid])
     placements = [result.placement_of(pid) for pid in ordered]
-    # Players knocked out in the same round share adjacent placements, so only
-    # require the sequence to be non-decreasing overall.
-    assert placements == sorted(placements) or len(set(elimination_round.values())) < len(ordered)
+    # Placement 1 is best, so the *earliest* elimination takes the *highest*
+    # number: ordering by elimination round ascending must give placements
+    # descending.
+    #
+    # This asserted ascending order until 2026-08-03, which is backwards. It
+    # only ever passed because its own escape hatch fired -- players eliminated
+    # in the same round made `len(set(rounds)) < len(ordered)` true. Correcting
+    # the round-damage rule lengthened games enough to break the ties and
+    # expose it (doc 99 entry 36.5).
+    assert placements == sorted(placements, reverse=True), (
+        f"elimination rounds {[elimination_round[p] for p in ordered]} "
+        f"gave placements {placements}"
+    )
 
 
 # --- termination and invariants -----------------------------------------

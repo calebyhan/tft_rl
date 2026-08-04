@@ -187,16 +187,21 @@ def sell_value(champion_cost: int, star_level: int) -> int:
 def round_damage(
     config: GameConfig, round_id: RoundId, survivors: list[tuple[int, int]]
 ) -> int:
-    """Damage the loser takes: a stage base plus a per-survivor component.
+    """Damage the loser takes: a stage base plus **one per surviving unit**.
 
-    ``survivors`` is ``(champion_cost, star_level)`` for each surviving enemy
-    unit; each contributes its cost scaled by star level (doc 01 sec 7).
+    ``survivors`` is ``(champion_cost, star_level)`` per surviving enemy unit.
+    Neither field affects the damage: a 3-star 5-cost costs the loser exactly
+    as much as a 1-star 1-cost. They are still taken as the argument shape so
+    callers do not change, and because it makes the rule explicit at a glance.
+
+    This was previously ``cost x star_multiplier``, following doc 01 sec 7,
+    which is simply wrong -- the LoL wiki states "base damage for the stage
+    plus 1 damage per surviving enemy champion". The old rule inflated damage
+    roughly fourfold and truncated games by ~7 rounds, cutting off the entire
+    phase in which composition pays off (doc 99 entry 36.4).
     """
     stages = sorted(config.stage_base_damage)
     capped_stage = min(round_id.stage, stages[-1]) if stages else 0
     base = config.stage_base_damage.get(capped_stage, 0)
-    per_unit = sum(
-        cost * config.star_damage_multiplier.get(star, star)
-        for cost, star in survivors
-    )
-    return base + per_unit
+    per_unit = len(survivors) * config.damage_per_surviving_unit
+    return max(base + per_unit, config.minimum_round_damage)

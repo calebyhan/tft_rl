@@ -142,11 +142,6 @@
     "6": 15,
     "7": 20
   },
-  "star_damage_multiplier": {
-    "1": 1,
-    "2": 2,
-    "3": 3
-  },
   "round_structure": {
     "players": 8,
     "rounds_per_stage": 7,
@@ -175,7 +170,11 @@
     },
     "role_omnivamp": {
       "Fighter": 0.1
-    }
+    },
+    "mana_lock_seconds": 1.0,
+    "overtime_attack_speed_pct": 3.0,
+    "overtime_damage_amp": 2.0,
+    "overtime_healing_reduction": 0.66
   },
   "unverified": [
     "xp_to_next_level (doc 01 sec 9: exact per-patch XP table unconfirmed)",
@@ -185,5 +184,7 @@
     "combat.armor_mitigation_constant (doc 01 sec 9: exact curve coefficient unconfirmed)",
     "combat.sudden_death_* (doc 01 sec 3.1: stall-breaker shape approximated)",
     "round_structure.pve_rounds_per_stage (doc 01 sec 1: 'periodic PvE rounds' -- exact schedule not pinned)"
-  ]
+  ],
+  "damage_per_surviving_unit": 1,
+  "minimum_round_damage": 1
 }

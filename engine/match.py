@@ -318,6 +318,7 @@ class Match:
                     self.augment_offer.offer(tier, self.rng, exclude=player.augments)
                 )
             player.roll_shop(self.pool, self.rng)
+            player.reroll_thiefs_gloves(self.rng)
             self.policies[player.player_id].plan(player, context)
             self._resolve_augment_pick(player)
 

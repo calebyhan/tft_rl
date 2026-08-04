@@ -32,6 +32,10 @@ class StatusEffect:
     ``bonuses`` are folded into derived stats while active. ``stun``, ``root``
     and ``disarm`` gate action selection in the combat loop (doc 01 sec 3.1).
     ``remaining`` counts down in seconds; ``None`` means "until combat ends".
+
+    ``cc_immune`` and ``healing_reduction`` are the two non-stat modifiers that
+    more than one effect needs, so they live here rather than being re-derived
+    by string-matching ``source`` at each site (doc 99 entry 34.1).
     """
 
     source: str
@@ -40,6 +44,15 @@ class StatusEffect:
     stun: bool = False
     root: bool = False
     disarm: bool = False
+    cc_immune: bool = False
+    healing_reduction: float = 0.0
+    mana_gain_bonus: float = 0.0
+    # An untargetable unit is skipped by target selection but still occupies
+    # its hex and still takes area damage, matching TFT's behaviour for
+    # Edge of Night, Rogue's stealth and Party Animal's repair.
+    untargetable: bool = False
+    # "Precision": ability damage from this unit can critically strike.
+    precision: bool = False
 
     @property
     def expired(self) -> bool:
@@ -96,10 +109,17 @@ class UnitInstance:
         self.current_mana: float = 0.0
         self.attack_timer: float = 0.0
         self.cast_timer: float = 0.0
+        # Simulation time until which this unit cannot gain mana (set on cast).
+        self.mana_locked_until: float = 0.0
         self.target_uid: int | None = None
         self.status_effects: list[StatusEffect] = []
         self.shields: list[Shield] = []
         self.alive: bool = True
+        self.counters: dict[str, int] = {}
+        self.marks: dict[str, dict[int, int]] = {}
+        # Set on units created mid-combat (Zed's clone, Shepherd's summons) so
+        # the match knows not to return them to the champion pool.
+        self.is_summon: bool = False
 
         self._version = 0
         self._cached_stats: DerivedStats | None = None
@@ -203,12 +223,20 @@ class UnitInstance:
             self.team = team
         self.status_effects.clear()
         self.shields.clear()
+        # Per-combat firing guards (Sterak's threshold, the interval items'
+        # time buckets). Units persist across rounds, so leaving this set
+        # populated made every once-per-combat and every interval item work in
+        # the first fight of a game and never again (doc 99 entry 34.8).
+        self._effect_once = set()
+        self.counters = {}
+        self.marks = {}
         self._invalidate()
         stats = self.derived_stats()
         self.current_hp = stats.max_health
         self.current_mana = stats.starting_mana
         self.attack_timer = 0.0
         self.cast_timer = 0.0
+        self.mana_locked_until = 0.0
         self.target_uid = None
         self.alive = True
 
@@ -232,6 +260,72 @@ class UnitInstance:
     @property
     def is_disarmed(self) -> bool:
         return any(e.disarm or e.stun for e in self.status_effects)
+
+    @property
+    def is_cc_immune(self) -> bool:
+        """True while any status grants crowd-control immunity (Quicksilver)."""
+        return any(e.cc_immune for e in self.status_effects)
+
+    @property
+    def is_untargetable(self) -> bool:
+        return any(e.untargetable for e in self.status_effects)
+
+    @property
+    def has_precision(self) -> bool:
+        """Whether this unit's *abilities* can critically strike.
+
+        Without it `crit_chance` and `crit_damage` are dead stats on every AP
+        carry, and Infinity Edge and Jeweled Gauntlet are pure stat sticks
+        (doc 99 entry 36.2).
+        """
+        return any(e.precision for e in self.status_effects)
+
+    # -- per-combat counters ----------------------------------------------
+    #
+    # "Every third cast", "every N attacks" and stacking marks are the three
+    # bookkeeping shapes that recur across the champion abilities. Keeping them
+    # on the unit means each ability reads a counter rather than inventing its
+    # own storage, and `reset_for_combat` clears them all in one place.
+
+    def bump_counter(self, key: str, amount: int = 1) -> int:
+        """Increment a per-combat counter and return its new value."""
+        self.counters[key] = self.counters.get(key, 0) + amount
+        return self.counters[key]
+
+    def counter(self, key: str) -> int:
+        return self.counters.get(key, 0)
+
+    def add_mark(self, key: str, source_uid: int, amount: int = 1) -> int:
+        """Add stacks of a mark placed *by* ``source_uid``, returning the total.
+
+        Marks are keyed by their placer so two Kindreds do not share a stack
+        count on the same victim.
+        """
+        marks = self.marks.setdefault(key, {})
+        marks[source_uid] = marks.get(source_uid, 0) + amount
+        return marks[source_uid]
+
+    def mark_count(self, key: str, source_uid: int) -> int:
+        return self.marks.get(key, {}).get(source_uid, 0)
+
+    def clear_marks(self, key: str, source_uid: int) -> None:
+        self.marks.get(key, {}).pop(source_uid, None)
+
+    @property
+    def mana_gain_bonus(self) -> float:
+        """Extra mana from all sources, as a fraction (Adaptive Helm)."""
+        return sum(e.mana_gain_bonus for e in self.status_effects)
+
+    @property
+    def healing_reduction(self) -> float:
+        """Strongest active grievous-wounds effect, as a 0..1 fraction.
+
+        TFT does not stack healing reduction additively -- two sources of
+        Grievous Wounds do not add to 66%. The strongest applies.
+        """
+        return min(
+            max((e.healing_reduction for e in self.status_effects), default=0.0), 1.0
+        )
 
     def add_status(self, effect: StatusEffect) -> None:
         self.status_effects.append(effect)

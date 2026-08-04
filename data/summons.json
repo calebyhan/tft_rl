@@ -1,0 +1,58 @@
+[
+  {
+    "id": "TFT17_Summon",
+    "display_name": "Bia & Bayin",
+    "cost": 0,
+    "traits": [],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        320.0,
+        576.0,
+        1036.8
+      ],
+      "armor": 0.0,
+      "magic_resist": 0.0,
+      "attack_damage": [
+        20.0,
+        30.0,
+        45.0
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Screech",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_TFT17_Summon",
+      "params": {
+        "AADamage": [
+          50.0,
+          80.0,
+          140.0
+        ],
+        "Shield": [
+          100.0,
+          275.0,
+          460.0
+        ],
+        "ShieldDuration": 4.0,
+        "BonusAP": 15.0,
+        "TailSweepDamage": [
+          200.0,
+          230.0,
+          275.0
+        ],
+        "UltimateDamage": 220.0,
+        "UltimateHeal": 0.15
+      }
+    },
+    "summon_role": "shepherd"
+  }
+]

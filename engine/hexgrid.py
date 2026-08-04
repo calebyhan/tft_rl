@@ -132,6 +132,51 @@ def line(a: Hex, b: Hex) -> list[Hex]:
     return results
 
 
+def cone(origin: Hex, toward: Hex, length: int, half_angle: int = 1) -> list[Hex]:
+    """Hexes in a wedge from ``origin`` in the direction of ``toward``.
+
+    Cone-shaped abilities (Graves, Gwen, Ornn, Riven, Urgot) are common enough
+    to belong here rather than being re-derived per champion. The wedge widens
+    with distance: a hex at range ``d`` is included when its offset from the
+    cone's centre line is within ``half_angle * d / length`` hexes, which gives
+    the familiar triangular fan rather than a rectangle.
+
+    ``origin`` itself is excluded -- a cone starts in front of the caster.
+    """
+    if length <= 0:
+        return []
+    if origin == toward:
+        return []
+    centre = line(origin, _extend(origin, toward, length))
+    out: list[Hex] = []
+    seen: set[Hex] = set()
+    for hex_ in spread(origin, length):
+        if hex_ == origin or hex_ in seen:
+            continue
+        d = distance(origin, hex_)
+        if d == 0 or d > length:
+            continue
+        # Width allowed at this distance, always at least the centre line.
+        width = max(0, int(half_angle * d / max(length, 1)))
+        spine = centre[min(d, len(centre) - 1)]
+        if distance(hex_, spine) <= width:
+            out.append(hex_)
+            seen.add(hex_)
+    return sorted(out, key=lambda h: (distance(origin, h), h.q, h.r))
+
+
+def _extend(origin: Hex, toward: Hex, length: int) -> Hex:
+    """The point ``length`` hexes from ``origin`` along the origin->toward ray."""
+    d = distance(origin, toward)
+    if d == 0:
+        return toward
+    scale = length / d
+    return _cube_round(
+        origin.q + (toward.q - origin.q) * scale + 1e-6,
+        origin.r + (toward.r - origin.r) * scale + 2e-6,
+    )
+
+
 def offset_to_axial(row: int, col: int) -> Hex:
     """Convert an ``odd-r`` offset ``(row, col)`` to axial coordinates."""
     return Hex(col - ((row - (row & 1)) // 2), row)

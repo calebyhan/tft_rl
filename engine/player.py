@@ -19,13 +19,20 @@ from dataclasses import dataclass, field
 from typing import Iterator, Sequence
 
 from engine import augments as augment_hooks
-from engine import economy
+from engine import economy, trait_effects
 from engine.economy import RoundId, StreakType
 from engine.hexgrid import Board, Hex, axial_to_offset
 from engine.items import ItemError, ItemRegistry
 from engine.schema import AugmentDef, GameData, ItemDef, RealmOffering
 from engine.shop import SharedPool, Shop
 from engine.unit import UnitInstance
+
+# Riot's own variable name on the three Tactician items. Read as data rather
+# than matched by item id, so a fourth such item needs no code change.
+MAX_ARMY_SIZE_PARAM = "MaxArmySizeIncrease"
+
+# The one item that grants other items; it occupies all three slots.
+THIEFS_GLOVES_ID = "TFT_Item_ThiefsGloves"
 
 MAX_STAR_LEVEL = 3
 COPIES_TO_UPGRADE = 3
@@ -62,6 +69,12 @@ class PlayerState:
     # comes, and what it took. The *match* owns the shared line-up; this is the
     # seat's view of it, and ``taken_offering`` is how the match learns what
     # was removed without needing a callback into it.
+    # Running state for between-rounds traits (Anima's Tech, Oracle's round
+    # counter, Factory New's armoury cadence). Keyed by trait, kept as floats
+    # so a partial accumulation survives a round.
+    trait_progress: dict[str, float] = field(default_factory=dict)
+    # Rerolls owed by a trait, spent before gold is (Timebreaker).
+    free_rerolls: int = 0
     realm_offer: tuple[RealmOffering, ...] = ()
     taken_offering: RealmOffering | None = None
     shop: Shop = field(init=False)
@@ -91,10 +104,26 @@ class PlayerState:
 
     @property
     def max_board_units(self) -> int:
-        """Units fieldable at the current level (doc 01 sec 4), plus augments."""
-        return self.config.board_size_for_level(
-            self.level
-        ) + augment_hooks.extra_board_slots(self.augments)
+        """Units fieldable at the current level (doc 01 sec 4), plus bonuses.
+
+        Three Tactician items ("Your team gains +N max team size") grant a slot
+        each. They are the only items whose effect is player-scoped rather than
+        combat-scoped, so they resolve here rather than in the effect registry.
+        """
+        return (
+            self.config.board_size_for_level(self.level)
+            + augment_hooks.extra_board_slots(self.augments)
+            + self.extra_board_slots_from_items
+        )
+
+    @property
+    def extra_board_slots_from_items(self) -> int:
+        """Extra team size granted by equipped and bagged Tactician items."""
+        held = [item for unit in self.all_units for item in unit.items]
+        return sum(
+            int(item.params.get(MAX_ARMY_SIZE_PARAM, 0))
+            for item in held + list(self.item_bag)
+        )
 
     @property
     def board_units(self) -> list[UnitInstance]:
@@ -562,7 +591,46 @@ class PlayerState:
         # Per-round augment payouts sit outside the income breakdown so the
         # economy tables stay a faithful record of doc 01 sec 4's rules.
         augment_hooks.apply_on_round_end(self)
+        trait_effects.apply_round_end(self)
         return breakdown
+
+    def reroll_thiefs_gloves(self, rng: random.Random) -> None:
+        """Re-roll the two random items every Thief's Gloves grants each round.
+
+        Riot's description is "Each round: Equip 2 random items", and the
+        gloves consume all three of the unit's slots. Resolved here rather than
+        in the effect registry because the items must be on the unit *before*
+        combat starts, so that item and trait combat-start hooks see them
+        (doc 99 entry 36.3).
+        """
+        completed = sorted(
+            (
+                i
+                for i in self.data.items.values()
+                if not i.is_component
+                and i.category == "advanced"
+                # Tactician items grant a board slot. Rolling one in would
+                # widen the board for a round and then strip the slot when the
+                # gloves re-roll, stranding a fielded unit above the cap -- the
+                # smoke test's board-size invariant catches exactly this.
+                # Real TFT's gloves grant combat items, not these.
+                and not i.params.get(MAX_ARMY_SIZE_PARAM)
+            ),
+            key=lambda i: i.id,
+        )
+        if not completed:
+            return
+        for unit in self.all_units:
+            if not any(i.id == THIEFS_GLOVES_ID for i in unit.items):
+                continue
+            gloves = next(i for i in unit.items if i.id == THIEFS_GLOVES_ID)
+            for held in list(unit.items):
+                if held.id != THIEFS_GLOVES_ID:
+                    unit.unequip(held.id)
+            # Rebuild the loadout directly: the granted pair routinely breaks
+            # the slot cap and the unique rule, which `equip` rightly forbids.
+            unit._items = [gloves, rng.choice(completed), rng.choice(completed)]
+            unit._invalidate()
 
     def record_result(self, won: bool) -> None:
         """Update the win/loss streak after a PvP round."""

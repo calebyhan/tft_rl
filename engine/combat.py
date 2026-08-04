@@ -33,11 +33,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Iterable, Mapping, Sequence
 
-from engine import effects
-from engine.effects import EffectTrigger
-from engine.hexgrid import Board, Hex, distance
+# `abilities` and `trait_effects` are imported for their registration side
+# effects: both populate the effect registries at import time, and combat is
+# the module that dispatches them.
+from engine import abilities as _abilities  # noqa: F401
+from engine import effects, trait_effects
+from engine.effects import EffectTrigger, _once
+from engine.hexgrid import Board, Hex, distance, spread
 from engine.schema import CombatConfig, GameData
-from engine.traits import TraitState
+from engine.traits import TraitState, unit_traits
 from engine.unit import Shield, StatusEffect, UnitInstance
 
 log = logging.getLogger(__name__)
@@ -65,6 +69,7 @@ class EventKind(str, Enum):
     STATUS = "status"
     DEATH = "death"
     SUDDEN_DEATH = "sudden_death"
+    SUMMON = "summon"
     COMBAT_END = "combat_end"
 
 
@@ -213,6 +218,25 @@ class Projectile:
     is_crit: bool
 
 
+@dataclass
+class Burn:
+    """A damage-over-time applied to one unit (Morellonomicon, Sunfire Cape).
+
+    Burn damage in TFT is a share of the *target's* maximum health per second,
+    dealt as true damage on a fixed tick rate rather than continuously. Only
+    the strongest burn on a unit applies, which is why :meth:`apply_burn`
+    replaces rather than appends.
+    """
+
+    source_uid: int | None
+    target_uid: int
+    remaining: float
+    pct_max_hp_per_tick: float
+    tick_interval: float
+    until_next_tick: float
+    source_label: str = ""
+
+
 # --- effect plumbing -----------------------------------------------------
 
 
@@ -227,6 +251,7 @@ class EffectContext:
     star_level: int = 1
     amount: float = 0.0
     damage_type: DamageType | None = None
+    is_crit: bool = False
 
     def param(self, key: str, default: object = None) -> object:
         """Read a param, indexing per-star lists by the caster's star level."""
@@ -272,6 +297,7 @@ class CombatSimulator:
         self.units: list[UnitInstance] = [*self.teams[0], *self.teams[1]]
         self.by_uid: dict[int, UnitInstance] = {u.uid: u for u in self.units}
         self.projectiles: list[Projectile] = []
+        self.burns: dict[int, Burn] = {}
 
         self.t = 0.0
         self.tick_index = 0
@@ -322,14 +348,30 @@ class CombatSimulator:
                 traits={tid: bp.count for tid, bp in sorted(state.active.items())},
             )
         self._fire_trigger_all(EffectTrigger.ON_COMBAT_START)
+        # Traits resolve after items so that percentage-of-max-health grants
+        # (Brawler) see the health items have already added.
+        for team_index in (0, 1):
+            self._fire_trait_triggers(team_index, EffectTrigger.ON_COMBAT_START)
 
     # -- queries ----------------------------------------------------------
 
     def living(self, team: int) -> list[UnitInstance]:
         return [u for u in self.teams[team] if u.alive]
 
+    def targetable(self, team: int) -> list[UnitInstance]:
+        """Living units that can currently be picked as a target.
+
+        Untargetable units (Edge of Night, Rogue's stealth, Party Animal) are
+        skipped by target selection but still occupy their hex and still take
+        area damage, which is how TFT treats them.
+        """
+        return [u for u in self.teams[team] if u.alive and not u.is_untargetable]
+
     def enemies_of(self, unit: UnitInstance) -> list[UnitInstance]:
         return self.living(1 - unit.team)
+
+    def targetable_enemies_of(self, unit: UnitInstance) -> list[UnitInstance]:
+        return self.targetable(1 - unit.team)
 
     def allies_of(self, unit: UnitInstance, include_self: bool = True) -> list[UnitInstance]:
         return [
@@ -386,8 +428,24 @@ class CombatSimulator:
                 regen = self.config.mana_per_second(unit.champion.role)
                 if regen > 0:
                     self.grant_mana(unit, regen * dt, reason="role_regen")
+                # Item-granted mana regen (Tear and everything built from it).
+                item_regen = unit.derived_stats().mana_regen
+                if item_regen > 0:
+                    self.grant_mana(unit, item_regen * dt, reason="item_regen")
 
         self._advance_projectiles(dt)
+        self._advance_burns(dt)
+
+        # Interval items (Archangel's Staff) need a per-tick dispatch; the
+        # implementation decides whether its interval has elapsed. Same
+        # reasoning as ON_HIT above -- a PERIODIC item was previously
+        # registered and unreachable (doc 99 entry 33.2).
+        for unit in sorted(self.units, key=lambda u: u.uid):
+            if unit.alive:
+                self._fire_item_triggers(unit, EffectTrigger.PERIODIC)
+                self._fire_ability_triggers(unit, EffectTrigger.PERIODIC)
+        for team_index in (0, 1):
+            self._fire_trait_triggers(team_index, EffectTrigger.PERIODIC)
 
         if self.t >= self.config.sudden_death_start_seconds:
             self._apply_sudden_death(dt)
@@ -436,13 +494,25 @@ class CombatSimulator:
         which taken literally makes chasing units flip targets constantly; the
         doc should be amended to match this behaviour.
         """
-        enemies = self.enemies_of(unit)
+        # The sticky check comes first because it is the overwhelmingly common
+        # case, and building the candidate list is not free: it scans the enemy
+        # team and evaluates `is_untargetable` on each, once per unit per tick.
+        # Profiled, this reordering alone is 19% of whole-game wall clock.
+        #
+        # It cannot change the answer. A `current` that is alive and targetable
+        # is by definition a member of `targetable_enemies_of(unit)`, so the
+        # `not enemies` early return below is unreachable in exactly the case
+        # this skips ahead of -- an empty list and a valid current target are
+        # not simultaneously possible.
+        current = self.by_uid.get(unit.target_uid) if unit.target_uid else None
+        # An untargetable target is dropped as if it had died, so attackers
+        # re-pick rather than standing still waiting for it to reappear.
+        if current is not None and current.alive and not current.is_untargetable:
+            return current
+
+        enemies = self.targetable_enemies_of(unit)
         if not enemies:
             return None
-
-        current = self.by_uid.get(unit.target_uid) if unit.target_uid else None
-        if current is not None and current.alive:
-            return current
 
         rule_name = getattr(unit, "targeting_rule", DEFAULT_TARGETING_RULE)
         rule = TARGETING_RULES.get(rule_name)
@@ -552,7 +622,12 @@ class CombatSimulator:
         self.deal_damage(unit, target, raw, damage_type, is_crit=is_crit, source_label="auto")
         # Doc 01 sec 3.2: mana is granted for an attack that *lands*.
         self.grant_mana(unit, unit.derived_stats().mana_per_attack, reason="attack")
-        self._fire_item_triggers(unit, EffectTrigger.ON_ATTACK, target=target)
+        self._fire_item_triggers(
+            unit, EffectTrigger.ON_ATTACK, target=target, is_crit=is_crit
+        )
+        self._fire_ability_triggers(
+            unit, EffectTrigger.ON_ATTACK, target=target, is_crit=is_crit
+        )
 
     def _advance_projectiles(self, dt: float) -> None:
         still_flying: list[Projectile] = []
@@ -631,17 +706,67 @@ class CombatSimulator:
             star_level=unit.star_level,
         )
         fn(ctx)
+        # Traits that react to a cast (Replicator's second casting) run after
+        # the ability has resolved, so they see its full effect.
+        self._fire_trait_triggers(
+            unit.team, EffectTrigger.ON_CAST, unit=unit, target=target
+        )
         return True
 
     def _consume_cast_resource(self, unit: UnitInstance) -> None:
         ability = unit.champion.ability
         assert ability is not None
+        max_mana = unit.derived_stats().max_mana
+        unit.mana_locked_until = self.t + self.config.mana_lock_seconds
         if ability.cast_mode == "cooldown":
             unit.cast_timer = ability.cooldown_seconds or 0.0
-            return
-        # Doc 01 sec 3.2: overflow above max mana carries into the next bar.
-        max_mana = unit.derived_stats().max_mana
-        unit.current_mana = max(0.0, unit.current_mana - max_mana)
+        else:
+            # Doc 01 sec 3.2: overflow above max mana carries into the next bar.
+            unit.current_mana = max(0.0, unit.current_mana - max_mana)
+        # Ionic Spark punishes the cast itself, scaled by the mana it cost, so
+        # a cooldown-caster still counts for its notional bar.
+        for enemy in self.enemies_of(unit):
+            self._fire_item_triggers(
+                enemy, EffectTrigger.ON_ENEMY_CAST, target=unit, amount=max_mana
+            )
+
+    def _fire_ability_triggers(
+        self,
+        unit: UnitInstance,
+        trigger: EffectTrigger,
+        target: UnitInstance | None = None,
+        amount: float = 0.0,
+        is_crit: bool = False,
+    ) -> list[float]:
+        """Run a champion's *ability* hooks for a non-cast trigger.
+
+        Most of the 29 champions the fetch script declined to canonicalise have
+        a passive as well as an active -- "Every third attack...", "Attacks
+        deal bonus magic damage". Those passives are registered on ON_ATTACK,
+        ON_HIT, ON_DAMAGED or PERIODIC against the same ``ability_<Name>``
+        effect_id as the active, which the multi-hook registry supports
+        directly (doc 99 entry 35.1).
+        """
+        ability = unit.champion.ability
+        if ability is None:
+            return []
+        hooks = effects.hooks_for(ability.effect_id, trigger)
+        out: list[float] = []
+        for fn in hooks:
+            result = fn(
+                EffectContext(
+                    sim=self,
+                    source=unit,
+                    target=target,
+                    params=ability.params,
+                    star_level=unit.star_level,
+                    amount=amount,
+                    is_crit=is_crit,
+                )
+            )
+            if isinstance(result, (int, float)) and not isinstance(result, bool):
+                out.append(float(result))
+        return out
 
     # -- mana -------------------------------------------------------------
 
@@ -649,6 +774,12 @@ class CombatSimulator:
         """Add mana, letting it overflow past the cap (doc 01 sec 3.2)."""
         if amount <= 0 or not unit.alive:
             return 0.0
+        # Real TFT locks a champion out of mana gain for 1s after it casts, so
+        # a tank does not convert the damage it takes mid-cast straight back
+        # into its next cast (doc 99 entry 36.7).
+        if unit.mana_locked_until > self.t:
+            return 0.0
+        amount *= 1.0 + unit.mana_gain_bonus
         unit.current_mana += amount
         self.log.add(
             self.t,
@@ -720,6 +851,21 @@ class CombatSimulator:
         if not target.alive or amount <= 0:
             return 0.0
 
+        # Precision (Infinity Edge, Jeweled Gauntlet, Fateweaver) lets ability
+        # damage critically strike. Auto-attacks roll their own crit in
+        # `_auto_attack` and arrive with `is_crit` already decided, so only
+        # non-attack damage is rolled here (doc 99 entry 36.2).
+        if (
+            source is not None
+            and not is_crit
+            and source_label not in ("auto", "")
+            and source.has_precision
+        ):
+            stats = source.derived_stats()
+            if stats.crit_chance > 0 and self.rng.random() < stats.crit_chance:
+                is_crit = True
+                amount *= stats.crit_damage
+
         pre_mitigation = amount
         mitigated = amount * self.mitigation_multiplier(target, damage_type)
 
@@ -727,6 +873,10 @@ class CombatSimulator:
         # armour/MR mitigation.
         if source is not None:
             mitigated *= 1.0 + source.derived_stats().damage_amp
+            # Conditional amps depend on who is being hit (Giant Slayer vs
+            # Tanks), so they cannot live in the attacker's stat block.
+            if trigger_effects:
+                mitigated *= self._damage_multiplier_from_items(source, target)
         mitigated *= 1.0 - target.derived_stats().durability
 
         absorbed = self._absorb_with_shields(target, mitigated, damage_type)
@@ -759,6 +909,28 @@ class CombatSimulator:
             self._fire_item_triggers(
                 target, EffectTrigger.ON_DAMAGED, target=source, amount=mitigated
             )
+            self._fire_ability_triggers(
+                target, EffectTrigger.ON_DAMAGED, target=source, amount=mitigated
+            )
+            # ON_HIT is the attacker's side of the same event -- shreds and
+            # on-hit riders (Last Whisper, Void Staff) live here. Without this
+            # dispatch an ON_HIT item is registered, warns about nothing, and
+            # silently never fires (doc 99 entry 33.2).
+            if source is not None and source.alive:
+                self._fire_item_triggers(
+                    source,
+                    EffectTrigger.ON_HIT,
+                    target=target,
+                    amount=mitigated,
+                    is_crit=is_crit,
+                )
+                self._fire_ability_triggers(
+                    source,
+                    EffectTrigger.ON_HIT,
+                    target=target,
+                    amount=mitigated,
+                    is_crit=is_crit,
+                )
 
         # Omnivamp: heal the attacker for a fraction of damage dealt. Sources
         # are the wearer's items plus their role's innate share (Fighters get
@@ -796,6 +968,11 @@ class CombatSimulator:
 
     def heal(self, target: UnitInstance, amount: float, source_label: str = "") -> float:
         if not target.alive or amount <= 0:
+            return 0.0
+        # Grievous Wounds (Morellonomicon, Sunfire Cape) cuts every heal the
+        # target receives, including omnivamp and its own ability's lifesteal.
+        amount *= 1.0 - target.healing_reduction
+        if amount <= 0:
             return 0.0
         max_health = target.derived_stats().max_health
         healed = min(amount, max_health - target.current_hp)
@@ -836,6 +1013,19 @@ class CombatSimulator:
     def apply_status(self, target: UnitInstance, effect: StatusEffect) -> None:
         if not target.alive:
             return
+        if target.is_cc_immune and (effect.stun or effect.root or effect.disarm):
+            # Quicksilver and its kin. The status is dropped rather than
+            # applied-and-ignored so that anything reading `is_stunned` sees
+            # the truth, and so a CC-immune unit's log shows the miss.
+            self.log.add(
+                self.t,
+                self.tick_index,
+                EventKind.STATUS,
+                target,
+                source=effect.source,
+                blocked_by="cc_immune",
+            )
+            return
         target.add_status(effect)
         self.log.add(
             self.t,
@@ -848,6 +1038,179 @@ class CombatSimulator:
             root=effect.root,
             disarm=effect.disarm,
         )
+
+    # -- summons, movement and luck ---------------------------------------
+
+    def summon(
+        self,
+        champion,
+        team: int,
+        near: Hex,
+        *,
+        star_level: int = 1,
+        health_scale: float = 1.0,
+        items=(),
+        source_label: str = "summon",
+    ) -> UnitInstance | None:
+        """Create a unit mid-combat on a free hex near ``near``.
+
+        Returns ``None`` when the board is full, which is a normal outcome and
+        not an error. Summons are flagged ``is_summon`` so the match never
+        returns them to the champion pool -- a leak the smoke test would catch
+        as a pool-conservation failure.
+        """
+        from engine.unit import UnitInstance
+
+        spot = self._free_hex_near(near)
+        if spot is None:
+            return None
+
+        unit = UnitInstance(champion, star_level, items=items, registry=None)
+        unit.team = team
+        unit.position = spot
+        unit.is_summon = True
+        unit.set_trait_bonuses(self.trait_states[team].bonuses_for(unit))
+        unit.reset_for_combat()
+        if health_scale != 1.0:
+            unit.current_hp *= health_scale
+
+        self.teams[team].append(unit)
+        self.units.append(unit)
+        self.by_uid[unit.uid] = unit
+        self._move_timers[unit.uid] = 0.0
+        self.log.register(unit)
+        self.log.add(
+            self.t, self.tick_index, EventKind.SUMMON, unit, via=source_label
+        )
+        return unit
+
+    def _free_hex_near(self, center: Hex) -> Hex | None:
+        """Nearest unoccupied board hex to ``center``, or ``None`` if full."""
+        taken = self.occupied
+        for radius in range(0, 4):
+            for hex_ in sorted(
+                spread(center, radius), key=lambda h: (distance(center, h), h.q, h.r)
+            ):
+                if hex_ in self.board and hex_ not in taken:
+                    return hex_
+        return None
+
+    def reposition(self, unit: UnitInstance, toward: Hex, max_hexes: int = 1) -> bool:
+        """Move a unit up to ``max_hexes`` toward a hex, ignoring movement speed.
+
+        Dashes and blinks (Pyke, Talon, Fizz, Gwen, Riven) are instantaneous
+        repositions rather than movement, so they bypass the move timer. A
+        rooted unit cannot be repositioned.
+        """
+        if unit.is_rooted or unit.position is None:
+            return False
+        taken = self.occupied
+        best = None
+        for hex_ in spread(unit.position, max_hexes):
+            if hex_ not in self.board or (hex_ in taken and hex_ != unit.position):
+                continue
+            if best is None or distance(hex_, toward) < distance(best, toward):
+                best = hex_
+        if best is None or best == unit.position:
+            return False
+        unit.position = best
+        self.log.add(self.t, self.tick_index, EventKind.MOVE, unit, to=str(best), via="dash")
+        return True
+
+    def lucky_roll(self, chance: float, lucky: bool) -> bool:
+        """A probability check that rolls twice and keeps the better if ``lucky``.
+
+        Fateweaver grants Lucky to its members and several abilities (Caitlyn's
+        Headshot, Twisted Fate's card) call for it explicitly. Routing every
+        such check through one method is what makes the trait expressible at
+        all -- otherwise "check twice" would have to be duplicated per ability.
+        """
+        first = self.rng.random() < chance
+        if not lucky:
+            return first
+        return first or (self.rng.random() < chance)
+
+    def lucky_value(self, low: float, high: float, lucky: bool) -> float:
+        """A uniform draw, taking the better of two when ``lucky``."""
+        first = self.rng.uniform(low, high)
+        if not lucky:
+            return first
+        return max(first, self.rng.uniform(low, high))
+
+    def has_trait(self, unit: UnitInstance, trait_id: str) -> bool:
+        return self.trait_states[unit.team].tier_of(trait_id) > 0
+
+    def apply_burn(
+        self,
+        source: UnitInstance | None,
+        target: UnitInstance,
+        pct_max_hp_per_second: float,
+        duration: float,
+        *,
+        ticks_per_second: float = 1.0,
+        source_label: str = "",
+    ) -> None:
+        """Apply or refresh a max-health burn (doc 99 entry 34.2).
+
+        Burns do not stack: a second application replaces the first only if it
+        is at least as strong, so a Sunfire carrier does not overwrite a
+        Morellonomicon's larger burn with its own.
+        """
+        if not target.alive or pct_max_hp_per_second <= 0 or duration <= 0:
+            return
+        interval = 1.0 / ticks_per_second if ticks_per_second > 0 else 1.0
+        per_tick = pct_max_hp_per_second * interval
+        existing = self.burns.get(target.uid)
+        if existing is not None and existing.pct_max_hp_per_tick > per_tick:
+            return
+        self.burns[target.uid] = Burn(
+            source_uid=source.uid if source else None,
+            target_uid=target.uid,
+            remaining=duration,
+            pct_max_hp_per_tick=per_tick,
+            tick_interval=interval,
+            until_next_tick=interval,
+            source_label=source_label,
+        )
+
+    def apply_grievous_wounds(
+        self, target: UnitInstance, fraction: float, duration: float, source_label: str = ""
+    ) -> None:
+        """Reduce every heal ``target`` receives, for a duration."""
+        if fraction <= 0 or duration <= 0:
+            return
+        self.apply_status(
+            target,
+            StatusEffect(
+                source_label or "grievous_wounds",
+                remaining=duration,
+                healing_reduction=fraction,
+            ),
+        )
+
+    def _advance_burns(self, dt: float) -> None:
+        """Tick every active burn, dealing true damage on its own cadence."""
+        for uid in sorted(self.burns):
+            burn = self.burns[uid]
+            target = self.by_uid.get(uid)
+            if target is None or not target.alive:
+                del self.burns[uid]
+                continue
+            burn.remaining -= dt
+            burn.until_next_tick -= dt
+            while burn.until_next_tick <= 0 and target.alive:
+                burn.until_next_tick += burn.tick_interval
+                damage = target.derived_stats().max_health * burn.pct_max_hp_per_tick
+                self.deal_damage(
+                    self.by_uid.get(burn.source_uid) if burn.source_uid else None,
+                    target,
+                    damage,
+                    DamageType.TRUE,
+                    source_label=burn.source_label or "burn",
+                    trigger_effects=False,
+                )
+            if burn.remaining <= 0:
+                del self.burns[uid]
 
     def apply_stun(self, target: UnitInstance, duration: float, source_label: str = "") -> None:
         self.apply_status(target, StatusEffect(source_label or "stun", duration, stun=True))
@@ -869,18 +1232,54 @@ class CombatSimulator:
             killed_by=self.log.name_of(killer.uid if killer else None),
         )
         self._fire_item_triggers(unit, EffectTrigger.ON_DEATH)
+        self._fire_ability_triggers(unit, EffectTrigger.ON_DEATH)
         # Anything still chasing the dead unit re-picks next tick.
         for other in self.units:
             if other.target_uid == unit.uid:
                 other.target_uid = None
 
-    def _apply_sudden_death(self, dt: float) -> None:
-        """Escalating burn that guarantees a stalled fight terminates.
+    def _apply_overtime_buffs(self) -> None:
+        """Grant the overtime acceleration once, to everything still standing."""
+        from engine.stats import StatBonuses
 
-        Doc 01 sec 3.1 calls for an analogous ramp rather than an abrupt stop.
-        This bypasses shields and mitigation so termination is unconditional.
+        speed = self.config.overtime_attack_speed_pct
+        amp = self.config.overtime_damage_amp
+        cut = self.config.overtime_healing_reduction
+        if not (speed or amp or cut):
+            return
+        for unit in sorted(self.units, key=lambda u: u.uid):
+            if not unit.alive or not _once(unit, "overtime"):
+                continue
+            unit.add_status(
+                StatusEffect(
+                    "overtime",
+                    remaining=None,
+                    bonuses=StatBonuses(
+                        {"attack_speed_pct": speed, "damage_amp": amp}
+                    ),
+                    healing_reduction=cut,
+                )
+            )
+
+    def _apply_sudden_death(self, dt: float) -> None:
+        """Overtime: amplify output rather than burn through mitigation.
+
+        Real TFT's overtime is an *acceleration* -- attack speed and ability
+        damage are amplified and healing is cut, with damage still resolving
+        through resists and shields. The previous implementation was a
+        percentage-of-max-health burn applied straight to ``current_hp``,
+        bypassing armour, MR, ``durability``, shields and healing entirely.
+        About a quarter of all fights were still live at 30s, so for the
+        deciding seconds of those the entire defensive half of the game was
+        worth nothing (doc 99 entry 36.8).
+
+        The burn is kept as a *floor* so termination stays unconditional: two
+        boards that cannot damage each other at all still resolve.
         """
+        self._apply_overtime_buffs()
+
         elapsed = self.t - self.config.sudden_death_start_seconds
+
         fraction = self.config.sudden_death_damage_pct_per_second * elapsed * dt
         if fraction <= 0:
             return
@@ -950,26 +1349,100 @@ class CombatSimulator:
         trigger: EffectTrigger,
         target: UnitInstance | None = None,
         amount: float = 0.0,
-    ) -> None:
-        """Run any equipped item's effect wired to ``trigger``."""
+        is_crit: bool = False,
+    ) -> list[float]:
+        """Run any equipped item's effect wired to ``trigger``.
+
+        Returns whatever the implementations returned, discarding ``None``.
+        Only :data:`EffectTrigger.DAMAGE_MODIFIER` uses the return value; every
+        other trigger's implementations return ``None`` and the list is empty.
+        """
+        out: list[float] = []
         for item in unit.items:
             if item.effect_id is None:
                 continue
-            if effects.EFFECT_TRIGGERS.get(item.effect_id) is not trigger:
+            hooks = effects.hooks_for(item.effect_id, trigger)
+            if not hooks:
+                # Ask the registry anyway, so a genuinely unimplemented item
+                # still warns exactly once instead of being skipped in silence.
+                effects.resolve(item.effect_id)
                 continue
-            fn = effects.resolve(item.effect_id)
-            if fn is None:
-                continue
-            fn(
-                EffectContext(
-                    sim=self,
-                    source=unit,
-                    target=target,
-                    params=item.effect_values,
-                    star_level=unit.star_level,
-                    amount=amount,
+            for fn in hooks:
+                result = fn(
+                    EffectContext(
+                        sim=self,
+                        source=unit,
+                        target=target,
+                        params=item.effect_values,
+                        star_level=unit.star_level,
+                        amount=amount,
+                        is_crit=is_crit,
+                    )
                 )
+                if isinstance(result, (int, float)) and not isinstance(result, bool):
+                    out.append(float(result))
+        return out
+
+    def _fire_trait_triggers(
+        self,
+        team: int,
+        trigger: EffectTrigger,
+        unit: UnitInstance | None = None,
+        target: UnitInstance | None = None,
+        amount: float = 0.0,
+    ) -> list[float]:
+        """Run every active trait's hook for ``trigger`` on one team.
+
+        When ``unit`` is given (the per-unit triggers), only traits that unit
+        actually carries are considered -- Sniper's distance amp belongs to the
+        Sniper doing the shooting, not to the whole board.
+        """
+        out: list[float] = []
+        state = self.trait_states[team]
+        living = self.living(team)
+        carried = unit_traits(unit) if unit is not None else None
+
+        for trait_id, breakpoint_ in sorted(state.active.items()):
+            if carried is not None and trait_id not in carried:
+                continue
+            hooks = trait_effects.trait_hooks_for(trait_id, trigger)
+            if not hooks:
+                if not trait_effects.is_trait_implemented(trait_id):
+                    trait_effects.note_missing_trait(trait_id)
+                continue
+            members = [u for u in living if trait_id in unit_traits(u)]
+            ctx = trait_effects.TraitContext(
+                sim=self,
+                team=team,
+                trait_id=trait_id,
+                tier=breakpoint_.count,
+                params=breakpoint_.params,
+                members=members,
+                allies=living,
+                unit=unit,
+                target=target,
+                amount=amount,
             )
+            for fn in hooks:
+                result = fn(ctx)
+                if isinstance(result, (int, float)) and not isinstance(result, bool):
+                    out.append(float(result))
+        return out
+
+    def _damage_multiplier_from_items(
+        self, source: UnitInstance, target: UnitInstance
+    ) -> float:
+        """Product of the attacker's conditional damage amps against ``target``."""
+        multiplier = 1.0
+        for value in self._fire_item_triggers(
+            source, EffectTrigger.DAMAGE_MODIFIER, target=target
+        ):
+            multiplier *= value
+        for value in self._fire_trait_triggers(
+            source.team, EffectTrigger.DAMAGE_MODIFIER, unit=source, target=target
+        ):
+            multiplier *= value
+        return multiplier
 
     def _fire_trigger_all(self, trigger: EffectTrigger) -> None:
         for unit in sorted(self.units, key=lambda u: u.uid):

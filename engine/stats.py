@@ -106,6 +106,7 @@ class DerivedStats:
     max_mana: float
     starting_mana: float
     mana_per_attack: float
+    mana_regen: float
     crit_chance: float
     crit_damage: float
     ability_power: float
@@ -153,6 +154,11 @@ def derive_stats(
         max_mana=max_mana,
         starting_mana=starting_mana,
         mana_per_attack=max(base.mana_per_attack, 0.0),
+        # Riot renders "Mana Regen" as a stat line on Tear and its builds
+        # (`%i:TFTManaRegen% +@ManaRegen@ Mana Regen`), so it is a stat here
+        # rather than an effect -- eight items would otherwise each need their
+        # own hook for the same behaviour (doc 99 entry 34.3).
+        mana_regen=max(b.get("mana_regen"), 0.0),
         crit_chance=min(max(base.crit_chance + b.get("crit_chance"), 0.0), CRIT_CHANCE_CAP),
         crit_damage=max(base.crit_damage + b.get("crit_damage"), 1.0),
         ability_power=max(BASE_ABILITY_POWER + b.get("ability_power"), 0.0),

@@ -950,3 +950,75 @@ def test_log_can_be_filtered_by_kind_and_unit(duel):
     assert all(
         e.actor == jinx.uid or e.target == jinx.uid for e in sim.log.for_unit(jinx.uid)
     )
+
+
+# --- mana lock and overtime (doc 99 entries 36.7, 36.8) ------------------
+
+
+def test_casting_locks_mana_gain_briefly(data, registry):
+    """Without this a tank converts damage taken mid-cast into its next cast."""
+    from engine.combat import CombatSimulator
+    from engine.hexgrid import Board
+    from engine.unit import UnitInstance
+
+    board = Board()
+    hexes = sorted(board.hexes)
+    names = sorted(data.champions)
+    caster = UnitInstance(data.champions[names[0]], 1, registry=registry)
+    enemy = UnitInstance(data.champions[names[1]], 1, registry=registry)
+    caster.position, caster.team = hexes[0], 0
+    enemy.position, enemy.team = hexes[-1], 1
+    sim = CombatSimulator([caster], [enemy], data, seed=1, board=board)
+
+    lock = data.config.combat.mana_lock_seconds
+    assert lock > 0, "this test is meaningless with no configured lock"
+
+    caster.current_mana = 0.0
+    caster.mana_locked_until = sim.t + lock
+    assert sim.grant_mana(caster, 50.0) == 0.0
+    assert caster.current_mana == 0.0
+
+    sim.t += lock + 0.01
+    assert sim.grant_mana(caster, 50.0) > 0.0
+
+
+def test_overtime_amplifies_rather_than_bypassing_mitigation(data, registry):
+    """Overtime is an acceleration; the old ramp ignored armour and shields."""
+    from engine.combat import CombatSimulator
+    from engine.hexgrid import Board
+    from engine.unit import UnitInstance
+
+    board = Board()
+    hexes = sorted(board.hexes)
+    names = sorted(data.champions)
+    a = UnitInstance(data.champions[names[0]], 1, registry=registry)
+    b = UnitInstance(data.champions[names[1]], 1, registry=registry)
+    a.position, a.team = hexes[0], 0
+    b.position, b.team = hexes[-1], 1
+    sim = CombatSimulator([a], [b], data, seed=1, board=board)
+
+    before = a.derived_stats().attack_speed
+    sim.t = data.config.combat.sudden_death_start_seconds + 0.1
+    sim._apply_overtime_buffs()
+    assert a.derived_stats().attack_speed > before
+    assert a.derived_stats().damage_amp > 0
+    assert a.healing_reduction > 0
+
+
+def test_overtime_buffs_are_granted_once_not_every_tick(data, registry):
+    from engine.combat import CombatSimulator
+    from engine.hexgrid import Board
+    from engine.unit import UnitInstance
+
+    board = Board()
+    hexes = sorted(board.hexes)
+    names = sorted(data.champions)
+    a = UnitInstance(data.champions[names[0]], 1, registry=registry)
+    b = UnitInstance(data.champions[names[1]], 1, registry=registry)
+    a.position, a.team = hexes[0], 0
+    b.position, b.team = hexes[-1], 1
+    sim = CombatSimulator([a], [b], data, seed=1, board=board)
+
+    for _ in range(10):
+        sim._apply_overtime_buffs()
+    assert sum(1 for s in a.status_effects if s.source == "overtime") == 1

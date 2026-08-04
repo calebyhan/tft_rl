@@ -122,12 +122,11 @@
     "category": "component",
     "recipe": [],
     "unique": false,
-    "stats": {},
-    "effect_id": "item_TFT_Item_TearOfTheGoddess",
-    "radiant_version_of": null,
-    "params": {
-      "ManaRegen": 1.0
-    }
+    "stats": {
+      "mana_regen": 1.0
+    },
+    "effect_id": "no_effect",
+    "radiant_version_of": null
   },
   {
     "id": "TFT17_Item_ASTraitEmblemItem",
@@ -156,7 +155,8 @@
     ],
     "unique": true,
     "stats": {
-      "crit_chance": 0.2
+      "crit_chance": 0.2,
+      "damage_amp": 0.1
     },
     "effect_id": "emblem_TFT17_AssassinTrait",
     "radiant_version_of": null
@@ -173,7 +173,8 @@
     "unique": true,
     "stats": {
       "armor": 20.0,
-      "magic_resist": 20.0
+      "magic_resist": 20.0,
+      "mana_regen": 2.0
     },
     "effect_id": "emblem_TFT17_Astronaut",
     "radiant_version_of": null
@@ -390,7 +391,9 @@
       "TFT_Item_TearOfTheGoddess"
     ],
     "unique": true,
-    "stats": {},
+    "stats": {
+      "mana_regen": 2.0
+    },
     "effect_id": "emblem_TFT17_SummonTrait",
     "radiant_version_of": null
   },
@@ -405,15 +408,15 @@
     ],
     "unique": false,
     "stats": {
-      "magic_resist": 20.0
+      "magic_resist": 20.0,
+      "mana_regen": 3.0
     },
     "effect_id": "item_TFT_Item_AdaptiveHelm",
     "radiant_version_of": null,
     "params": {
       "BacklineADAP": 10.0,
       "FrontlineResists": 30.0,
-      "ManaPercIncrease": 0.15000000596046448,
-      "ManaRegen": 3.0
+      "ManaPercIncrease": 0.15000000596046448
     }
   },
   {
@@ -427,14 +430,14 @@
     ],
     "unique": false,
     "stats": {
-      "ability_power": 30.0
+      "ability_power": 30.0,
+      "mana_regen": 1.0
     },
     "effect_id": "item_TFT_Item_ArchangelsStaff",
     "radiant_version_of": null,
     "params": {
       "APPerInterval": 20.0,
-      "IntervalSeconds": 5.0,
-      "ManaRegen": 1.0
+      "IntervalSeconds": 5.0
     }
   },
   {
@@ -474,12 +477,12 @@
     "unique": false,
     "stats": {
       "attack_damage_pct": 0.15,
-      "ability_power": 15.0
+      "ability_power": 15.0,
+      "mana_regen": 5.0
     },
     "effect_id": "item_TFT_Item_BlueBuff",
     "radiant_version_of": null,
     "params": {
-      "ManaRegen": 5.0,
       "ModifiedADAP": 0.10000000149011612
     }
   },
@@ -543,13 +546,13 @@
     ],
     "unique": false,
     "stats": {
-      "attack_damage_pct": 0.55
+      "attack_damage_pct": 0.55,
+      "damage_amp": 0.1
     },
     "effect_id": "item_TFT_Item_Deathblade",
     "radiant_version_of": null,
     "params": {
-      "BonusDamage": 0.10000000149011612,
-      "{1543aa48}": 0.10000000149011612
+      "BonusDamage": 0.10000000149011612
     }
   },
   {
@@ -604,14 +607,14 @@
     "unique": false,
     "stats": {
       "armor": 25.0,
-      "magic_resist": 25.0
+      "magic_resist": 25.0,
+      "mana_regen": 1.0
     },
     "effect_id": "item_TFT_Item_FrozenHeart",
     "radiant_version_of": null,
     "params": {
       "CombatStartMana": 20.0,
       "HealthThreshold": 40.0,
-      "ManaRegen": 1.0,
       "ShieldDuration": 60.0,
       "ShieldHealthPercent": 20.0,
       "TriggerMana": 15.0
@@ -699,13 +702,13 @@
     "stats": {
       "attack_damage_pct": 0.2,
       "ability_power": 20.0,
+      "mana_regen": 1.0,
       "omnivamp": 0.15
     },
     "effect_id": "item_TFT_Item_HextechGunblade",
     "radiant_version_of": null,
     "params": {
       "AllyHealing": 0.20000000298023224,
-      "ManaRegen": 1.0,
       "Omnivamp": 18.0
     }
   },
@@ -723,7 +726,7 @@
       "attack_damage_pct": 0.35,
       "crit_chance": 0.35
     },
-    "effect_id": "no_effect",
+    "effect_id": "item_TFT_Item_InfinityEdge",
     "radiant_version_of": null
   },
   {
@@ -764,7 +767,7 @@
       "ability_power": 35.0,
       "crit_chance": 0.35
     },
-    "effect_id": "no_effect",
+    "effect_id": "item_TFT_Item_JeweledGauntlet",
     "radiant_version_of": null
   },
   {
@@ -831,7 +834,6 @@
     "effect_id": "item_TFT_Item_MadredsBloodrazor",
     "radiant_version_of": null,
     "params": {
-      "{1543aa48}": 0.15000000596046448,
       "{abb9f4ce}": 25.0
     }
   },
@@ -847,7 +849,8 @@
     "unique": false,
     "stats": {
       "ability_power": 20.0,
-      "health": 150.0
+      "health": 150.0,
+      "mana_regen": 1.0
     },
     "effect_id": "item_TFT_Item_Morellonomicon",
     "radiant_version_of": null,
@@ -855,7 +858,6 @@
       "BurnDuration": 10.0,
       "BurnPercent": 1.0,
       "GrievousWoundsPercent": 33.0,
-      "ManaRegen": 1.0,
       "MonsterCap": 100.0,
       "TicksPerSecond": 1.0
     }
@@ -896,15 +898,15 @@
     "stats": {
       "attack_speed_pct": 0.1,
       "crit_chance": 0.2,
-      "health": 150.0
+      "health": 150.0,
+      "damage_amp": 0.1
     },
     "effect_id": "item_TFT_Item_PowerGauntlet",
     "radiant_version_of": null,
     "params": {
       "BuffDamageAmp": 0.05000000074505806,
       "Duration": 5.0,
-      "MaxStacks": 4.0,
-      "{1543aa48}": 0.10000000149011612
+      "MaxStacks": 4.0
     }
   },
   {
@@ -940,13 +942,13 @@
     ],
     "unique": false,
     "stats": {
-      "ability_power": 55.0
+      "ability_power": 55.0,
+      "damage_amp": 0.15
     },
     "effect_id": "item_TFT_Item_RabadonsDeathcap",
     "radiant_version_of": null,
     "params": {
-      "BonusDamage": 0.15000000596046448,
-      "{1543aa48}": 0.15000000596046448
+      "BonusDamage": 0.15000000596046448
     }
   },
   {
@@ -960,7 +962,8 @@
     ],
     "unique": false,
     "stats": {
-      "attack_speed_pct": 0.45
+      "attack_speed_pct": 0.45,
+      "damage_amp": 0.03
     },
     "effect_id": "item_TFT_Item_RapidFireCannon",
     "radiant_version_of": null,
@@ -970,7 +973,6 @@
       "Duration": 5.0,
       "HealingReductionPct": 33.0,
       "HexRangeIncrease": 1.0,
-      "{1543aa48}": 0.029999999329447746,
       "{9f5117db}": 100.0
     }
   },
@@ -1011,13 +1013,13 @@
     ],
     "unique": false,
     "stats": {
-      "health": 300.0
+      "health": 300.0,
+      "mana_regen": 2.0
     },
     "effect_id": "item_TFT_Item_Redemption",
     "radiant_version_of": null,
     "params": {
       "HealTickRate": 1.0,
-      "ManaRegen": 2.0,
       "MaxHeal": 250.0,
       "MissingHealthHeal": 0.019999999552965164,
       "{cd951938}": 0.07999999821186066
@@ -1058,13 +1060,13 @@
     "unique": false,
     "stats": {
       "attack_damage_pct": 0.15,
-      "ability_power": 15.0
+      "ability_power": 15.0,
+      "mana_regen": 1.0
     },
     "effect_id": "spear_of_shojin_bonus_mana_on_attack",
     "radiant_version_of": null,
     "params": {
-      "FlatManaRestore": 5.0,
-      "ManaRegen": 1.0
+      "FlatManaRestore": 5.0
     }
   },
   {
@@ -1102,14 +1104,14 @@
     "unique": false,
     "stats": {
       "ability_power": 35.0,
-      "attack_speed_pct": 0.15
+      "attack_speed_pct": 0.15,
+      "mana_regen": 1.0
     },
     "effect_id": "item_TFT_Item_StatikkShiv",
     "radiant_version_of": null,
     "params": {
       "MRShred": 30.0,
-      "MRShredDuration": 5.0,
-      "ManaRegen": 1.0
+      "MRShredDuration": 5.0
     }
   },
   {
@@ -1185,7 +1187,7 @@
       "crit_chance": 0.2,
       "health": 150.0
     },
-    "effect_id": "no_effect",
+    "effect_id": "item_TFT_Item_ThiefsGloves",
     "radiant_version_of": null
   },
   {
@@ -1222,7 +1224,8 @@
     ],
     "unique": false,
     "stats": {
-      "crit_chance": 0.2
+      "crit_chance": 0.2,
+      "mana_regen": 1.0
     },
     "effect_id": "item_TFT_Item_UnstableConcoction",
     "radiant_version_of": null,
@@ -1230,7 +1233,6 @@
       "AD_NotStatBar": 0.15000000596046448,
       "AP_NotStatBar": 15.0,
       "HealthThreshold": 0.5,
-      "ManaRegen": 1.0,
       "StatOmnivamp_NotStatBar": 0.11999999731779099,
       "{f23e83fc}": 2.0
     }
