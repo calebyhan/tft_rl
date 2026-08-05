@@ -9,11 +9,15 @@ action space or environment ever starts handicapping the agent seat, it fails.
 from __future__ import annotations
 
 import random
+from types import SimpleNamespace
 
 import pytest
 
+from engine.items import ItemRegistry
 from engine.loader import load_all
+from engine.player import PlayerState
 from engine.schema import GameData
+from engine.unit import UnitInstance
 from rl.env import TFTEnv
 from rl.evaluate import (
     LP_BY_PLACEMENT,
@@ -24,7 +28,7 @@ from rl.evaluate import (
     random_policy,
     scripted_policy,
 )
-from tests.paths import STARTER_DATA_DIR
+from tests.paths import REAL_DATA_DIR, STARTER_DATA_DIR
 
 
 @pytest.fixture(scope="module")
@@ -35,6 +39,23 @@ def data() -> GameData:
 @pytest.fixture
 def env(data) -> TFTEnv:
     return TFTEnv(data=data)
+
+
+@pytest.fixture(scope="module")
+def real_data() -> GameData:
+    """The expert variants key off champion *role*, which the 13-champion
+    starter fixture cannot exercise across all six roles."""
+    return load_all(REAL_DATA_DIR)
+
+
+@pytest.fixture
+def real_env(real_data) -> TFTEnv:
+    return TFTEnv(data=real_data)
+
+
+@pytest.fixture
+def registry(real_data) -> ItemRegistry:
+    return ItemRegistry(real_data.items, real_data.config.max_items_per_unit)
 
 
 # --- result aggregation --------------------------------------------------
@@ -277,3 +298,297 @@ def test_summary_reports_lp_alongside_placement():
     text = _result([1, 2, 3, 4, 5, 6, 7, 8]).summary()
     assert "avg_placement=" in text
     assert "lp=" in text
+
+
+# --- scripted expert variants (doc 99 §8 open item) ----------------------
+#
+# The clone is at parity with this policy and imitation caps at its teacher,
+# so raising the teacher is the lever. Because the seven opponents run the
+# *same* heuristic, every flag must improve the teacher only -- and every
+# default must reproduce the historical policy, or all prior numbers become
+# unreproducible.
+
+
+def _play(env, policy, seeds):
+    return evaluate(env, policy, seeds=seeds)
+
+
+def test_variant_defaults_reproduce_the_historical_policy(real_env):
+    """Every flag off must be byte-identical in behaviour to no flags at all."""
+    seeds = range(6)
+    plain = _play(real_env, scripted_policy(real_env), seeds)
+    defaulted = _play(
+        real_env,
+        scripted_policy(
+            real_env, buy_synergy=False, match_items=False, corner_carry=False
+        ),
+        seeds,
+    )
+    assert plain.placements == defaulted.placements
+
+
+def test_buy_synergy_changes_shopping(real_env):
+    """Without the flag the teacher shops on (owned, cost); the bots use synergy."""
+    seeds = range(8)
+    plain = _play(real_env, scripted_policy(real_env), seeds)
+    synergy = _play(real_env, scripted_policy(real_env, buy_synergy=True), seeds)
+    assert plain.placements != synergy.placements, "flag had no effect at all"
+
+
+def test_match_items_prefers_a_role_appropriate_item(real_data, registry):
+    """An AP item must not be chosen for a marksman when an AD item is bagged."""
+    from rl.evaluate import _best_item_for
+
+    player = PlayerState(real_data, registry, player_id=0)
+    marksman = next(
+        c for c in real_data.champions.values() if c.role == "Marksman"
+    )
+    carry = UnitInstance(marksman, 1)
+
+    ap = next(i for i in real_data.items.values() if (i.stats or {}).get("ability_power"))
+    ad = next(
+        i for i in real_data.items.values() if (i.stats or {}).get("attack_damage_pct")
+    )
+    player.item_bag = [ap, ad]
+
+    space = SimpleNamespace(item_bag_slots=10)
+    assert _best_item_for(player, carry, space) == 1, "should pick the AD item"
+
+    caster = next(c for c in real_data.champions.values() if c.role == "Caster")
+    assert _best_item_for(player, UnitInstance(caster, 1), space) == 0
+
+
+def test_match_items_falls_back_to_slot_zero_for_an_unknown_role(real_data, registry):
+    from rl.evaluate import _best_item_for
+
+    player = PlayerState(real_data, registry, player_id=0)
+    champion = next(iter(real_data.champions.values()))
+    carry = UnitInstance(champion, 1)
+    object.__setattr__(carry.champion, "role", "Nonexistent")
+    player.item_bag = [next(iter(real_data.items.values()))]
+    assert _best_item_for(player, carry, SimpleNamespace(item_bag_slots=10)) == 0
+
+
+# --- selling, and why rolling depended on it (doc 99 entry 37.4) ---------
+
+
+def _action_kinds(env, policy, seeds):
+    """Tally the kinds of action a policy actually takes over some games."""
+    from collections import Counter
+
+    space = env.action_space_helper
+    counts: Counter[str] = Counter()
+
+    def counting(obs, mask):
+        action = policy(obs, mask)
+        counts[space.decode(action).kind.name] += 1
+        return action
+
+    evaluate(env, counting, seeds=seeds)
+    return counts
+
+
+def test_sell_bench_defaults_off_so_prior_numbers_reproduce(real_env):
+    seeds = range(4)
+    plain = _play(real_env, scripted_policy(real_env), seeds)
+    defaulted = _play(real_env, scripted_policy(real_env, sell_bench=False), seeds)
+    assert plain.placements == defaulted.placements
+    assert _action_kinds(real_env, scripted_policy(real_env), seeds)["SELL"] == 0
+
+
+def test_selling_unclogs_the_bench_and_lets_the_policy_keep_buying(real_env):
+    """The defect in entry 37.4: a full bench masks BUY, so purchases stall.
+
+    Without selling the board fills, the SELECT branch refuses anything
+    weaker, and every later purchase is stranded. Measured at the time:
+    28.6 buys per game without, 136.8 with.
+    """
+    seeds = range(4)
+    plain = _action_kinds(real_env, scripted_policy(real_env), seeds)
+    selling = _action_kinds(
+        real_env, scripted_policy(real_env, sell_bench=True), seeds
+    )
+    assert selling["SELL"] > 0, "the sell branch never fired"
+    assert selling["BUY"] > 2 * plain["BUY"], (
+        f"selling must unblock buying: {plain['BUY']} -> {selling['BUY']}"
+    )
+
+
+def test_rolling_without_selling_spins_on_a_shop_it_cannot_buy_from(real_env):
+    """Why the two flags are measured together, pinned as a test.
+
+    A reroll arm alone rerolls far more and buys no more; adding selling
+    converts the gold instead of burning it.
+    """
+    seeds = range(4)
+    plain = _action_kinds(real_env, scripted_policy(real_env), seeds)
+    rolling = _action_kinds(
+        real_env, scripted_policy(real_env, roll_at_level=7), seeds
+    )
+    both = _action_kinds(
+        real_env, scripted_policy(real_env, roll_at_level=7, sell_bench=True), seeds
+    )
+
+    assert rolling["REROLL"] > 0, "the reroll branch never fired"
+    # Rolls a great deal, converts almost none of it into units.
+    assert rolling["BUY"] < 1.2 * plain["BUY"]
+    assert both["BUY"] > 2 * rolling["BUY"]
+
+
+def test_selling_never_breaks_up_a_pair(real_env):
+    """Two copies are one upgrade away, so the sell branch must skip them."""
+    from rl.evaluate import _copies_owned
+
+    space = real_env.action_space_helper
+    policy = scripted_policy(real_env, sell_bench=True)
+    obs, info = real_env.reset(seed=3)
+
+    checked = 0
+    for _ in range(400):
+        mask = info["action_mask"] if "action_mask" in info else real_env.action_mask()
+        action = policy(obs, mask)
+        decoded = space.decode(action)
+        if decoded.kind.name == "SELL":
+            slot = decoded.a
+            if slot >= space.board_slots:
+                unit = real_env.player.bench[slot - space.board_slots]
+                assert _copies_owned(real_env.player, unit) < 2
+                checked += 1
+        obs, _, terminated, truncated, info = real_env.step(action)
+        if terminated or truncated:
+            break
+    assert checked > 0, "no sell was observed, so the assertion never ran"
+
+
+# --- parallel evaluation (doc 99 entry 37.8) -----------------------------
+
+
+def test_parallel_evaluation_is_identical_to_serial():
+    """Not "similar" -- identical. Games are deterministic given a seed.
+
+    If this ever diverges, either the engine has picked up hidden global state
+    or the results are being reassembled in completion order rather than seed
+    order, which would silently break every paired comparison.
+    """
+    from rl.evaluate import evaluate_scripted_parallel
+    from tests.paths import REAL_DATA_DIR
+
+    seeds = range(4)
+    serial = evaluate_scripted_parallel(
+        seeds, workers=1, data_dir=REAL_DATA_DIR, sell_bench=True
+    )
+    parallel = evaluate_scripted_parallel(
+        seeds, workers=3, data_dir=REAL_DATA_DIR, sell_bench=True
+    )
+    assert parallel.placements == serial.placements
+    assert parallel.rounds == serial.rounds
+    assert parallel.rewards == pytest.approx(serial.rewards)
+    assert parallel.episodes == serial.episodes
+
+
+def test_parallel_evaluation_preserves_seed_order():
+    """Reassembly must be by seed, so paired comparisons line up seed for seed.
+
+    Run the seeds reversed: the results must come back reversed too, matching
+    the requested order rather than whatever order the workers finished in.
+    """
+    from rl.evaluate import evaluate_scripted_parallel
+    from tests.paths import REAL_DATA_DIR
+
+    forward = evaluate_scripted_parallel(
+        range(4), workers=3, data_dir=REAL_DATA_DIR
+    )
+    backward = evaluate_scripted_parallel(
+        list(reversed(range(4))), workers=3, data_dir=REAL_DATA_DIR
+    )
+    assert backward.placements == list(reversed(forward.placements))
+
+
+def test_parallel_model_evaluation_matches_serial(tmp_path):
+    """A saved model must score identically however many processes run it.
+
+    `compare_models` is the gate on every paired comparison in this project, so
+    a parallel path that shifted results by even one placement would corrupt
+    the comparisons rather than merely speed them up. Trains nothing: an
+    untrained MaskablePPO is a perfectly good fixture for determinism.
+    """
+    from sb3_contrib import MaskablePPO
+
+    from rl.evaluate import evaluate_model_parallel, sb3_policy
+
+    data = load_all(REAL_DATA_DIR)
+    env = TFTEnv(data=data)
+    model = MaskablePPO("MlpPolicy", env, device="cpu", seed=0)
+    path = tmp_path / "model"
+    model.save(path)
+
+    seeds = [0, 1, 2, 3]
+    serial = evaluate(TFTEnv(data=data), sb3_policy(MaskablePPO.load(path, device="cpu")),
+                      seeds=seeds)
+    parallel = evaluate_model_parallel(path, seeds, workers=3, data_dir=REAL_DATA_DIR)
+
+    assert parallel.placements == serial.placements
+    assert parallel.rounds == serial.rounds
+    assert parallel.illegal_actions == serial.illegal_actions
+
+
+def test_gap_attribution_hybrid_delegates_only_its_kinds():
+    """The hybrid must use the teacher's action exactly when it is delegated.
+
+    The whole attribution rests on this dispatch: if it leaked, every arm would
+    be some unlabelled blend of the two policies and the controls could still
+    pass by coincidence.
+    """
+    from rl.action import ActionKind
+
+    data = load_all(REAL_DATA_DIR)
+    env = TFTEnv(data=data)
+    env.reset(seed=0)
+    space = env.action_space_helper
+
+    teacher_choice = space.buy_offset          # a BUY
+    clone_choice = space.end_index             # END_PLANNING
+    delegated = {ActionKind.BUY}
+
+    def hybrid(obs, mask):
+        proposed = teacher_choice
+        if space.decode(proposed).kind in delegated:
+            return proposed
+        return clone_choice
+
+    # Delegated kind -> teacher's action wins.
+    assert hybrid(None, None) == teacher_choice
+
+    # Non-delegated kind -> the clone decides, even though the teacher proposed.
+    delegated = {ActionKind.SELL}
+    assert hybrid(None, None) == clone_choice
+
+
+def test_pick_probe_random_arm_is_reproducible():
+    """A randomised arm must depend on the episode seed, not on scheduling.
+
+    The first version seeded one stream per worker process, so which episode
+    drew which option depended on `imap_unordered`'s completion order. Two runs
+    of the identical arm returned 3.493 and 3.257 -- a swing larger than most
+    effects this project measures, silently inflating a paired t (doc 99 51.2).
+    """
+    import random
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    # The contract: reseeding from the episode seed reproduces the draw, and
+    # different seeds generally do not.
+    def draws(seed, n=12):
+        rng = random.Random(0)
+        rng.seed(seed)
+        return [rng.choice([0, 1, 2, 3, 4]) for _ in range(n)]
+
+    assert draws(7) == draws(7), "same seed must reproduce the same choices"
+    assert draws(7) != draws(8), "different seeds must give different choices"
+
+    # And the probe reseeds per episode rather than once per worker.
+    source = (root / "scripts" / "pick_probe.py").read_text()
+    assert '_WORKER["rng"].seed(seed)' in source, (
+        "pick_probe must reseed its RNG per episode; a per-worker stream makes "
+        "the random arms depend on scheduling order"
+    )

@@ -37,11 +37,15 @@ from scripts.train_ppo import (  # noqa: E402
 )
 
 
-def match_by_kind(model, data, episodes: int, on_student_states: bool) -> dict:
+def match_by_kind(
+    model, data, episodes: int, on_student_states: bool,
+    expert_kwargs: dict | None = None,
+) -> dict:
     """Agreement with the expert, bucketed by the kind of action it chose."""
     actor = student_actor(model) if on_student_states else None
     obs, masks, expert_actions, _ = collect_expert_data(
-        data, episodes, actor=actor, seed_offset=90_000
+        data, episodes, actor=actor, seed_offset=90_000,
+        expert_kwargs=expert_kwargs,
     )
 
     env = build_env(data)
@@ -68,6 +72,29 @@ def main() -> None:
     parser.add_argument("--episodes", type=int, default=40)
     parser.add_argument("--data", type=Path, default=Path("data"))
     parser.add_argument(
+        "--expert-flags",
+        action="store_true",
+        help="label with buy_synergy + match_items + corner_carry as well",
+    )
+    parser.add_argument(
+        "--copy-counts",
+        action="store_true",
+        help=(
+            "must match what the model was trained with. Like "
+            "--champion-encoding, a mismatch is a shape error rather than a "
+            "helpful message (doc 99 entry 38.9)"
+        ),
+    )
+    parser.add_argument(
+        "--expert-sell",
+        action="store_true",
+        help=(
+            "label with the sell-capable teacher. Must match the teacher the "
+            "model was cloned from, or the disagreement measured is with a "
+            "policy it never saw (doc 99 entry 37.4)"
+        ),
+    )
+    parser.add_argument(
         "--champion-encoding",
         default="index",
         help=(
@@ -77,6 +104,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     ENV_DEFAULTS["champion_encoding"] = args.champion_encoding
+    ENV_DEFAULTS["copy_counts"] = args.copy_counts
 
     from sb3_contrib import MaskablePPO
 
@@ -85,7 +113,15 @@ def main() -> None:
         model = MaskablePPO.load(path, device="cpu")
         print(f"\n=== {path} ===")
         for label, on_student in (("expert states", False), ("student states", True)):
-            table = match_by_kind(model, data, args.episodes, on_student)
+            table = match_by_kind(
+                model, data, args.episodes, on_student,
+                expert_kwargs={
+                    "sell_bench": args.expert_sell,
+                    "buy_synergy": args.expert_flags,
+                    "match_items": args.expert_flags,
+                    "corner_carry": args.expert_flags,
+                },
+            )
             total_hits = sum(h for h, _, _ in table.values())
             total_n = sum(n for _, n, _ in table.values())
             print(f"\n  -- {label} (n={total_n}, overall {total_hits / total_n:.1%})")

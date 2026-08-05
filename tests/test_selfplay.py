@@ -268,3 +268,97 @@ def test_a_full_self_play_game_completes(data):
         steps += 1
         assert steps < 5000
     assert info["placement"] is not None
+
+
+# --- observation layout must match the learner's (doc 99 entry 48) --------
+
+
+def test_layout_options_covers_every_encoder_option():
+    """`LAYOUT_OPTIONS` must list every layout-affecting encoder keyword.
+
+    Introspects `ObservationEncoder.__init__` rather than restating the list,
+    so adding an option without adding it here fails immediately. The bug this
+    guards is not hypothetical: `copy_counts` was added to the encoder and not
+    to `snapshot_factory`, and every self-play run after that died mid-training
+    on a 381-vs-418 shape error.
+    """
+    import inspect
+
+    from rl.observation import LAYOUT_OPTIONS, ObservationEncoder
+
+    signature = inspect.signature(ObservationEncoder.__init__)
+    structural = {"self", "data", "board_slots", "n_opponents"}
+    options = {
+        name for name, param in signature.parameters.items()
+        if name not in structural and param.default is not inspect.Parameter.empty
+    }
+    assert options == set(LAYOUT_OPTIONS), (
+        f"encoder options {options} but LAYOUT_OPTIONS is {set(LAYOUT_OPTIONS)}; "
+        "a layout option is missing and self-play seats will mis-encode"
+    )
+
+
+@pytest.mark.parametrize(
+    "env_kwargs",
+    [
+        {},
+        {"copy_counts": True},
+        {"scouting": "full"},
+        {"copy_counts": True, "scouting": "full"},
+    ],
+)
+def test_snapshot_seat_matches_the_learner_observation_width(data, env_kwargs):
+    """A snapshot seat must encode exactly what the learner's policy expects."""
+    from rl.env import TFTEnv
+    from rl.selfplay import SnapshotPolicy
+
+    env = TFTEnv(data=data, **env_kwargs)
+    seat = SnapshotPolicy(
+        model=None,
+        data=env.data,
+        board_hexes=env._board_hexes,
+        n_opponents=env.n_players - 1,
+        **env.encoder.layout_settings(),
+    )
+    assert seat.encoder.size == env.encoder.size
+
+
+def test_snapshot_factory_propagates_copy_counts(data):
+    """The exact regression: the factory must carry the full layout across."""
+    from rl.env import TFTEnv
+    from rl.selfplay import SnapshotPool, snapshot_factory
+
+    env = TFTEnv(data=data, copy_counts=True)
+    pool = SnapshotPool()
+    pool.add(object())  # a stand-in model; only the encoder is exercised here
+    seat = snapshot_factory(pool, env, seed=1)(seat=0)
+    assert seat.encoder.size == env.encoder.size
+    assert seat.encoder.copy_counts is True
+
+
+def test_snapshot_factory_fills_every_seat_at_full_mix(data):
+    """`mix=1.0` must put a trained policy in *every* opponent seat.
+
+    `scripts/teacher_check.py` reads the teacher's strength against a field of
+    trained clones (doc 99 entry 56). If the factory silently fell back to
+    `GreedyPolicy` -- which it does whenever the pool is empty -- that arm would
+    measure the bots while being labelled "clones", and 56's conclusion would
+    invert.
+    """
+    from rl.env import TFTEnv
+    from rl.opponents import GreedyPolicy
+    from rl.selfplay import SnapshotPolicy, SnapshotPool, snapshot_factory
+
+    env = TFTEnv(data=data, copy_counts=True)
+    pool = SnapshotPool(capacity=1)
+    pool.add(object())  # stand-in model; only seat construction is exercised
+    factory = snapshot_factory(pool, env, mix=1.0, seed=3)
+    seats = [factory(i) for i in range(env.n_players - 1)]
+    assert all(isinstance(s, SnapshotPolicy) for s in seats), (
+        f"mix=1.0 left {sum(not isinstance(s, SnapshotPolicy) for s in seats)} "
+        "seats on the scripted bot"
+    )
+
+    # And the documented fallback still holds when there is nothing to sample.
+    empty = snapshot_factory(SnapshotPool(capacity=1), env, mix=1.0, seed=3)
+    assert isinstance(empty(0), GreedyPolicy)

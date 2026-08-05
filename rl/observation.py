@@ -159,6 +159,29 @@ SHOP_DERIVED_FEATURES = 2
 # discover how to combine them.
 UNIT_RANK_FEATURES = 2
 
+# Optionally appended after the ranks, per owned unit slot:
+#
+#   copies -- how many copies of this champion the player holds at this unit's
+#             star level, normalised by the 3 needed to combine.
+#
+# The ranks above supply the *ordering* the SELECT rule needs. The SELL rule
+# needs one operation more: it refuses to sell combine progress, so it must
+# know which units are a pair. That is an **identity match across slots** --
+# comparing champion ids between units in different slots -- and doc 99's
+# observation rule names it alongside the ranking as something a flat MLP does
+# not derive.
+#
+# Measured before adding it (doc 99 entry 38.6): five hand-computed per-slot
+# floats predict the teacher's sell choice at 100% on held-out data, while the
+# real observation manages 20.7%. Drop `copies` from those five and the probe
+# cannot fit even its own training set (34.7%), because without it the label
+# is not a function of the features at all.
+#
+# This is a *count the player can read off their own board*, not a strength
+# score. The line from doc 99 entry 38.4 holds: facts yes, the expert's
+# lexicographic combination of them no.
+UNIT_COPY_FEATURES = 1
+
 
 @dataclass(frozen=True)
 class ObservationSpec:
@@ -174,6 +197,7 @@ class ObservationSpec:
     augment_choices: int = 0
     champion_encoding: str = "index"
     scouting: str = "summary"
+    copy_counts: bool = False
 
     @property
     def opponent_width(self) -> int:
@@ -197,7 +221,9 @@ class ObservationSpec:
                 + UNIT_STAT_FEATURES
                 + self.n_traits
             )
-        return base + UNIT_RANK_FEATURES
+        return base + UNIT_RANK_FEATURES + (
+            UNIT_COPY_FEATURES if self.copy_counts else 0
+        )
 
     @property
     def shop_width(self) -> int:
@@ -215,7 +241,9 @@ class ObservationSpec:
         base = (
             2
             if self.champion_encoding == "index"
-            else self.unit_width - UNIT_RANK_FEATURES
+            else self.unit_width
+            - UNIT_RANK_FEATURES
+            - (UNIT_COPY_FEATURES if self.copy_counts else 0)
         )
         return base + SHOP_DERIVED_FEATURES
 
@@ -259,6 +287,13 @@ class ObservationSpec:
         raise KeyError(f"unknown observation section {section!r}")
 
 
+# Every ObservationEncoder option that changes the observation layout. Kept
+# beside the class and pinned to its signature by
+# `test_layout_options_covers_every_encoder_option`, because the failure mode
+# for an omission is a shape error thrown deep inside torch, hours into a run.
+LAYOUT_OPTIONS = ("champion_encoding", "scouting", "copy_counts")
+
+
 class ObservationEncoder:
     """Turns a :class:`PlayerState` and its match context into a feature vector."""
 
@@ -269,6 +304,7 @@ class ObservationEncoder:
         n_opponents: int,
         champion_encoding: str = "index",
         scouting: str = "summary",
+        copy_counts: bool = False,
     ) -> None:
         if champion_encoding not in CHAMPION_ENCODINGS:
             raise ValueError(
@@ -282,6 +318,7 @@ class ObservationEncoder:
         self.data = data
         self.champion_encoding = champion_encoding
         self.scouting = scouting
+        self.copy_counts = copy_counts
         self.champion_ids = tuple(sorted(data.champions))
         self.trait_ids = tuple(sorted(data.traits))
         self.augment_ids = tuple(sorted(data.augments))
@@ -300,6 +337,7 @@ class ObservationEncoder:
             augment_choices=data.config.augments.choices,
             champion_encoding=champion_encoding,
             scouting=scouting,
+            copy_counts=copy_counts,
         )
         # Normalisers keep every feature roughly in [0, 1].
         cfg = data.config
@@ -339,6 +377,22 @@ class ObservationEncoder:
     @property
     def size(self) -> int:
         return self.spec.size
+
+    def layout_settings(self) -> dict:
+        """The options that determine this encoder's observation layout.
+
+        Anything rebuilding an encoder to match another one -- a self-play
+        snapshot seat, most importantly -- must copy *all* of these, and
+        hand-enumerating them at the call site does not survive a new option
+        being added. `snapshot_factory` copied `champion_encoding` and
+        `scouting` but not `copy_counts`, so every self-play run after
+        `copy_counts` landed built 381-wide opponent observations for a
+        418-wide policy and died mid-training (doc 99 entry 48).
+
+        Derived from :data:`LAYOUT_OPTIONS`, which a test pins against this
+        class's own signature so a future option cannot be silently omitted.
+        """
+        return {name: getattr(self, name) for name in LAYOUT_OPTIONS}
 
     # -- encoding ---------------------------------------------------------
 
@@ -397,15 +451,16 @@ class ObservationEncoder:
         # bench unit's rank is directly comparable with a fielded one -- which
         # is exactly the comparison the swap rule makes.
         ranks = self._unit_ranks(player)
+        copies = self._copy_counts(player) if self.spec.copy_counts else None
         unit_width = self.spec.unit_width
         for hex_ in sorted(board_hexes):
-            self._write_unit(out, cursor, player.board.get(hex_), ranks)
+            self._write_unit(out, cursor, player.board.get(hex_), ranks, copies)
             cursor += unit_width
 
         # -- bench --------------------------------------------------------
         for index in range(self.spec.bench_slots):
             unit = player.bench[index] if index < len(player.bench) else None
-            self._write_unit(out, cursor, unit, ranks)
+            self._write_unit(out, cursor, unit, ranks, copies)
             cursor += unit_width
 
         # -- shop ---------------------------------------------------------
@@ -530,7 +585,25 @@ class ObservationEncoder:
             for u in units
         }
 
-    def _write_unit(self, out: np.ndarray, cursor: int, unit, ranks=None) -> None:
+    def _copy_counts(self, player: PlayerState) -> dict:
+        """Copies held of each unit's champion *at that unit's star level*.
+
+        Star level matters: three 1-stars combine, a 1-star and a 2-star do
+        not, so a count that ignored it would mark a unit as combine progress
+        when it is nothing of the kind.
+        """
+        counts: dict[tuple[str, int], int] = {}
+        units = list(player.all_units)
+        for unit in units:
+            key = (unit.champion.id, unit.star_level)
+            counts[key] = counts.get(key, 0) + 1
+        return {
+            id(u): counts[(u.champion.id, u.star_level)] / 3.0 for u in units
+        }
+
+    def _write_unit(
+        self, out: np.ndarray, cursor: int, unit, ranks=None, copies=None
+    ) -> None:
         if unit is None:
             return
         if self.champion_encoding == "index":
@@ -548,10 +621,15 @@ class ObservationEncoder:
                 star_level=unit.star_level,
                 item_count=len(unit.items),
             )
-        tail = cursor + self.spec.unit_width - UNIT_RANK_FEATURES
+        width = UNIT_RANK_FEATURES + (
+            UNIT_COPY_FEATURES if self.spec.copy_counts else 0
+        )
+        tail = cursor + self.spec.unit_width - width
         star, cost = (ranks or {}).get(id(unit), (0.0, 0.0))
         out[tail] = star
         out[tail + 1] = cost
+        if self.spec.copy_counts:
+            out[tail + 2] = (copies or {}).get(id(unit), 0.0)
 
     def _write_champion_features(
         self, out: np.ndarray, cursor: int, champion, star_level: int, item_count: int

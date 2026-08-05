@@ -436,3 +436,105 @@ def test_board_full_flag_tracks_the_unit_cap(real_data, populated_player):
         player.board[hex_] = UnitInstance(champion, 1)
     assert len(player.board) >= player.max_board_units
     assert encoder.encode(player, *context)[flag_at] == pytest.approx(1.0)
+
+
+# --------------------------------------------------------------------------
+# Copy counts (doc 99 entry 38.7)
+# --------------------------------------------------------------------------
+#
+# The SELL rule refuses to break up combine progress, which needs an identity
+# match across slots -- comparing champion ids between units in different
+# slots. Ranks supply the ordering; this supplies the match. Without it a probe
+# reads the teacher's sell choice from the observation at 20.7%, with it 49.1%
+# (doc 99 entry 38.9), and hand-computed features that omit it cannot fit even
+# their own training set.
+
+
+def _copies_encoder(data, encoding="features", board_slots=4, n_opponents=2):
+    return ObservationEncoder(
+        data, board_slots, n_opponents,
+        champion_encoding=encoding, copy_counts=True,
+    )
+
+
+def _copy_feature(encoder, player, context, slot_index, section="bench"):
+    obs = encoder.encode(player, *context)
+    spec = encoder.spec
+    start = spec.offset_of(section) + slot_index * spec.unit_width
+    return float(obs[start + spec.unit_width - 1])
+
+
+@pytest.mark.parametrize("encoding", ["features", "index"])
+def test_copy_counts_are_off_by_default(real_data, encoding, populated_player):
+    """Every observation measured before 2026-08-04 must keep its width."""
+    player, _ = populated_player
+    plain = make_encoder(real_data, encoding, board_slots=len(player.hex_board.hexes))
+    wider = _copies_encoder(
+        real_data, encoding, board_slots=len(player.hex_board.hexes)
+    )
+    assert wider.size > plain.size
+    assert wider.size - plain.size == plain.spec.board_slots + plain.spec.bench_slots
+
+
+@pytest.mark.parametrize("encoding", ["features", "index"])
+def test_copy_count_rises_with_each_copy_held(real_data, encoding, populated_player):
+    player, context = populated_player
+    encoder = _copies_encoder(
+        real_data, encoding, board_slots=len(player.hex_board.hexes)
+    )
+    champion = real_data.champions[sorted(real_data.champions)[0]]
+
+    player.bench[0] = UnitInstance(champion, 1)
+    alone = _copy_feature(encoder, player, context, 0)
+    player.bench[1] = UnitInstance(champion, 1)
+    paired = _copy_feature(encoder, player, context, 0)
+
+    assert paired > alone, "a second copy must raise the count"
+
+
+@pytest.mark.parametrize("encoding", ["features", "index"])
+def test_copies_are_counted_per_star_level(real_data, encoding, populated_player):
+    """Three 1-stars combine; a 1-star and a 2-star do not.
+
+    A count that ignored star level would mark a unit as combine progress when
+    it is nothing of the kind -- which is the exact judgement the sell rule
+    makes.
+    """
+    player, context = populated_player
+    encoder = _copies_encoder(
+        real_data, encoding, board_slots=len(player.hex_board.hexes)
+    )
+    champion = real_data.champions[sorted(real_data.champions)[0]]
+
+    player.bench[0] = UnitInstance(champion, 1)
+    alone = _copy_feature(encoder, player, context, 0)
+    player.bench[1] = UnitInstance(champion, 2)
+    with_other_star = _copy_feature(encoder, player, context, 0)
+
+    assert with_other_star == pytest.approx(alone), (
+        "a 2-star copy is not combine progress for a 1-star"
+    )
+
+
+@pytest.mark.parametrize("encoding", ["features", "index"])
+def test_copy_count_does_not_disturb_the_rank_tail(real_data, encoding, populated_player):
+    """The new float is appended, so ranks must read the same as before."""
+    player, context = populated_player
+    board_slots = len(player.hex_board.hexes)
+    champion = real_data.champions[sorted(real_data.champions)[0]]
+    player.bench[0] = UnitInstance(champion, 1)
+    player.bench[1] = UnitInstance(champion, 2)
+
+    plain = make_encoder(real_data, encoding, board_slots=board_slots)
+    wide = _copies_encoder(real_data, encoding, board_slots=board_slots)
+
+    def ranks(encoder, slot):
+        obs = encoder.encode(player, *context)
+        spec = encoder.spec
+        start = spec.offset_of("bench") + slot * spec.unit_width
+        extra = 1 if spec.copy_counts else 0
+        tail = start + spec.unit_width - UNIT_RANK_FEATURES - extra
+        return tuple(obs[tail : tail + UNIT_RANK_FEATURES])
+
+    for slot in (0, 1):
+        assert ranks(wide, slot) == pytest.approx(ranks(plain, slot))

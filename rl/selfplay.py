@@ -82,6 +82,7 @@ class SnapshotPolicy:
         deterministic: bool = False,
         champion_encoding: str = "index",
         scouting: str = "summary",
+        copy_counts: bool = False,
         n_opponents: int = 7,
     ) -> None:
         self.model = model
@@ -100,6 +101,7 @@ class SnapshotPolicy:
             n_opponents,
             champion_encoding=champion_encoding,
             scouting=scouting,
+            copy_counts=copy_counts,
         )
 
     def plan(self, player: PlayerState, context: PlanningContext) -> None:
@@ -213,15 +215,26 @@ def snapshot_factory(
         model = pool.sample(rng) if rng.random() < mix else None
         if model is None:
             return GreedyPolicy(seed=seed * 1000 + seat)
-        return SnapshotPolicy(
+        # Copy the layout wholesale via `layout_settings()` rather than naming
+        # options one at a time. Naming them is what broke: `copy_counts` was
+        # added to the encoder and not here, so snapshot seats encoded 381
+        # floats for a policy expecting 418 and self-play died several minutes
+        # into every run (doc 99 entry 48).
+        seat_policy = SnapshotPolicy(
             model,
             env.data,
             env._board_hexes,
             max_actions_per_round=env.max_actions_per_round,
             deterministic=deterministic,
-            champion_encoding=env.encoder.champion_encoding,
-            scouting=env.encoder.scouting,
             n_opponents=env.n_players - 1,
+            **env.encoder.layout_settings(),
         )
+        if seat_policy.encoder.size != env.encoder.size:
+            raise ValueError(
+                f"snapshot seat encodes {seat_policy.encoder.size} floats but "
+                f"the learner's env encodes {env.encoder.size}; the seat's "
+                "observation layout does not match the policy's"
+            )
+        return seat_policy
 
     return factory

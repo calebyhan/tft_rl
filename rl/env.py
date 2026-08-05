@@ -79,6 +79,7 @@ class TFTEnv(gym.Env):
         invalid_action_penalty: float = 0.0,
         champion_encoding: str = "index",
         scouting: str = "summary",
+        copy_counts: bool = False,
         shaping_mode: str = "potential",
         shaping_gamma: float = 0.999,
         seed: int | None = None,
@@ -125,6 +126,7 @@ class TFTEnv(gym.Env):
             self.n_players - 1,
             champion_encoding=champion_encoding,
             scouting=scouting,
+            copy_counts=copy_counts,
         )
 
         self.action_space = spaces.Discrete(self.action_space_helper.n)

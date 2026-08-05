@@ -18,6 +18,7 @@ import pytest
 
 from engine.loader import load_all
 from rl.env import SHAPING_MODES, TFTEnv
+from rl.evaluate import scripted_policy
 from tests.paths import STARTER_DATA_DIR
 
 
@@ -126,18 +127,22 @@ def test_bonus_shaping_accumulates_and_rivals_the_terminal_reward(data):
 def test_potential_falls_when_the_board_is_emptied(data):
     """Losing board strength must be penalised, not merely un-rewarded."""
     env = TFTEnv(data=data, reward_shaping=True, shaping_mode="potential")
-    env.reset(seed=0)
-    # Field whatever is on the bench so the potential is non-trivial.
-    for _ in range(30):
+    obs, _ = env.reset(seed=0)
+    # Driven by the scripted policy rather than by the lowest legal action.
+    # Taking `legal[0]` never fielded a unit, so this test skipped on every run
+    # and asserted nothing at all -- the one claim it exists to pin, that
+    # losing board strength is penalised, was unchecked. An empty board is now
+    # a failure rather than a skip, because a test that cannot build its own
+    # precondition is not coverage.
+    policy = scripted_policy(env)
+    for _ in range(200):
         mask = env.action_mask()
-        legal = np.flatnonzero(mask)
-        if legal.size == 0:
+        if not mask.any():
             break
-        env.step(int(legal[0]))
-        if env.player.board:
+        obs, _, terminated, _, _ = env.step(int(policy(obs, mask)))
+        if env.player.board or terminated:
             break
-    if not env.player.board:
-        pytest.skip("no unit reached the board in this rollout")
+    assert env.player.board, "scripted policy fielded no unit; cannot test potential"
     before = env._potential()
     for hex_ in list(env.player.board):
         env.player.move_to_bench(hex_)
