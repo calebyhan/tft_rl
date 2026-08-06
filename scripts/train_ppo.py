@@ -637,6 +637,101 @@ def dagger(
     return history
 
 
+
+def BCAnchorCallback(dataset, coef: float, every: int, batch_size: int,
+                     label_smoothing: float, lr: float, steps: int = 1):
+    """Interleave expert-imitation gradient steps with PPO's own updates.
+
+    **Why this exists.** PPO does not degrade a cloned policy by following a bad
+    signal -- entry 61 measured advantages as barely differentiated across
+    action kinds, and REROLL as *negatively* advantaged while PPO converged onto
+    it. Entry 63 located the drift precisely: probability mass flows to actions
+    that cloning suppressed **and** that are legal in nearly every state
+    (END_PLANNING +3.61, REROLL +1.58), because only those can absorb it
+    everywhere and sampling then reinforces them.
+
+    An anchor to the cloned behaviour is the standard answer to that failure --
+    it is what RLHF does when fine-tuning an imitation-trained model. Note this
+    is *not* `--target-kl`, which was tried and reverted (doc 99 23.5: the worst
+    arm measured from a parity clone, +0.793, t=+4.36). That bounds movement
+    from the **rollout** policy and says nothing about drift from the clone.
+
+    **Match PPO's gradient-step count, not just its coefficient.** The first
+    version fired *once* per 2048 environment steps while PPO ran
+    ``n_epochs=10`` over 8 minibatches -- **80** gradient steps in the same
+    window. Anchoring lost 82.6% -> 65.1% expert agreement and placement fell to
+    5.517: that measured one step against eighty, not the value of an anchor.
+    ``steps`` x ``every`` should be set to match (doc 99 entry 64).
+
+    **An auxiliary BC loss rather than an exact KL penalty**, deliberately.
+    Injecting a KL term into PPO's objective means copying sb3-contrib's
+    118-line ``train()``, which would drift silently on upgrade and would
+    corrupt the ``entropy_loss`` logging that diagnosed entries 60-62. This
+    reuses the already-tested imitation path instead. It anchors to the expert
+    *data* rather than to the cloned *policy*, which is a real difference: it
+    cannot be satisfied by matching a clone that has itself drifted.
+    """
+    import numpy as np
+    import torch
+    from stable_baselines3.common.callbacks import BaseCallback
+
+    observations, masks, actions, _ = dataset
+
+    class _Anchor(BaseCallback):
+        def __init__(self) -> None:
+            super().__init__()
+            self.rng = np.random.default_rng(0)
+            self.optimiser = None
+            self.steps = 0
+
+        def _on_training_start(self) -> None:
+            self.optimiser = torch.optim.Adam(
+                self.model.policy.parameters(), lr=lr
+            )
+
+        def _on_step(self) -> bool:
+            if self.num_timesteps % every != 0:
+                return True
+            device = self.model.device
+            for _ in range(steps):
+                self._anchor_step(device)
+            return True
+
+        def _anchor_step(self, device) -> None:
+            rows = self.rng.choice(len(observations), size=batch_size,
+                                   replace=False)
+            obs_t = torch.as_tensor(observations[rows], dtype=torch.float32,
+                                    device=device)
+            mask_t = torch.as_tensor(masks[rows], dtype=torch.bool, device=device)
+            action_t = torch.as_tensor(actions[rows], dtype=torch.long,
+                                       device=device)
+            distribution = self.model.policy.get_distribution(
+                obs_t, action_masks=mask_t
+            )
+            log_prob = distribution.log_prob(action_t)
+            if label_smoothing > 0.0:
+                legal = mask_t.float()
+                mean_legal = (
+                    distribution.distribution.logits * legal
+                ).sum(-1) / legal.sum(-1).clamp(min=1.0)
+                loss = -(
+                    (1.0 - label_smoothing) * log_prob
+                    + label_smoothing * mean_legal
+                ).mean()
+            else:
+                loss = -log_prob.mean()
+            loss = coef * loss
+            self.optimiser.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(
+                self.model.policy.parameters(), self.model.max_grad_norm
+            )
+            self.optimiser.step()
+            self.steps += 1
+
+    return _Anchor()
+
+
 def measure_baselines(data, episodes: int) -> dict:
     """Doc 03 sec 4: know the floor before claiming the agent learned anything."""
     env = build_env(data)
@@ -764,6 +859,36 @@ def main() -> int:
             "Defaults to PPO's 3e-4"
         ),
     )
+    parser.add_argument(
+        "--bc-anchor-coef",
+        type=float,
+        default=0.0,
+        help=(
+            "weight on an auxiliary expert-imitation loss interleaved with "
+            "PPO. Targets the drift entry 63 measured: mass flowing to actions "
+            "that cloning suppressed AND that are legal nearly everywhere "
+            "(END_PLANNING +3.61, REROLL +1.58). 0 disables"
+        ),
+    )
+    parser.add_argument("--bc-anchor-every", type=int, default=256)
+    parser.add_argument(
+        "--bc-anchor-steps",
+        type=int,
+        default=10,
+        help=(
+            "gradient steps per firing. Defaults chosen so anchor steps match "
+            "PPO's own count per rollout; at 1-per-2048 the anchor was "
+            "outvoted 80:1 and lost 17 points of expert agreement "
+            "(doc 99 entry 64)"
+        ),
+    )
+    parser.add_argument(
+        "--anchor-episodes",
+        type=int,
+        default=0,
+        help="expert episodes to collect for --bc-anchor-coef under --init-from",
+    )
+    parser.add_argument("--bc-anchor-lr", type=float, default=1e-4)
     parser.add_argument(
         "--label-smoothing",
         type=float,
@@ -968,6 +1093,7 @@ def main() -> int:
 
     print("=== baselines ===")
     baselines = measure_baselines(data, args.eval_episodes)
+    expert_dataset = None
     if args.baseline_only:
         return 0
 
@@ -1055,6 +1181,17 @@ def main() -> int:
         warm = evaluate(build_env(data), sb3_policy(model), seeds=range(args.eval_episodes))
         print(f"  loaded checkpoint: {warm.summary()}")
         baselines["after_warm_start"] = warm.as_dict()
+        if args.anchor_episodes:
+            # The anchor needs expert data and `--init-from` skips cloning, so
+            # collect a fresh set here. Seeds are offset clear of the warm
+            # start's training and holdout ranges.
+            print(f"  collecting {args.anchor_episodes} episodes for the anchor")
+            expert_dataset = collect_expert_data(
+                data, args.anchor_episodes, gamma=args.gamma,
+                seed_offset=730_000, expert_kwargs=expert_kwargs,
+                reward_shaping=args.reward_shaping,
+            )
+            print(f"  anchor data: {len(expert_dataset[0])} transitions")
     elif args.warm_start:
         print("\n--- behaviour cloning from the scripted policy ---")
         # Returns must be computed under the same reward and discount PPO will
@@ -1077,30 +1214,62 @@ def main() -> int:
         baselines["after_warm_start"] = warm.as_dict()
         baselines["warm_start_stats"] = bc_stats
 
-        if args.dagger_rounds:
-            dagger_stats = dagger(
-                model,
-                data,
-                args.dagger_rounds,
-                args.dagger_episodes,
-                args.warm_start_epochs,
-                expert_dataset,
-                gamma=args.gamma,
-                value_coef=args.value_coef,
-                expert_kwargs=expert_kwargs,
-                lr=args.dagger_lr,
-                label_smoothing=args.label_smoothing,
-                reward_shaping=args.reward_shaping,
+    # Outside the warm-start branch so DAgger can run from an existing
+    # checkpoint: re-cloning 1200 episodes to add DAgger rounds costs 36
+    # minutes and produces a *separately derived* warm start, which is the
+    # confound `--init-from` exists to remove (doc 99 entry 48.1).
+    if args.dagger_rounds:
+        if expert_dataset is None:
+            raise SystemExit(
+                "--dagger-rounds needs a seed dataset: pass --warm-start, or "
+                "--anchor-episodes alongside --init-from"
             )
-            aggregated = evaluate(
-                build_env(data), sb3_policy(model), seeds=range(args.eval_episodes)
-            )
-            print(f"  after dagger: {aggregated.summary()}")
-            baselines["after_dagger"] = aggregated.as_dict()
-            baselines["dagger_stats"] = dagger_stats
+        dagger_stats = dagger(
+            model,
+            data,
+            args.dagger_rounds,
+            args.dagger_episodes,
+            args.warm_start_epochs,
+            expert_dataset,
+            gamma=args.gamma,
+            value_coef=args.value_coef,
+            expert_kwargs=expert_kwargs,
+            lr=args.dagger_lr,
+            label_smoothing=args.label_smoothing,
+            reward_shaping=args.reward_shaping,
+        )
+        aggregated = evaluate(
+            build_env(data), sb3_policy(model), seeds=range(args.eval_episodes)
+        )
+        print(f"  after dagger: {aggregated.summary()}")
+        baselines["after_dagger"] = aggregated.as_dict()
+        baselines["dagger_stats"] = dagger_stats
 
     callback = MetricsCallback(data, args.eval_every, args.eval_episodes, run_dir)
     callbacks = [callback]
+    if args.bc_anchor_coef > 0:
+        if expert_dataset is None:
+            raise SystemExit(
+                "--bc-anchor-coef needs expert data: pass --warm-start, or "
+                "--anchor-episodes to collect some when using --init-from"
+            )
+        callbacks.append(BCAnchorCallback(
+            expert_dataset, args.bc_anchor_coef, args.bc_anchor_every,
+            args.batch_size, args.label_smoothing, args.bc_anchor_lr,
+            steps=args.bc_anchor_steps,
+        ))
+        per_rollout = (args.n_steps * args.envs) // args.bc_anchor_every
+        # From the model, not args: n_epochs is an sb3 default with no CLI
+        # flag, and referencing args.n_epochs crashed a run after its 200
+        # episodes of collection had already been paid for.
+        ppo_steps = model.n_epochs * (
+            (args.n_steps * args.envs) // args.batch_size
+        )
+        print(f"bc anchor: coef={args.bc_anchor_coef} "
+              f"every={args.bc_anchor_every} x {args.bc_anchor_steps} steps, "
+              f"lr={args.bc_anchor_lr} -- "
+              f"{per_rollout * args.bc_anchor_steps} anchor steps per rollout "
+              f"against PPO's {ppo_steps}")
     if pool is not None:
         callbacks.append(SnapshotCallback(pool, args.snapshot_every, run_dir))
     # `episodes` is the training budget in thousands of steps so the ledger's

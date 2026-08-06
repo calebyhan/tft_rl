@@ -187,6 +187,13 @@ both arms together. (§22, §30.5)
 | 58 | 08-05 | Imitation is exhausted at t=+1.71; early-game outcomes are ~unpredictable | ✅ |
 | 59 | 08-05 | The critic is data-limited and trained ~50x past its optimum | ✅ |
 | 60 | 08-05 | The critic was never the constraint: PPO collapses onto REROLL | ✅ |
+| 61 | 08-05 | The drift is not advantage-driven; REROLL is penalised and wins anyway | ✅ |
+| 62 | 08-05 | Not a shared-head artefact: REROLL rises under *any* perturbation | ✅ |
+| 63 | 08-05 | The drift goes to suppressed x always-legal actions; END_PLANNING leads | ✅ |
+| 64 | 08-06 | The PPO collapse is fixable; PPO still contributes nothing | ✅ |
+| 65 | 08-06 | Training-seed sd is 0.074; imitation is saturated at ~3.40 | ✅ |
+| 66 | 08-06 | Every lever is closed; gold has no sink and 3-stars never happen | ✅ |
+| 67 | 08-06 | Board size dominates; star scaling is correct; slow-roll test was crude | ⚠️ |
 
 ### The arc, in one table
 
@@ -6443,8 +6450,468 @@ that was never binding.
 in every arm here. Per-step signal is the intervention that addresses the
 measured cause rather than a symptom. Untested.
 
+### 60.4 Reward shaping, and a transient that was not real
+
+`--reward-shaping` was the test 60.3 named. It **also only delayed the
+collapse**: 8.000 unshaped against 6.283 shaped at 61k steps, from the same
+3.700 warm start. Reward sparsity is not the root cause either.
+
+One reading looked like the first RL improvement this project has ever
+produced -- **3.283 at 10k steps**, against a 3.700 warm start, with top-4 at
+71.7% vs 60.0%. It did not survive:
+
+| arm | placement (n=300) | vs teacher | t |
+|---|---|---|---|
+| TEACHER | 3.030 | -- | -- |
+| `ppo-shaped-10k` | 3.427 | +0.397 | +2.76 |
+| `ws1200` | 3.603 | +0.573 | +3.90 |
+
+**Paired: -0.177, t=-1.12.** Under the bar. Better in 124 games, worse in 101,
+tied in 75 -- a coin flip with a lean.
+
+The run's own log had already said so: consecutive evaluations at 10,000 and
+10,240 steps read **3.283 and 3.583**. A 0.3 swing from 240 steps of training is
+the n=60 noise floor, and it was visible before the verification was queued.
+
+**A selection effect worth naming.** The 10k point was chosen *after* looking at
+seven evaluations across three runs. Fresh evaluation seeds control for
+evaluation noise but not for having picked the best of seven draws. The clean
+version needs a second *training* seed, which is the axis that discriminates.
+
 *Lesson.* **An intervention that only moves the failure later is evidence
-against its own mechanism.** Four times today -- clipping, learning rate and
-decay on the DAgger divergence, then the entropy bonus here. Each looked like
-partial progress and each was a sign the diagnosis was wrong. Delay is not
-mitigation.
+against its own mechanism.** Five times today -- clipping, learning rate and
+decay on the DAgger divergence, then the entropy bonus and reward shaping here.
+Each looked like partial progress and each was a sign the diagnosis was wrong.
+Delay is not mitigation.
+
+---
+
+## 61. The drift is not advantage-driven (08-05)
+
+Entry 60 left one hypothesis standing: REROLL wins because the advantages
+reward it. `scripts/advantage_probe.py` reads PPO's **own** `RolloutBuffer`
+after `compute_returns_and_advantage`, so this is the signal the optimiser
+consumed, not a reimplementation of GAE.
+
+### 61.1 REROLL is penalised, and wins anyway
+
+`ws1200` (the warm start, where the drift begins), 81,920 transitions:
+
+| kind | n | mean adv | % positive |
+|---|---|---|---|
+| SELL | 19,638 | +0.0083 | 56.6% |
+| SELECT | 8,757 | +0.0070 | 55.4% |
+| END_PLANNING | 3,164 | +0.0043 | 51.8% |
+| BUY_XP | 9,474 | +0.0040 | 54.6% |
+| BUY | 27,755 | +0.0006 | 51.0% |
+| EQUIP | 3,226 | -0.0062 | 45.2% |
+| PLACE | 8,058 | -0.0103 | 43.5% |
+| **REROLL** | **139** | **-0.0107** | 40.3% |
+| PICK_AUGMENT | 735 | -0.0178 | 41.1% |
+
+`ppo-noent` (the collapsed policy, 12,288 transitions) agrees: REROLL -0.0042
+against -0.0039 overall, at n=1071. Measured from both ends, **REROLL is not
+preferentially rewarded**. The hypothesis is refuted -- the sixth today.
+
+**The advantages are also barely differentiated.** In the collapsed policy every
+kind falls between +0.0022 and -0.0063, a spread of 0.008 across categories
+spanning "build your board" and "burn gold for nothing".
+
+### 61.2 What this leaves: a shared-parameter coupling
+
+The slot head has per-kind heads (`sell_head`, `select_head`, `place_head`,
+`equip_head`, `buy_head`) and **one `global_net` producing END_PLANNING, BUY_XP
+and REROLL together**. Both of REROLL's siblings carry positive advantage
+(+0.0043, +0.0040). Pushing `global_net` toward them plausibly raises REROLL's
+logit as a side effect, against its own negative advantage.
+
+This is the first hypothesis today that is not about the reward. It predicts the
+collapse changes shape or disappears under `--no-slot-head`. **Untested.**
+
+### 61.3 Two process failures, same root
+
+`env_kwargs_from()` was written *for* this script to avoid rebuilding an env
+from module defaults (45.2) -- and then not called. A 381-vs-418 shape error
+caught it. An unused guard is worse than an absent one: it reads as solved.
+
+The probe printed a confident verdict from **three** REROLL samples, reading
++0.0380 -- the opposite of the n=1071 and n=139 answers. Had only the warm start
+been run at low volume, it would have confirmed the prevailing hypothesis on
+noise. A `MIN_SAMPLES` guard now blocks the verdict below 60.
+
+*Lesson.* **Read the signal before theorising about it.** Six hypotheses were
+proposed and refuted across entries 57, 60 and 61 -- five about reward or
+optimisation, one about the advantages. The probe that settled it took under an
+hour and could have been written before any of them.
+
+---
+
+## 62. REROLL rises under any perturbation (08-05)
+
+Entry 61 left one hypothesis: REROLL shares `global_net` with END_PLANNING and
+BUY_XP, both of which carry positive advantage, so pushing them lifts it.
+Tested directly -- ascend one action kind's log-prob from fixed weights, measure
+REROLL's before and after, with separate-head kinds as controls.
+
+| arm | shares `global_net` | REROLL delta |
+|---|---|---|
+| `buy_xp` | yes | +2.58 |
+| `end` | yes | +1.46 |
+| `buy` | no | +0.61 |
+| `place` | no | +0.10 |
+
+Shared +2.02 against separate +0.35, and the probe declared the coupling
+confirmed. **It was wrong.**
+
+### 62.1 The control that refuted it
+
+Freezing `global_net` and repeating the `end` arm should suppress the rise if
+the coupling runs through those weights. It **amplified** it: +5.03 against
++1.46. The mechanism is not `global_net`.
+
+That control is itself confounded -- freezing the head makes the objective
+harder to reach, forcing larger changes upstream, which perturbs everything
+more. It is enough to refute the specific claim, not to quantify a replacement.
+
+The arms were unequal in another way, noticed before the control ran: `buy` and
+`place` span many slot-scored indices, so a `logsumexp` push spreads thinner per
+index than for single-index `end`/`buy_xp`. The original contrast was never as
+clean as its verdict line implied.
+
+### 62.2 What survives
+
+REROLL's log-prob rose under **every** intervention -- +1.46, +2.58, +0.61,
++0.10, +5.03 -- and never fell, despite these being *normalised* log-probs where
+raising one action should lower the rest.
+
+The likely mechanism is unglamorous. Cloning drives rarely-taken actions to very
+low logits: REROLL sits at **-9.48** and is 0.2% of expert actions. Any
+perturbation of the shared representation regresses it upward. It is legal in
+**93.7%** of states, so as its probability recovers it gets sampled, and the loop
+closes. Nothing about reward, advantage or head structure is required.
+
+If that is right, the collapse is a property of *fine-tuning a heavily peaked
+cloned policy with a near-flat learning signal* -- not of PPO's configuration.
+Untested; it predicts the drift targets whichever legal action the clone
+suppressed hardest, not REROLL specifically.
+
+### 62.3 Seven hypotheses
+
+Across entries 57, 60, 61 and 62, in one day: gradient clipping, learning rate,
+AdamW decay, critic quality, entropy bonus, reward sparsity, a 10k transient,
+REROLL-is-rewarded, and the shared head. Every one was consistent with the
+evidence available when proposed, and every one was refuted by a measurement
+that took under an hour.
+
+*Lesson.* **Write the control before believing the arm.** This probe printed
+"COUPLING CONFIRMED" from a comparison whose asymmetry was already known, and
+the refuting control was one command away. A verdict line that can only say
+"confirmed" or "unexplained" will say "confirmed" too often.
+
+---
+
+## 63. The drift targets suppressed *and* always-legal actions (08-05)
+
+Entry 62 predicted the collapse was regression-to-the-mean in logit space: the
+mass PPO gains should concentrate on whatever cloning suppressed hardest. Both
+policies scored on the **same 3000 states**, paired per action index.
+
+### 63.1 The prediction as stated is false
+
+`correlation(baseline log-prob, gain) = +0.091` -- near zero and the *wrong
+sign*. Worse for the hypothesis:
+
+| baseline quintile | mean gain |
+|---|---|
+| lowest (most suppressed) | **-0.771** |
+| highest | -0.423 |
+
+The most suppressed actions *lost* more than the least. Suppression alone does
+not cause the runaway.
+
+### 63.2 What does: suppression x legality
+
+| among suppressed actions | n | mean gain |
+|---|---|---|
+| legal in >50% of states | 16 | **+0.178** |
+| legal in <=50% | 35 | -0.398 |
+
+A **+0.576** contrast. This was built as the falsifiable half precisely because
+no ceiling effect explains it -- the ceiling argument applies equally to both
+groups, which are matched on baseline.
+
+| top gainers | kind | legal | base | gain |
+|---|---|---|---|---|
+| 500 | **END_PLANNING** | 97.8% | -8.50 | **+3.61** |
+| 498 | REROLL | 93.8% | -9.43 | +1.58 |
+
+**The largest gainer is END_PLANNING, not REROLL** -- which independently
+explains the step count falling 881 -> 330 (60.2). The policy learns to stop
+playing, and REROLL is the runner-up rather than the story.
+
+### 63.3 The mechanism, and what it now predicts
+
+Only actions legal in nearly every state can absorb drifting probability mass;
+once they do they are sampled, and sampling reinforces them. Suppressed *and*
+always-legal is the conjunction. Neither reward, advantage (61), nor head
+structure (62) is required.
+
+This is the first hypothesis today to survive its own discriminating test, and
+one half of it was refuted in the same run -- which is the reason to believe the
+other half at all.
+
+**It predicts** that constraining the always-legal actions -- masking
+END_PLANNING until some minimum action count, or removing REROLL from a teacher
+that never uses it -- should change the collapse's shape, not merely delay it.
+Untested, and "delays it" is the outcome that would refute it, per 60.4's
+lesson.
+
+*Lesson.* **Build the half that can fail.** The correlation was always going to
+look supportive -- log-probs are bounded above, so some negative slope is
+mechanical. The legality split was matched on baseline and could have come back
+flat. It is the only part of this entry worth citing.
+
+---
+
+## 64. The collapse is fixable, and PPO still contributes nothing (08-06)
+
+Entry 63 located the drift: mass flows to actions cloning suppressed **and**
+that are legal nearly everywhere. The standard answer is an anchor to the
+cloned behaviour -- what RLHF does when fine-tuning an imitation model. Note it
+is *not* `--target-kl`, which bounds movement from the **rollout** policy and
+was reverted as the worst arm from a parity clone (23.5).
+
+Implemented as an auxiliary BC loss on frozen expert data rather than a KL term
+in PPO's objective, to avoid copying sb3-contrib's 118-line `train()` (silent
+drift on upgrade, and it would corrupt the `entropy_loss` logging that
+diagnosed 60-62).
+
+### 64.1 A configuration error that looked like a result
+
+The first anchored run degraded to 5.517 and lost expert agreement 82.6% ->
+65.1%. Read as "anchoring is too weak", it was arithmetic: the anchor fired
+**once** per 2048 environment steps while PPO ran `n_epochs=10` over 8
+minibatches -- **80** gradient steps in the same window. It measured one step
+against eighty.
+
+`--bc-anchor-steps` now matches the counts, and the run prints the ratio so the
+comparison cannot silently be unfair again.
+
+### 64.2 Matched, the collapse disappears
+
+| steps | anchor 1:80 | anchor 80:80 |
+|---|---|---|
+| 10k | 3.883 | 3.517 |
+| 30k | 4.417 | 3.667 |
+| 40k | 5.017 | 3.167 |
+| 61k | 5.517 | 3.683 |
+
+**No degradation across 60k steps** -- the first stable PPO run in this project,
+after six interventions failed (57.2, 60.1, 60.4).
+
+### 64.3 The control: it is not PPO
+
+Expert agreement *rose*, 82.6% -> 86.1%, and behaviour moved **toward** the
+teacher (BUY 285->335, SELL 200->248, steps 881->968). That is what continued
+cloning looks like, not what RL improvement looks like. The anchored arm also
+saw 200 expert episodes `ws1200` never did.
+
+`--learning-rate 0` zeroes PPO's updates while the anchor runs on its own Adam.
+300 shared seeds:
+
+| arm | placement | vs teacher | t |
+|---|---|---|---|
+| TEACHER | 3.030 | -- | -- |
+| **anchor-only (PPO disabled)** | **3.400** | +0.370 | +2.59 |
+| ppo-anchored2 | 3.513 | +0.483 | +3.02 |
+| ws1200 | 3.603 | +0.573 | +3.90 |
+
+Paired: **anchored2 - anchor-only = +0.113, t=+0.73** -- PPO makes it slightly
+*worse*. `anchor-only` is the best arm. All stability and all gain come from
+behaviour cloning; PPO is inert to mildly harmful.
+
+**The stable RL run is behaviour cloning in a PPO-shaped wrapper.**
+
+### 64.4 What does pay
+
+`anchor-only - ws1200 = -0.203, t=-1.35`: 200 extra expert episodes, suggestive
+and in the direction 59 predicted from imitation still being data-limited at
+1200 episodes. Imitation keeps paying; RL does not.
+
+*Lesson.* **Check the ratio before reading the arm.** An intervention given 1/80
+the gradient steps of what it opposes has not been tested. And a mid-run
+reversal was called here on a single n=60 checkpoint (anchor-only 4.083 vs
+3.517) that the 300-seed control flatly contradicted -- the fourth n=60 reading
+today to point the wrong way.
+
+---
+
+## 65. The training-seed noise floor, and what it invalidates (08-06)
+
+Four clones, identical configuration (400 episodes, smoothing, slot head),
+differing **only in training seed**, all on 300 shared evaluation seeds:
+
+| clone | placement |
+|---|---|
+| seedvar-1 | 3.387 |
+| bc_smooth (seed 0) | 3.390 |
+| seedvar-3 | 3.467 |
+| seedvar-2 | 3.543 |
+
+**spread 0.157, sd 0.074.** Largest pairwise |t| between *identically
+configured* clones: **1.00**.
+
+### 65.1 What it invalidates
+
+`ws1200` (1200 episodes) scored **3.603** -- outside the range of all four
+400-episode clones. Every arm built on it was then measured against it:
+
+| arm | vs `ws1200` | vs a typical clone |
+|---|---|---|
+| `ws1200-dagger` (3.410) | -0.193, t=-1.23 | **+0.02** |
+| `anchor-only` (3.400) | -0.203, t=-1.35 | **+0.01** |
+
+Both "gains" were `ws1200` being a poor draw. `ws1200-dagger` 3.410,
+`anchor-only` 3.400, `bc_smooth` 3.390 and `seedvar-1` 3.387 are **the same
+number**.
+
+**Imitation is saturated at ~3.40** -- 400 episodes or 1500, DAgger or not.
+Entry 64.4's "imitation keeps paying" is withdrawn: it was one unlucky baseline
+read as a trend.
+
+### 65.2 What survives
+
+Effects far larger than 0.157 stand: the PPO collapse (3.7 -> 8.0) and its fix,
+imitation's gap to the teacher (+0.36 to +0.51, t=+2.4 to +3.5), and the critic
+defects of 59. Effects near 0.2 measured on one training seed per arm do not.
+
+### 65.3 The statistical error
+
+A paired *evaluation* t answers "is this policy better on these seeds". A claim
+about a **method** needs the training seed varied too, and evaluation pairing
+cannot substitute -- no number of evaluation seeds averages out one training
+run's luck. With sd=0.074, detecting a 0.2 effect at |t|=2 needs roughly **2-3
+training seeds per arm**; one gives t~1.9 at best, which is where tonight's
+readings kept landing.
+
+*Lesson.* **A difference is uninterpretable without its noise floor** -- the
+same shape as *a rate is uninterpretable without its achievable maximum*, and
+unmeasured here for 65 entries. Evaluation noise was detected four times
+tonight and each time "fixed" by adding evaluation seeds (60 -> 300). That
+treats the symptom. The variance was upstream, and the 50 minutes this
+measurement cost could have been spent at any point in the preceding ten hours.
+
+---
+
+## 66. Every lever closed, and the reason is upstream (08-06)
+
+### 66.1 The teacher is at a local optimum on every parameter
+
+300 shared seeds, scripted policy, **no training seed** so these need no
+replication caveat. `roll_at_level=0` reproduces 3.030 as its control.
+
+| arm | placement | vs control | t |
+|---|---|---|---|
+| control | 3.030 | -- | -- |
+| roll_at_level=8 | 3.043 | +0.013 | +0.25 |
+| roll_at_level=7 | 3.187 | +0.157 | +1.73 |
+| roll_at_level=6 | 3.257 | +0.227 | +1.96 |
+| level_at_gold=40 | 3.190 | +0.160 | +1.43 |
+| level_at_gold=20 | 3.207 | +0.177 | +1.45 |
+| keep_interest=False | 3.257 | +0.227 | +1.81 |
+| level_at_gold=50 | 3.310 | +0.280 | +2.31 |
+
+Every change is worse, and `level_at_gold` degrades in **both** directions.
+Rerolling never helps -- 61's observation that REROLL is 0.2% of expert actions
+was the teacher being *correct*.
+
+### 66.2 The imitation gap is diffuse
+
+Gap attribution on `seedvar-1` (a typical clone, not the unlucky `ws1200`).
+Both controls pass: delegating nothing gives 3.387, everything gives 3.030.
+
+| delegated | recovered | % of gap | t |
+|---|---|---|---|
+| BUY | +0.113 | 32% | -0.78 |
+| MOVE | +0.097 | 27% | -0.65 |
+| PICK | +0.090 | 25% | -0.75 |
+| EQUIP | +0.023 | 7% | -0.23 |
+| ECON | +0.020 | 6% | -0.20 |
+| SELL | -0.053 | -15% | +0.35 |
+| **all** | **+0.357** | 100% | **-2.38** |
+
+Full delegation recovers the gap; **no single kind does**. Three kinds carry a
+quarter each, none individually significant. There is no targeted fix.
+
+### 66.3 Why everything is closed: gold has no sink
+
+Living players, mid-game, 30 games:
+
+| round | gold | board | level | stars |
+|---|---|---|---|---|
+| 12 | 42.6 | 5.25 | 5.33 | 82% 1-star, 18% 2-star |
+| 20 | 72.0 | 6.95 | 6.97 | 65% / 35% |
+| 28 | **107.8** | 7.66 | 7.42 | 48% / 52%, **~0% 3-star** |
+
+Gold accumulates without bound, and **3-stars essentially never occur** (0.3%
+across whole games). In real TFT gold sits near the 50 interest cap because
+anything above it is spent, and 3-star low-cost units are routine by stage 4-5.
+
+These are one finding: **gold has no effective sink**. That also explains 66.1 --
+rolling is harmful and `level_at_gold` is already optimal not because the
+teacher is well-tuned but because there is nothing worth converting gold into.
+A ceiling of 3.030 follows from the economy, not from the decision rules.
+
+*Lesson.* **When every lever is at a local optimum, suspect the terrain.** Seven
+parameters, two policy classes and an entire RL programme all bottomed out
+around the same value. The common cause was upstream of all of them, and one
+descriptive measurement of the game state found it. Nothing in this project had
+ever printed the average gold.
+
+### 66.4 Next
+
+Diagnose the missing sink before any further optimisation. Candidates: shop
+odds or pool sizes making upgrades unreachable, the teacher selling the
+duplicates 3-stars need (`sell_bench`, worth +1.893 in 52), or a level cap
+interacting with `xpTable`. All are data/engine questions, not ML ones.
+
+---
+
+## 67. Board size dominates, and the slow-roll test was too crude (08-06)
+
+66.4 named the missing gold sink as the thing to diagnose. The 3-star path
+needs the real TFT pattern -- hold at low level where 1-cost odds are high, roll
+for copies -- which 66.1's **one-at-a-time** sweeps could not have found, since
+it requires two changes together.
+
+| arm | placement | vs control | t |
+|---|---|---|---|
+| control (lvl30, no roll) | 3.030 | -- | -- |
+| greedy-lvl (lvl20, roll@8) | 3.263 | +0.233 | +1.87 |
+| slow-roll (lvl80, roll@7) | 4.283 | +1.253 | +9.10 |
+| slow-roll (lvl80, roll@6) | 4.407 | +1.377 | **+9.70** |
+
+Catastrophic -- among the largest effects in this log. **Board size dominates**:
+delaying levels costs slots, and slots decide fights.
+
+### 67.1 Star scaling is not the cause
+
+If 3-stars were underpowered the reroll path would be correctly unattractive.
+They are not. Across all 63 champions the 3-star/1-star ratios are **3.24x
+health and 2.25x attack damage** -- exactly real TFT's 1.8^2 and 1.5^2, with
+zero variance. The unit-quality math is right.
+
+### 67.2 Why this entry is flagged, not concluded
+
+`level_at_gold=80` starves levelling from stage 1. Real slow-rolling holds at
+level **6-7 with a nearly full board** and rolls surplus gold. This tested
+"never level" and labelled it "slow roll"; the t=+9.70 largely measures the cost
+of a small board, which was already known. **It does not establish that reroll
+strategies are non-viable here** -- that claim needs an arm that reaches level
+6-7 normally and then rolls, which has not been run.
+
+*Lesson.* **A one-at-a-time sweep cannot find a strategy that needs two changes
+at once.** 66.1 concluded "local optimum on every parameter" from seven
+independent sweeps and stated it more confidently than that design supports. The
+conjunction was invisible by construction -- and the first conjunction tried was
+then mis-specified, so the question is still open.
