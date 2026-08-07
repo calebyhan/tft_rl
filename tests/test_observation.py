@@ -538,3 +538,79 @@ def test_copy_count_does_not_disturb_the_rank_tail(real_data, encoding, populate
 
     for slot in (0, 1):
         assert ranks(wide, slot) == pytest.approx(ranks(plain, slot))
+
+
+def test_unit_range_encodes_each_unit_s_derived_attack_range():
+    """The quantity the teacher's placement rule actually thresholds on.
+
+    Doc 99 entry 82.1 localised the only disagreement that costs placement to
+    SELECT/PLACE (-0.194, t=-2.28). The teacher's rule is `attack_range <= 1`
+    -> front row, else back; under the `index` encoding a unit's range is
+    recoverable only by memorising champion id -> range, which CLAUDE.md says
+    a flat MLP will not do. This supplies it.
+
+    Asserts the value against the engine's own `derived_stats()` per hex, not
+    against a recomputed constant -- items and traits can change range, and a
+    test that re-derived it could agree with a broken encoder.
+    """
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from engine.loader import load_all
+    from rl.env import TFTEnv
+    from rl.evaluate import scripted_policy
+    from rl.observation import SELECTION_FEATURES, SELF_FEATURES
+    from rl.opponents import STANDARD
+    from tests.paths import REAL_DATA_DIR
+
+    data = load_all(REAL_DATA_DIR)
+    plain = TFTEnv(data=data, copy_counts=True)
+    env = TFTEnv(data=data, copy_counts=True, unit_range=True)
+
+    board = env.encoder.spec.board_slots
+    bench = env.encoder.spec.bench_slots
+    grew = env.observation_space.shape[0] - plain.observation_space.shape[0]
+    assert grew == board + bench, (
+        f"unit_range should add one float per unit slot ({board + bench}), "
+        f"added {grew}"
+    )
+
+    policy = scripted_policy(env, sell_bench=True, buy_synergy=True,
+                             match_items=True, corner_carry=True, econ=STANDARD)
+    obs, _info = env.reset(seed=0)
+    for _ in range(4000):
+        obs, _r, term, trunc, _i = env.step(policy(obs, env.action_masks()))
+        if len(env.player.board) >= 3:
+            break
+        if term or trunc:
+            obs, _info = env.reset(seed=1)
+    assert len(env.player.board) >= 3, (
+        "never fielded a board -- this test would otherwise assert nothing"
+    )
+
+    width = env.encoder.spec.unit_width
+    start = SELF_FEATURES + SELECTION_FEATURES
+    hexes = sorted(env._board_hexes)
+    encoded = {
+        hexes[i]: float(obs[start + i * width + width - 1])
+        for i in range(board)
+    }
+    for hex_, unit in env.player.board.items():
+        expected = min(
+            unit.derived_stats().attack_range / env.encoder._max_range, 1.0
+        )
+        assert encoded[hex_] == pytest.approx(expected), (
+            f"{hex_}: encoded {encoded[hex_]}, engine says {expected}"
+        )
+    for hex_ in hexes:
+        if hex_ not in env.player.board:
+            assert encoded[hex_] == 0.0, f"empty {hex_} carries a range"
+
+    # A feature that is constant across champions would be worthless. The
+    # roster splits 32 melee / 31 ranged, so the encoding must span >1 value.
+    ranges = {
+        min(c.stats.attack_range / env.encoder._max_range, 1.0)
+        for c in data.champions.values()
+    }
+    assert len(ranges) > 1, "attack_range does not discriminate in this dataset"

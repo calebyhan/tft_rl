@@ -146,18 +146,34 @@ def test_baseline_policies_never_take_an_illegal_action(env):
 
 
 @pytest.mark.slow
-def test_a_scripted_policy_reaches_parity_with_the_bots(env):
+def test_a_scripted_policy_reaches_parity_with_the_bots(data):
     """The environment must not handicap the agent seat.
 
     A heuristic driving the action space should place about average (4.5)
-    against seven copies of the same heuristic. Materially worse means the
-    action space cannot express competent play, and no learned policy could
-    do better either.
+    against seven seats running the *equivalent* heuristic. Materially worse
+    means the action space cannot express competent play, and no learned policy
+    could do better either.
+
+    **The opponents must be matched to the agent.** Until doc 99 entry 71 the
+    default field was seven copies of the unflagged bot, so the bare
+    `scripted_policy` was a fair comparison. The field now runs real economy
+    plans, and an unflagged policy loses to it *correctly* -- this test read
+    5.50 against its own 5.5 bound for that reason, measuring the agent's lack
+    of an economy rather than the action space. Giving both sides the same
+    plan restores what the test is for.
     """
-    result = evaluate(env, scripted_policy(env), seeds=range(30))
+    from rl.opponents import STANDARD, GreedyPolicy
+
+    env = TFTEnv(data=data)
+    env.opponent_factory = lambda seat: GreedyPolicy(seed=seat, econ=STANDARD)
+    policy = scripted_policy(
+        env, econ=STANDARD, sell_bench=True,
+        buy_synergy=True, match_items=True, corner_carry=True,
+    )
+    result = evaluate(env, policy, seeds=range(30))
     assert result.avg_placement < 5.5, (
-        f"scripted play only reached {result.avg_placement:.2f}; "
-        "the action space or env is handicapping the agent seat"
+        f"scripted play only reached {result.avg_placement:.2f} against a "
+        "matched field; the action space or env is handicapping the agent seat"
     )
     assert result.win_rate > 0.10
 
@@ -433,6 +449,83 @@ def test_rolling_without_selling_spins_on_a_shop_it_cannot_buy_from(real_env):
     # Rolls a great deal, converts almost none of it into units.
     assert rolling["BUY"] < 1.2 * plain["BUY"]
     assert both["BUY"] > 2 * rolling["BUY"]
+
+
+def _levels_when_buying_xp(env, policy, seeds):
+    """The agent's level at the moment it chooses to *buy* XP, and its finals."""
+    space = env.action_space_helper
+    at_purchase, finals = [], []
+    for seed in seeds:
+        obs, _info = env.reset(seed=seed)
+        done = False
+        while not done:
+            action = policy(obs, env.action_masks())
+            if action == space.buy_xp_index:
+                at_purchase.append(env.player.level)
+            obs, _r, done, _t, _i = env.step(action)
+        finals.append(env.player.level)
+    return at_purchase, finals
+
+
+def test_level_cap_defaults_off_so_prior_numbers_reproduce(real_env):
+    seeds = range(4)
+    plain = _play(real_env, scripted_policy(real_env, sell_bench=True), seeds)
+    defaulted = _play(
+        real_env, scripted_policy(real_env, sell_bench=True, level_cap=0), seeds
+    )
+    assert plain.placements == defaulted.placements
+
+
+def test_level_cap_binds_without_delaying_the_climb_to_it(real_env):
+    """The distinction doc 99 entry 67 could not express.
+
+    ``level_at_gold=80`` starves levelling from stage 1; ``level_cap`` must
+    leave the climb alone and only stop *spending* on it at the ceiling. So the
+    capped arm must (a) never buy XP at or above the cap and (b) still reach
+    it -- an arm that stalled at level 4 would satisfy (a) while testing the
+    wrong thing, which is exactly entry 67's mis-specification.
+
+    Final level is deliberately *not* asserted to stay at the cap: passive XP
+    is 2/round against 36 to go 6->7, so a long game drifts past it. That is
+    real TFT's behaviour too -- a slow-roller stops paying for levels, it does
+    not stop receiving them.
+    """
+    seeds = range(4)
+    uncapped_buys, uncapped_finals = _levels_when_buying_xp(
+        real_env, scripted_policy(real_env, sell_bench=True), seeds
+    )
+    capped_buys, capped_finals = _levels_when_buying_xp(
+        real_env, scripted_policy(real_env, sell_bench=True, level_cap=6), seeds
+    )
+
+    assert max(uncapped_buys) >= 6, (
+        f"the uncapped policy never bought XP at level 6+ ({set(uncapped_buys)}), "
+        "so the cap cannot be shown to bind"
+    )
+    assert capped_buys, "the capped policy bought no XP at all -- it starved"
+    assert max(capped_buys) < 6, f"the cap leaked: bought XP at {set(capped_buys)}"
+    assert max(capped_finals) >= 6, (
+        f"the cap was never reached, so it starved: {capped_finals}"
+    )
+    assert max(capped_finals) < max(uncapped_finals), (
+        f"capping must hold levels below the uncapped arm: "
+        f"{capped_finals} vs {uncapped_finals}"
+    )
+
+
+def test_level_cap_frees_gold_for_the_reroll_branch(real_env):
+    """Capping is what makes rolling reachable: XP stops consuming the gold."""
+    seeds = range(4)
+    base = dict(sell_bench=True, roll_at_level=6)
+    uncapped = _action_kinds(real_env, scripted_policy(real_env, **base), seeds)
+    capped = _action_kinds(
+        real_env, scripted_policy(real_env, **base, level_cap=7), seeds
+    )
+    assert capped["BUY_XP"] < uncapped["BUY_XP"], "the cap did not reduce levelling"
+    assert capped["REROLL"] > uncapped["REROLL"], (
+        f"freed gold must reach the reroll branch: "
+        f"{uncapped['REROLL']} -> {capped['REROLL']}"
+    )
 
 
 def test_selling_never_breaks_up_a_pair(real_env):

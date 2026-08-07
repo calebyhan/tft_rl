@@ -50,18 +50,54 @@ def paired_t(a: list[int], b: list[int]) -> tuple[float, float]:
     return mean, (mean / math.sqrt(var / n) if var > 0 else 0.0)
 
 
-def teacher_config(run_dir: Path) -> tuple[dict, dict]:
-    """The teacher flags and env options this run was actually trained with."""
+def search_config(args: dict) -> dict | None:
+    """The positional-search budget a run's teacher was wrapped in, or None.
+
+    Same reasoning as `econ` below: a search teacher places 3.883 against the
+    plain econ teacher's 4.213 (doc 99 entry 78.2), so reconstructing without
+    it scores a clone against a teacher 0.330 weaker than the one that
+    labelled it. The budget matters too -- c6/p1 is not distinguishable from
+    no search at all -- so it is read rather than assumed. The fallbacks are
+    6/1 because that is what runs predating these flags hardcoded, not because
+    it is a sensible default for a new run.
+    """
+    if not args.get("expert_reposition", False):
+        return None
+    return {
+        "mode": "move",
+        "max_candidates": args.get("expert_reposition_candidates", 6),
+        "panel_size": args.get("expert_reposition_panel", 1),
+        # Defaults **False**, opposite to `best_move`'s own default. Runs
+        # predating entry 79.4 were labelled by the free-running stream, and
+        # rebuilding them state-seeded would score those clones against a
+        # teacher that never labelled them -- the same failure this function
+        # exists to prevent, arriving through a changed default rather than a
+        # dropped key.
+        "state_seeded": args.get("expert_reposition_state_seeded", False),
+    }
+
+
+def teacher_config(run_dir: Path) -> tuple[dict, dict, dict | None]:
+    """The teacher flags, env options and search budget this run was trained with."""
+    from rl.opponents import STRATEGIES
+
     meta = json.loads((run_dir / "metadata.json").read_text())
     args = meta.get("args", meta.get("hyperparameters", {}))
     expert = {flag: bool(args.get(key, False)) for flag, key in FLAG_KEYS.items()}
     expert["roll_at_level"] = args.get("expert_roll_at_level", 0) or 0
+    # Must come from the sidecar. Dropping it silently rebuilds a *no-econ*
+    # teacher, which places 4.823 against 4.213 -- so a clone trained on the
+    # good teacher would be scored against the bad one and the gap would be
+    # measured against a policy that never labelled it (doc 99 entry 74).
+    econ_name = args.get("expert_econ")
+    expert["econ"] = STRATEGIES[econ_name] if econ_name else None
     env = {
         "copy_counts": bool(args.get("copy_counts", False)),
         "champion_encoding": args.get("champion_encoding", "index"),
         "scouting": args.get("scouting", "summary"),
+        "unit_range": bool(args.get("unit_range", False)),
     }
-    return expert, env
+    return expert, env, search_config(args)
 
 
 def main() -> None:
@@ -73,15 +109,17 @@ def main() -> None:
     args = parser.parse_args()
 
     seeds = list(range(args.episodes))
-    expert, env_kwargs = teacher_config(args.runs[0])
+    expert, env_kwargs, search_kwargs = teacher_config(args.runs[0])
     print(f"teacher flags (from {args.runs[0].name}): "
-          + " ".join(f"{k}={v}" for k, v in expert.items()))
+          + " ".join(f"{k}={v}" for k, v in expert.items())
+          + f" search={search_kwargs}")
 
     results = {}
     with timed("teacher_gap", episodes=args.episodes,
                arms=len(args.runs) + 1, workers=args.workers):
         results["TEACHER (scripted)"] = evaluate_scripted_parallel(
-            seeds, workers=args.workers, env_kwargs=env_kwargs, **expert
+            seeds, workers=args.workers, env_kwargs=env_kwargs,
+            search_kwargs=search_kwargs, **expert
         )
         for run_dir in args.runs:
             results[run_dir.name] = evaluate_model_parallel(

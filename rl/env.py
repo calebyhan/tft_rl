@@ -32,9 +32,17 @@ from engine.player import IllegalAction, PlayerState
 from engine.schema import GameData
 from rl.action import ActionExecutor, ActionKind, ActionSpace
 from rl.observation import ObservationEncoder
-from rl.opponents import GreedyPolicy
+from rl.opponents import default_opponent
 
-DEFAULT_MAX_ACTIONS_PER_ROUND = 12
+# Doc 99 entry 69: at 12 the agent could not express a roll-down round -- ~25
+# rerolls plus buys and placements is ~40 actions -- while the opponents now
+# genuinely do that. 12 forecloses every reroll strategy by construction and
+# was the binding constraint on the whole economy.
+#
+# This is a **cap, not a cost**: `END_PLANNING` advances the round whatever the
+# budget, so a policy that finishes early pays nothing for the headroom. Only
+# an exploring policy that spends actions it does not need pays for it.
+DEFAULT_MAX_ACTIONS_PER_ROUND = 50
 
 # How dense shaping is computed. "potential" is policy-invariant; "bonus"
 # is the earlier standing-payment form, kept only for comparison.
@@ -80,6 +88,7 @@ class TFTEnv(gym.Env):
         champion_encoding: str = "index",
         scouting: str = "summary",
         copy_counts: bool = False,
+        unit_range: bool = False,
         shaping_mode: str = "potential",
         shaping_gamma: float = 0.999,
         seed: int | None = None,
@@ -93,7 +102,11 @@ class TFTEnv(gym.Env):
         if not 0 <= agent_seat < self.n_players:
             raise ValueError(f"agent_seat must be 0..{self.n_players - 1}")
         self.agent_seat = agent_seat
-        self.opponent_factory = opponent_factory or (lambda seat: GreedyPolicy(seed=seat))
+        # A mixed field of real economy strategies (doc 99 entry 71). The old
+        # default was eight identical `GreedyPolicy` seats that bought XP once
+        # per round and banked 145 gold by 6-4 -- not an opponent a policy
+        # meant for real TFT should be trained against.
+        self.opponent_factory = opponent_factory or default_opponent
         self.max_actions_per_round = max_actions_per_round
         self.reward_shaping = reward_shaping
         self.board_reward_weight = board_reward_weight
@@ -127,6 +140,7 @@ class TFTEnv(gym.Env):
             champion_encoding=champion_encoding,
             scouting=scouting,
             copy_counts=copy_counts,
+            unit_range=unit_range,
         )
 
         self.action_space = spaces.Discrete(self.action_space_helper.n)

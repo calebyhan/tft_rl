@@ -274,6 +274,7 @@ class _Args:
         self.champion_encoding = "index"
         self.scouting = "summary"
         self.slot_head = True
+        self.unit_range = False
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -284,6 +285,7 @@ def _checkpoint(tmp_path: Path, **hyperparameters) -> Path:
         "champion_encoding": "index",
         "scouting": "summary",
         "slot_head": True,
+        "unit_range": False,
     }
     saved.update(hyperparameters)
     (tmp_path / "metadata.json").write_text(
@@ -303,6 +305,7 @@ def test_matching_flags_pass(tmp_path):
         ("slot_head", False),
         ("champion_encoding", "features"),
         ("scouting", "full"),
+        ("unit_range", True),
     ],
 )
 def test_each_architecture_flag_is_checked(tmp_path, flag, value):
@@ -320,7 +323,8 @@ def test_each_architecture_flag_is_checked(tmp_path, flag, value):
 
 def test_every_architecture_flag_is_exercised_by_the_parametrisation():
     """Guards against a flag being added to the tuple but never tested."""
-    covered = {"copy_counts", "slot_head", "champion_encoding", "scouting"}
+    covered = {"copy_counts", "slot_head", "champion_encoding", "scouting",
+               "unit_range"}
     assert set(ARCHITECTURE_FLAGS) == covered
 
 

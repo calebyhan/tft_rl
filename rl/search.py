@@ -27,6 +27,7 @@ search running and discards its result.
 
 from __future__ import annotations
 
+import hashlib
 import random
 from typing import Sequence
 
@@ -282,6 +283,7 @@ def best_move(
     panel_size: int = 1,
     margin: float = 0.5,
     trials: int = 3,
+    state_seeded: bool = True,
 ) -> tuple[object, object] | None:
     """Search *where* a unit stands rather than *which* unit is fielded.
 
@@ -309,9 +311,38 @@ def best_move(
 
     board = player.hex_board
     data = player.data
-    seeds = [[rng.randrange(2**31) for _ in range(trials)] for _ in panel]
     occupied = sorted(player.board)
     free = [h for h in sorted(player._own_hexes) if h not in player.board]
+    # `state_seeded` decides whether this teacher is a *function of the board*.
+    #
+    # The candidate set is sampled from ~200 legal moves (see below), and with
+    # a free-running stream two calls on a byte-identical board consider
+    # different candidates. Entry 79.3 measured the consequence: across five
+    # streams the search returned five different answers on 55% of states, and
+    # agreed with itself only 38.7% of the time. That 38.7% is a hard ceiling
+    # on how well any student can imitate it -- the map from observation to
+    # action is one-to-many, so cloning can only learn the marginal, which is a
+    # blur over many good moves rather than a good move. It is why the search
+    # teacher gained 0.330 (78.2) and its clone gained nothing (79.1).
+    #
+    # Seeding from the board layout keeps the sampling distribution -- moves
+    # are still drawn uniformly, so search *quality* is untouched -- while
+    # making the draw reproducible for a given state. `rng` still supplies the
+    # stream when `state_seeded=False`, which reproduces every pre-79 number.
+    if state_seeded:
+        # `hash()` is NOT usable here: Python randomises string hashing per
+        # process via PYTHONHASHSEED, so the key would differ across the spawn
+        # workers `evaluate_scripted_parallel` and `collect_expert_data` use --
+        # reintroducing exactly the state-dependence this removes, while
+        # looking deterministic in a single-process test.
+        key = hashlib.sha256(repr((
+            [(str(h), player.board[h].champion.id, player.board[h].star_level)
+             for h in occupied],
+            [str(h) for h in free],
+            [p.player_id for p in panel],
+        )).encode()).digest()
+        rng = random.Random(int.from_bytes(key[:8], "big"))
+    seeds = [[rng.randrange(2**31) for _ in range(trials)] for _ in panel]
 
     def score(layout: dict) -> float:
         original = dict(player.board)

@@ -63,10 +63,14 @@ def paired_t(a: list[int], b: list[int]) -> tuple[float, float]:
     return mean, (mean / math.sqrt(var / n) if var > 0 else 0.0)
 
 
-def config_for(run_dir: Path) -> tuple[dict, dict]:
+def config_for(run_dir: Path) -> tuple[dict, dict, dict | None]:
+    from rl.opponents import STRATEGIES
+    from scripts.teacher_gap import search_config
+
     meta = json.loads((run_dir / "metadata.json").read_text())
     args = meta.get("args", meta.get("hyperparameters", {}))
     flags = bool(args.get("expert_flags", False))
+    econ_name = args.get("expert_econ")
     return (
         {
             "sell_bench": bool(args.get("expert_sell", False)),
@@ -74,17 +78,24 @@ def config_for(run_dir: Path) -> tuple[dict, dict]:
             "match_items": flags,
             "corner_carry": flags,
             "roll_at_level": args.get("expert_roll_at_level", 0) or 0,
+            # From the sidecar, never assumed: see teacher_gap.teacher_config.
+            "econ": STRATEGIES[econ_name] if econ_name else None,
         },
         {
             "copy_counts": bool(args.get("copy_counts", False)),
             "champion_encoding": args.get("champion_encoding", "index"),
             "scouting": args.get("scouting", "summary"),
+            "unit_range": bool(args.get("unit_range", False)),
         },
+        # Same reason as `econ`: a search teacher is 0.330 stronger (78.2), so
+        # omitting it here would fill the `teacher` arms with a weaker policy
+        # than the one the run was cloned from.
+        search_config(args),
     )
 
 
 def _init(run_dir: str, env_kwargs: dict, expert_kwargs: dict,
-          agent: str, opponents: str) -> None:
+          agent: str, opponents: str, search_kwargs: dict | None) -> None:
     import logging
 
     import torch
@@ -109,7 +120,12 @@ def _init(run_dir: str, env_kwargs: dict, expert_kwargs: dict,
         env.opponent_factory = snapshot_factory(pool, env, mix=1.0, seed=7)
 
     if agent == "teacher":
-        _WORKER["policy"] = scripted_policy(env, **expert_kwargs)
+        policy = scripted_policy(env, **expert_kwargs)
+        if search_kwargs is not None:
+            from rl.search import search_policy
+
+            policy = search_policy(env, base=policy, **search_kwargs)
+        _WORKER["policy"] = policy
     elif agent == "clone":
         _WORKER["policy"] = sb3_policy(
             MaskablePPO.load(run_dir, device="cpu")
@@ -129,13 +145,14 @@ def _episode(seed: int):
     return seed, result.placements[0], result.rewards[0], result.rounds[0]
 
 
-def run_arm(run_dir, seeds, agent, opponents, workers, env_kwargs, expert_kwargs):
+def run_arm(run_dir, seeds, agent, opponents, workers, env_kwargs, expert_kwargs,
+            search_kwargs=None):
     context = mp.get_context("spawn")
     with context.Pool(
         processes=workers,
         initializer=_init,
         initargs=(str(run_dir / "model"), env_kwargs, expert_kwargs,
-                  agent, opponents),
+                  agent, opponents, search_kwargs),
     ) as pool:
         rows = list(pool.imap_unordered(_episode, list(seeds)))
     by_seed = {seed: row for seed, *row in rows}
@@ -157,8 +174,8 @@ def main() -> None:
     args = parser.parse_args()
 
     seeds = list(range(args.episodes))
-    expert_kwargs, env_kwargs = config_for(args.run)
-    print(f"opponent policy: {args.run.name}")
+    expert_kwargs, env_kwargs, search_kwargs = config_for(args.run)
+    print(f"opponent policy: {args.run.name}  teacher search={search_kwargs}")
 
     results = {}
     with timed("teacher_check", episodes=args.episodes,
@@ -167,7 +184,7 @@ def main() -> None:
             name = f"{agent} vs {opponents}"
             results[name] = run_arm(
                 args.run, seeds, agent, opponents, args.workers,
-                env_kwargs, expert_kwargs,
+                env_kwargs, expert_kwargs, search_kwargs,
             )
             print(f"  {name:<22}{results[name].avg_placement:.3f}", flush=True)
 

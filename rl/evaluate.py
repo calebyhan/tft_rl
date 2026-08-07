@@ -17,6 +17,7 @@ import numpy as np
 from engine.hexgrid import axial_to_offset
 from engine.traits import trait_counts
 from rl.env import TFTEnv
+from rl.opponents import reroll_targets
 
 # Last-place rate above which a result is treated as degenerate rather than
 # measured. 50% is well clear of a competent policy (the scripted baseline sits
@@ -274,7 +275,10 @@ def scripted_policy(
     match_items: bool = False,
     corner_carry: bool = False,
     roll_at_level: int = 0,
+    level_cap: int = 0,
     sell_bench: bool = False,
+    econ=None,
+    place_rule: str = "rows",
 ) -> PolicyFn:
     """A competent heuristic expressed **through the action space**.
 
@@ -318,6 +322,30 @@ def scripted_policy(
         was the only unbounded gold sink and levelling won by construction
         (doc 99 entry 36.6). Rolling is the primary gold sink in real TFT and
         the only way to convert gold into specific units.
+
+    ``level_cap``
+        Stop *buying* XP at this level. **0 disables it.** Passive XP still
+        applies, so a long game drifts past the cap -- 2/round against 36 to go
+        6->7. That matches real TFT, where a slow-roller stops paying for
+        levels rather than stops receiving them. Measured in doc 99 entry 68:
+        capping costs +0.553 at level 8 and +1.730 at level 7, and rolling the
+        freed gold recovers **none** of it. This is the knob real
+        slow-rolling needs and the one this project did not have: doc 99 entry
+        67 tried to express it as ``level_at_gold=80``, which starves levelling
+        from stage 1 and tests "never level" rather than "level normally to 6-7,
+        then hold". Separating the two requires capping the *destination*
+        without delaying the *journey*, which no existing parameter does.
+
+    ``econ``
+        An :class:`~rl.opponents.EconStrategy`, which **replaces**
+        ``level_at_gold``/``roll_at_level``/``level_cap`` with a real economy
+        plan: level to the curve, roll down to the floor that round calls for.
+
+        Doc 99 entry 72's motivation: once the field ran real economies the
+        teacher's edge over parity fell from 1.470 to 0.617, because the
+        opponents had an economy and the teacher had "buy XP whenever gold >=
+        30". A teacher that is the imitation target for an agent meant to play
+        real TFT should not be the worst economist at the table.
 
     ``sell_bench``
         Sell the weakest bench unit when the bench is full and it is not
@@ -398,7 +426,41 @@ def scripted_policy(
 
                     return space.place_offset + max(empty, key=corner_key)
                 empty.sort(key=lambda s: axial_to_offset(space.hex_for_slot(s))[0] - half_rows)
-                return space.place_offset + (empty[-1] if ranged else empty[0])
+                if place_rule == "rows":
+                    return space.place_offset + (empty[-1] if ranged else empty[0])
+                # `rows` sorts by depth and takes an end. The sort is *stable*,
+                # so within the chosen row ties break by slot index and every
+                # unit lands on the same flank -- the board clumps into one
+                # corner. Entry 80 tests whether spreading pays: a clumped
+                # board is what area abilities and a single focused enemy carry
+                # punish. Both alternatives are deterministic functions of the
+                # board, so unlike the search (79.9) a clone can follow them.
+                def depth_of(slot: int) -> int:
+                    return axial_to_offset(space.hex_for_slot(slot))[0] - half_rows
+
+                extreme = max(map(depth_of, empty)) if ranged else min(
+                    map(depth_of, empty))
+                row_slots = [s for s in empty if depth_of(s) == extreme]
+                centre = (player.hex_board.cols - 1) / 2
+
+                def col_of(slot: int) -> int:
+                    return axial_to_offset(space.hex_for_slot(slot))[1]
+
+                if place_rule == "centre":
+                    return space.place_offset + min(
+                        row_slots, key=lambda s: (abs(col_of(s) - centre), s))
+                if place_rule == "spread":
+                    taken = [axial_to_offset(h)[1] for h in player.board]
+                    if not taken:
+                        return space.place_offset + min(
+                            row_slots, key=lambda s: (abs(col_of(s) - centre), s))
+                    # Furthest column from any fielded unit, centre-most on a
+                    # tie so the board fills outward rather than to one edge.
+                    return space.place_offset + max(
+                        row_slots,
+                        key=lambda s: (min(abs(col_of(s) - c) for c in taken),
+                                       -abs(col_of(s) - centre), -s))
+                raise ValueError(f"unknown place_rule {place_rule!r}")
 
             # Board is full: swap out the weakest fielded unit if this is better.
             if player.board and held is not None:
@@ -444,7 +506,12 @@ def scripted_policy(
                     return action
 
         # -- nothing held --------------------------------------------------
-        budget = spendable(player)
+        #
+        # Under an econ plan, buying spends full gold: the interest floor
+        # governs *rolling*, not buying. Gating purchases at gold-50 means a
+        # policy that rolls down to 50 cannot buy what it just rolled for
+        # (doc 99 entry 73).
+        budget = player.gold if econ is not None else spendable(player)
         buys = [
             i
             for i in range(space.shop_slots)
@@ -453,13 +520,29 @@ def scripted_policy(
         if buys:
             counts = trait_counts(player.all_units) if buy_synergy else {}
 
+            # A reroll plan's whole purpose is concentrating copies into a few
+            # champions. `EconStrategy` declares which via `target_cost` /
+            # `target_count`, `GreedyPolicy` has always honoured it, and this
+            # policy silently ignored it -- so `slowroll6` rolled the shop and
+            # bought by generic strength, reaching **0** three-stars in the
+            # agent seat against 100% in the field (doc 99 entry 86). A target
+            # outranks synergy and cost: a fourth copy of the carry is worth
+            # more than a better unit the plan will never star up.
+            targets = reroll_targets(player, econ)
+
             def buy_key(i: int):
                 champion = player.data.champions[player.shop.slots[i]]
                 owned = any(u.champion.id == champion.id for u in player.all_units)
+                target = champion.id in targets or (
+                    # Nothing held yet at the target cost: any unit of that
+                    # cost is a candidate carry, or the plan can never start.
+                    not targets and econ is not None and econ.target_cost
+                    and champion.cost == econ.target_cost
+                )
                 if not buy_synergy:
-                    return (owned, 0, champion.cost)
+                    return (target, owned, 0, champion.cost)
                 synergy = sum(counts.get(t, 0) for t in champion.traits)
-                return (owned, synergy, champion.cost)
+                return (target, owned, synergy, champion.cost)
 
             return max(buys, key=buy_key)
 
@@ -478,7 +561,22 @@ def scripted_policy(
                 if _unit_strength(player.bench[best]) > _unit_strength(weakest):
                     return space.select_offset + space.slot_for_bench(best)
 
-        if mask[space.buy_xp_index] and player.gold >= level_at_gold:
+        if econ is not None:
+            # Level to the curve. Worth dipping below the interest floor --
+            # that is what "level 8 at 4-1" means -- so this spends real gold.
+            target = econ.target_level(env.match.round_id)
+            if (
+                mask[space.buy_xp_index]
+                and target is not None
+                and player.level < target
+                and player.gold >= player.config.xp_purchase_gold
+            ):
+                return space.buy_xp_index
+        elif (
+            mask[space.buy_xp_index]
+            and player.gold >= level_at_gold
+            and not (level_cap and player.level >= level_cap)
+        ):
             return space.buy_xp_index
 
         # -- clear the bench so buying is possible at all -------------------
@@ -503,6 +601,9 @@ def scripted_policy(
                 if unit is not None
                 and mask[space.sell_offset + space.slot_for_bench(b)]
                 and _copies_owned(player, unit) < 2
+                # Never a reroll target: nine copies must be *held* long
+                # enough to combine, and the bench is where they wait.
+                and unit.champion.id not in reroll_targets(player, econ)
             ]
             if spare:
                 worst = min(spare, key=lambda b: _unit_strength(player.bench[b]))
@@ -520,7 +621,16 @@ def scripted_policy(
         #
         # Rolling is gated on having reached the level worth rolling at, and
         # protects interest exactly as buying does.
-        if (
+        if econ is not None:
+            floor = econ.roll_floor(env.match.round_id)
+            if floor is None:
+                floor = econ.save_floor
+            if (
+                mask[space.reroll_index]
+                and player.gold - player.config.reroll_cost >= floor
+            ):
+                return space.reroll_index
+        elif (
             roll_at_level
             and player.level >= roll_at_level
             and mask[space.reroll_index]

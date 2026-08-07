@@ -12,6 +12,7 @@ silently:
 
 from __future__ import annotations
 
+import os
 import random
 import sys
 from pathlib import Path
@@ -256,4 +257,104 @@ def test_parallel_evaluation_reseeds_a_search_policy_per_episode():
     source = (Path(__file__).resolve().parent.parent / "rl" / "evaluate.py").read_text()
     assert 'getattr(_WORKER["policy"], "rng", None)' in source, (
         "_parallel_episode must reseed a search policy's stream per episode"
+    )
+
+
+def _drive_to_a_searchable_state(env, policy, seed=0):
+    """Play until the teacher would end planning with a board worth moving."""
+    obs, _info = env.reset(seed=seed)
+    for _ in range(4000):
+        mask = env.action_masks()
+        action = policy(obs, mask)
+        if (env.action_space_helper.decode(action).kind is ActionKind.END_PLANNING
+                and len(env.player.board) >= 2):
+            return True
+        obs, _reward, terminated, truncated, _info = env.step(action)
+        if terminated or truncated:
+            obs, _info = env.reset(seed=seed + 1000)
+    return False
+
+
+def test_positional_search_is_a_function_of_the_board(data):
+    """Identical state, different streams -- the search must answer the same.
+
+    `best_move` samples `max_candidates` from ~200 legal moves. With a
+    free-running stream, two calls on a byte-identical board consider
+    different candidates: entry 79.3 measured five different answers from five
+    streams on 55% of states, and 38.7% self-agreement. That is a hard ceiling
+    on imitation -- one observation maps to many labels, so a clone can only
+    learn the blur. State-seeding removes it.
+    """
+    env = TFTEnv(data=data)
+    policy = scripted_policy(env, **FLAGS)
+    assert _drive_to_a_searchable_state(env, policy), (
+        "never reached a state with a board worth searching -- this test would "
+        "otherwise pass by asserting nothing"
+    )
+
+    answers = {
+        best_move(env, random.Random(stream), max_candidates=12, panel_size=1)
+        for stream in range(6)
+    }
+    assert len(answers) == 1, (
+        f"state-seeded search gave {len(answers)} different answers for one "
+        f"board: {answers}"
+    )
+
+    # And the escape hatch still reproduces the pre-79 behaviour, so every
+    # number measured before it stays reproducible.
+    legacy = {
+        best_move(env, random.Random(stream), max_candidates=12, panel_size=1,
+                  state_seeded=False)
+        for stream in range(6)
+    }
+    assert len(legacy) > 1, (
+        "state_seeded=False must restore the free-running stream; if this "
+        "fails the flag is dead and the comparison arm is not reproducible"
+    )
+
+
+def test_state_seeding_does_not_depend_on_pythonhashseed(data):
+    """The key must survive `spawn`, where every worker hashes differently.
+
+    Python randomises string hashing per process. A key built with `hash()`
+    looks deterministic in one process and silently reverts to
+    state-dependence across the worker pools `evaluate_scripted_parallel` and
+    `collect_expert_data` use -- which is the exact defect being fixed.
+    """
+    import subprocess
+
+    script = (
+        "import sys, random; sys.path.insert(0, %r);"
+        "from engine.loader import load_all;"
+        "from rl.env import TFTEnv;"
+        "from rl.evaluate import scripted_policy;"
+        "from rl.search import best_move;"
+        "from rl.action import ActionKind;"
+        "env = TFTEnv(data=load_all(%r));"
+        "p = scripted_policy(env, sell_bench=True, buy_synergy=True,"
+        " match_items=True, corner_carry=True);"
+        "obs, _ = env.reset(seed=0);"
+        "\nfor _ in range(4000):\n"
+        "    m = env.action_masks()\n"
+        "    a = p(obs, m)\n"
+        "    if env.action_space_helper.decode(a).kind is ActionKind.END_PLANNING"
+        " and len(env.player.board) >= 2:\n"
+        "        break\n"
+        "    obs, _r, t, tr, _i = env.step(a)\n"
+        "\nprint(best_move(env, random.Random(0), max_candidates=12, panel_size=1))"
+    ) % (str(Path(__file__).resolve().parent.parent), str(REAL_DATA_DIR))
+
+    outs = set()
+    for hashseed in ("0", "1", "12345"):
+        proc = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True, text=True,
+            env={**os.environ, "PYTHONHASHSEED": hashseed},
+        )
+        assert proc.returncode == 0, proc.stderr[-2000:]
+        outs.add(proc.stdout.strip().splitlines()[-1])
+    assert len(outs) == 1, (
+        f"search answer varied with PYTHONHASHSEED: {outs}. The state key must "
+        "use a stable digest, not hash()."
     )

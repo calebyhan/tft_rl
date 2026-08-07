@@ -19,12 +19,11 @@ The document is in two parts, and they are different kinds of thing:
 - **Part I — Standing decisions** (§1–8). A catalogue of judgement calls made
   where the specs were silent or were deviated from. Reference material, kept
   current. Mostly tables.
-- **Part II — Journal** (§9–32). Dated entries, newest last. Each one records a
+- **Part II — Journal** (§9–on). Dated entries, newest last. Each one records a
   question, what was measured, and what changed as a result. Read in order they
   tell the story of the agent going from 8.000 to parity with its teacher.
 
-**Citing an entry.** Use `doc 99 entry N.M` in code comments and commit
-messages — for example `doc 99 entry 29.1`. Numbers are **stable**: an entry is
+**Citing an entry.** Use `doc 99 entry N.M` in code comments — for example `doc 99 entry 29.1`. Numbers are **stable**: an entry is
 never renumbered, because ~77 comments across the codebase point at them. A
 superseded entry keeps its number and gains a banner naming its successor.
 
@@ -112,6 +111,54 @@ asserts nothing is worse than no test, because it reads as coverage. (§29.1,
 number. Never compare a figure against one from an older commit; re-measure
 both arms together. (§22, §30.5)
 
+**13. A parallel evaluation reads its code from disk, not from memory.** Every
+long measurement here is a `spawn` pool, so the working tree is shared mutable
+state for its whole duration. A mutation test run against a live evaluation
+spliced two different policies into one table, and the contaminated arms
+printed plausible numbers supporting a tidy and entirely false story. Freeze
+the tree, or fingerprint it between arms. (§68.4)
+
+**14. Validate the model before optimising against it.** Seventy entries, four
+experiment batches and an entire RL programme were tuned against an economy
+whose field could not spend its gold — a defect one profile script and two web
+searches exposed, which reframed three of the last five entries. "The data
+checks out" is a different claim from "the simulation behaves like the game",
+and only the second one licenses treating a measured ceiling as real. (§70)
+
+**15. A `spawn` pool re-imports the module it was launched from.** A helper
+script without an `if __name__ == "__main__"` guard fork-bombed for 90 minutes
+and wrote a 745 MB log of `RuntimeError` while reporting nothing. Silence reads
+identically to slowness — check the log's *size*, not just its tail. (§72.4)
+
+**16. When imitation is saturated, the ceiling is the teacher, not the method.**
+"Imitation is exhausted" was true and was read as *this line of work is
+finished*; it meant *this teacher is finished*. Nine entries of optimisation
+followed. Improving the teacher moved the agent 0.543 in one training run —
+larger than anything the RL programme ever produced. (§75.2)
+
+**17. A stochastic teacher caps imitation at its own self-agreement.**
+`best_move` sampled its candidates from a free-running RNG, so one board mapped
+to many labels: five streams gave five different answers on 55% of states, and
+the search agreed with itself 38.7% of the time. Cloning a one-to-many map
+learns the marginal — a blur over many good moves, which is not a good move.
+The teacher gained 0.330 and the clone gained nothing. Before reading an
+agreement rate as a failure to fit, check what the teacher's agreement with
+*itself* is. (§79.3)
+
+**18. Agreement and placement can decouple completely.** DAgger raised
+student-state agreement 25-29 points on the two decision kinds that were
+collapsing, and placement moved -0.083 (t=-0.57). An imitation metric improving
+is not evidence the policy improved, even when the metric was correctly
+diagnosing the problem. Measure the objective. (§81.2)
+
+**19. The clone noise floor is ~0.14 placement, so one seed resolves
+nothing below ~0.4.** Two arms differing only in one observation feature read
+-0.227, +0.110, +0.067 across three seeds -- mean -0.017. The favourable seed
+alone would have been written up as promising. This applies to anything
+requiring *retraining*; measurements that re-evaluate one fixed policy on
+shared episode seeds are unaffected. (§83.1, §83.4)
+
+
 ---
 
 ## Index
@@ -193,7 +240,28 @@ both arms together. (§22, §30.5)
 | 64 | 08-06 | The PPO collapse is fixable; PPO still contributes nothing | ✅ |
 | 65 | 08-06 | Training-seed sd is 0.074; imitation is saturated at ~3.40 | ✅ |
 | 66 | 08-06 | Every lever is closed; gold has no sink and 3-stars never happen | ✅ |
-| 67 | 08-06 | Board size dominates; star scaling is correct; slow-roll test was crude | ⚠️ |
+| 67 | 08-06 | Board size dominates; star scaling is correct; slow-roll test was crude | ⚠️ resolved by 68 |
+| 68 | 08-06 | Slow-rolling fails when specified correctly; 3-stars need targeting | ✅ |
+| 69 | 08-06 | 3-stars are unreachable at the default action budget by any policy | ⚠️ refined by 70 |
+| 70 | 08-06 | External validation: data is correct, but no policy can spend its gold | ✅ |
+| 71 | 08-06 | Real economy archetypes; field and action budget changed; **all prior numbers void** | ✅ |
+| 72 | 08-06 | The teacher's edge was 74% opponent weakness; a real economy recovers half | ⚠️ table withdrawn by 73 |
+| 73 | 08-06 | The field was not a fair lobby; targeting is what makes reroll work | ✅ |
+| 74 | 08-06 | **The teacher is below parity (4.823 vs 4.500); its 3.030 had the sign wrong** | ✅ |
+| 75 | 08-06 | **A better teacher transmits: 89% of it reaches the clone (-0.543, t=-3.64)** | ✅ |
+| 76 | 08-06 | Combat prices stars correctly; reroll's shortfall is a gold budget | ✅ |
+| 77 | 08-06 | Unsourceable combat constants: 3 of 4 shown not to matter | ✅ |
+| 78 | 08-06 | Repositioning is worth -0.33; teacher now 0.617 above parity | ✅ |
+| 79 | 08-07 | **Search doesn't transmit: labels were fixable, the observation is the wall** | ✅ |
+| 80 | 08-07 | The incumbent placement rule beats both alternatives; spacing is under-priced | ✅ |
+| 81 | 08-07 | **DAgger closes the distribution gap and buys nothing; imitation is exhausted** | ✅ |
+| 82 | 08-07 | **The disagreement that costs placement is positional; SELL is 38% and inert** | ✅ |
+| 83 | 08-07 | **Attack range does nothing; the clone noise floor is 0.14, not 0.074** | ✅ |
+| 84 | 08-07 | PICK_OFFERING's -0.405 was a thin cell; -0.133 at n=631 | ✅ |
+| 85 | 08-07 | Reroll gets 30 of the 58 rolls it needs; not the action budget | ⚠️ cause found in 86 |
+| 86 | 08-07 | **The teacher never implemented reroll targeting: slowroll6 -1.210** | ✅ |
+| 87 | 08-07 | Roll floor is not a lever; behavioural guard for EconStrategy fields | ✅ |
+| 88 | 08-07 | **Level curve is a local optimum; every economy lever now measured** | ✅ |
 
 ### The arc, in one table
 
@@ -6845,6 +6913,11 @@ quarter each, none individually significant. There is no targeted fix.
 
 ### 66.3 Why everything is closed: gold has no sink
 
+> **Re-diagnosed by entry 70.** The observation is right and the cause is
+> wrong. The sink exists and is correctly priced against real TFT; what is
+> missing is any policy able to *reach* it -- `GreedyPolicy` buys XP once per
+> round, so 60 XP of levelling takes 10 rounds however much gold is banked.
+
 Living players, mid-game, 30 games:
 
 | round | gold | board | level | stars |
@@ -6878,6 +6951,12 @@ interacting with `xpTable`. All are data/engine questions, not ML ones.
 ---
 
 ## 67. Board size dominates, and the slow-roll test was too crude (08-06)
+
+> **RESOLVED by entry 68.** The correctly-specified arm was run with a new
+> `level_cap` knob: it fails too (cap7+roll@6 = 4.823 against control 3.030).
+> This entry's *arm* was mis-specified and its *conclusion* was right. 67.2's
+> "does not establish that reroll strategies are non-viable here" is now
+> established -- they are non-viable, and entry 68.3 gives the reason.
 
 66.4 named the missing gold sink as the thing to diagnose. The 3-star path
 needs the real TFT pattern -- hold at low level where 1-cost odds are high, roll
@@ -6915,3 +6994,2000 @@ at once.** 66.1 concluded "local optimum on every parameter" from seven
 independent sweeps and stated it more confidently than that design supports. The
 conjunction was invisible by construction -- and the first conjunction tried was
 then mis-specified, so the question is still open.
+
+---
+
+## 68. Slow-rolling, specified correctly, fails; the reason is targeting (08-06)
+
+Entry 67 is flagged ⚠️ because the arm it called "slow roll" was
+`level_at_gold=80`, which starves levelling from stage 1 and tests *never
+level*. Real slow-rolling levels normally to 6-7, **stops there**, and rolls the
+surplus. Separating those needs a knob that caps the destination without
+delaying the journey, and `scripted_policy` had none -- so `level_cap` was
+added (stops *buying* XP; passive XP still accrues at 2/round, as in real TFT,
+where a slow-roller stops paying for levels rather than stops receiving them).
+
+`scripts/slowroll_ab.py`, 300 shared seeds, teacher configuration
+(`sell_bench` plus the three expert flags). No training seed, so no replication
+caveat (entry 65). Both anchors reproduce doc 99's stored values exactly, which
+is what licenses reading the rest.
+
+| arm | placement | vs control | t |
+|---|---|---|---|
+| control | **3.030** | -- | -- |
+| roll@6 (entry 66.1's arm) | **3.257** | +0.227 | +1.96 |
+| cap8 | 3.583 | +0.553 | +10.08 |
+| cap8+roll@7 | 3.583 | +0.553 | +6.03 |
+| cap7 | 4.760 | +1.730 | +19.40 |
+| cap7+roll@6 | 4.823 | +1.793 | +15.31 |
+
+### 68.1 The conjunction fails, and entry 67's conclusion survives its bad arm
+
+**Rolling on top of a cap buys nothing.** cap8 3.583 -> cap8+roll@7 3.583 is
++0.000; cap7 4.760 -> cap7+roll@6 4.823 is +0.063, the wrong way. The cap costs
++0.553 at level 8 and +1.730 at level 7, monotone in slots, and rolling
+recovers none of it.
+
+Entry 67's ⚠️ resolves: its arm was mis-specified and its **conclusion was
+right anyway**. Board size dominates. The question it left open -- whether
+reroll strategies are viable here -- is now answered no, on the arm it said was
+needed.
+
+### 68.2 The action budget was a real confound, and not the cause
+
+`DEFAULT_MAX_ACTIONS_PER_ROUND = 12` caps the agent seat's actions per round
+across buying, selling, placing *and* rolling, with reroll last in priority --
+while the seven `GreedyPolicy` bots plan a whole phase at once and are **not
+capped at all**. Real slow-rolling spends 40-60 rolls in a single round. At 12
+the roll arms managed 5-10 rolls per *game*, so entry 66.3's "gold has no sink"
+was partly a fact about the wrapper.
+
+Raising it to 60 (`/a60`) is the discriminating test. Three outcomes were named
+before the run: the budget is the cause; conversion is blocked elsewhere; or
+rolling is genuinely bad here. **The third fired.**
+
+| arm | placement | vs control | t | rolls/game | r28 gold | 2-star |
+|---|---|---|---|---|---|---|
+| control | 3.030 | -- | -- | 0.0 | 35.9 | 46.4% |
+| control/a60 | 2.890 | -0.140 | -1.45 | 0.0 | 37.0 | 46.6% |
+| roll@6 | 3.257 | +0.227 | +1.96 | 5.2 | 35.7 | 50.3% |
+| **roll@6/a60** | **4.687** | +1.657 | +11.89 | **40.1** | 29.7 | **71.8%** |
+| cap7+roll@6/a60 | 4.820 | +1.790 | +12.79 | 44.8 | 53.3 | 71.0% |
+
+The budget is not handicapping the teacher: control/a60 gains only 0.140 at
+t=-1.45, under the bar. But given a real budget, **rolling gets much worse** --
+3.257 -> 4.687 as rolls go 5.2 -> 40.1. The gold does drain and the units do
+improve: 2-star runs 46.4% -> 71.8%. Rolling converts. It simply loses more in
+board slots (8.8 -> 7.4) and levels (8.1 -> 7.0) than it gains in stars, because
+gold spent rolling is gold not spent on XP.
+
+### 68.3 Why 3-stars never appear: the teacher does not target
+
+> **Half refined by entry 69.** Targeting is necessary and **not sufficient**.
+> At the default action budget the shop never offers a committed champion more
+> than ~6.4 copies of the 9 needed, so no shopping policy reaches a 3-star.
+> This section's "the missing mechanism is a *policy* one" is wrong as stated:
+> the binding constraint is `max_actions_per_round`.
+
+**3-star rate is 0.0% in every arm, including at 44.8 rolls per game.** The
+arithmetic says it cannot be otherwise. At level 7 the 1-cost tier is 19% over
+14 one-cost champions, so a *specific* 1-cost arrives 0.068 times per roll:
+
+    45 rolls x 5 slots x (0.19 / 14) = 3.1 copies
+
+against the **9** a 3-star needs. At level 6 (30% 1-cost) it is 4.8 -- still
+short. Real slow-rolling clears the bar by rolling 150-200 times across several
+rounds at low level, which no budget tested here approaches.
+
+More basic than the volume: the teacher shops on `(owned, synergy, cost)` and
+so **spreads purchases across champions**. A reroll comp commits to two or
+three specific units. Without targeting, copies never concentrate on anything,
+and the 3.1 above is an overestimate of what actually happens. The missing
+mechanism is a *policy* one, not an engine or data one -- entry 67.1 already
+established star scaling is exactly right, and 66's shop odds, pool sizes and
+xp table all check out.
+
+### 68.4 A contaminated measurement, and how it printed a plausible number
+
+The first run of this table was **invalid and is not reported above**. Mutation
+tests that rewrite `rl/evaluate.py` on disk were run *while* the evaluation was
+live. `evaluate_scripted_parallel` uses `spawn`, so each arm's workers
+re-import from disk: two arms were measured against deliberately broken code.
+
+It did not look wrong. It read cap7+roll@6 = 3.693 and cap8 = 3.030, against
+clean values of **4.823** and **3.583** -- and 3.693 supported a tidy story
+("rolling recovers 62% of the cap's cost") that is entirely an artefact. The
+contamination was caught only because a single arm was re-run by hand and
+disagreed.
+
+`slowroll_ab.py` now hashes every `engine/` and `rl/` source file between arms
+and aborts if the tree moves. The clean runs print their fingerprint
+(`9c12674de54a`).
+
+*Lesson.* **A parallel evaluation reads its code from disk, not from memory.**
+Every long-running measurement in this project is a `spawn` pool, and the
+working tree is shared mutable state for the whole duration of it. Editing
+source during a run is not a style problem; it silently splices two different
+policies into one table, under one set of column headings.
+
+*Lesson (restated from 60.4, and it held).* **Name the possible outcomes before
+the run finishes.** Three were named for the budget test and the least
+convenient one fired. Had they not been written down, "rolling converts gold
+into 2-stars" (true, and visible in the table) was available as a success story
+for an arm that placed 1.4 worse.
+
+### 68.5 Still open
+
+- Whether a *targeting* teacher -- commit to 2-3 champions, roll for those --
+  reaches 3-stars and whether that beats 3.030. This is the arm 68.3 implies
+  and it has not been run.
+- Whether `max_actions_per_round=12` should stay. It costs the teacher only
+  0.140 (t=-1.45), but it is an asymmetry the opponents do not face, and it
+  bounds any policy that would want to roll.
+- External validation against real TFT statistics, still never done.
+
+---
+
+## 69. The 3-star ceiling is the action budget, not the shop (08-06)
+
+68.5 named a targeting teacher as the next arm. Before building it, measure
+what it would be working against -- lesson 2, *a rate is uninterpretable
+without its achievable maximum*.
+
+**Copies offered is a hard upper bound on copies obtainable.** A policy can at
+best buy every copy the shop shows it, so if the most-offered champion arrives
+fewer than the **9** a 3-star needs, targeting is closed before it is written.
+`scripts/copy_ceiling.py` counts arrivals (a slot going X -> Y is one arrival of
+Y; buying empties a slot and never counts), in live games where seven bots draw
+from the same `SharedPool`.
+
+### 69.1 The first metric measured hindsight, not policy
+
+The obvious statistic -- copies of the best champion over a whole game -- read
+**8.03** for the teacher, near the 9 needed, and looked like a green light. It
+is a max over ~63 champions **chosen after seeing the outcome**. A reroll comp
+must commit before it knows which champion the shop will favour.
+
+`commit@K` is the honest version: take the champion leading at round `K`, then
+bank its arrivals for the whole game. n=40:
+
+| arm | rolls/game | hindsight | **c@6** | c@10 | c@14 |
+|---|---|---|---|---|---|
+| a12 (the default) | 0.0 | 8.03 | **6.30** | 6.90 | 7.35 |
+| a12+roll@6 | 5.4 | 8.65 | **6.45** | 6.70 | 7.20 |
+| a12+cap7 | 0.0 | 8.03 | **6.35** | 6.88 | 7.30 |
+| a12+cap7+roll@6 | 10.7 | 8.88 | **6.78** | 7.50 | 7.60 |
+| a60 | 0.0 | 7.92 | **6.50** | 6.70 | 7.17 |
+| a60+roll@6 | 39.4 | 14.55 | **9.90** | 10.20 | 10.95 |
+| a60+cap7+roll@6 | 43.1 | 15.75 | **10.53** | 11.03 | 11.90 |
+
+Hindsight overstates the honest ceiling by **1.7 to 5.2 copies**, and it is the
+difference between "9 is reachable" and "9 is not". Reporting it would have
+justified building the targeting teacher on a number that measures the
+measurement.
+
+### 69.2 The binding constraint is `max_actions_per_round`
+
+> **Refined by entry 70.** True of the *agent*, incomplete as stated. The seven
+> opponents are throttled harder by a different mechanism -- `GreedyPolicy`
+> buys XP and rerolls once per round, hard-coded -- so this section's ceilings
+> were measured in a configuration where no seat can spend its gold. They
+> describe this setup, not the engine.
+
+At the default budget of 12, **every** arm sits at c@6 = 6.3-6.8, against 9.
+Capping levels does not move it (6.30 -> 6.78) and neither does rolling
+(6.30 -> 6.45), because at 12 actions per round -- shared across buying,
+selling, placing and rolling, with reroll last in priority -- the policy
+manages 5-10 rolls per *game*.
+
+At 60 it manages 39-43 rolls and c@6 clears 9 (**9.90**, **10.53**).
+
+**The budget alone does nothing**, which is the control that makes this a
+conjunction rather than a single cause: `a60` without rolling sits at c@6 =
+6.50, indistinguishable from `a12`'s 6.30. Extra actions only matter to a
+policy that spends them on the shop. So:
+
+> **3-stars are unreachable at the default action budget by any shopping
+> policy whatsoever, and become marginally reachable at 5x the budget.**
+
+This reframes entries 66-68. "Gold has no sink" (66.3), "rolling converts
+nothing" (68.1) and "the teacher does not target" (68.3) are all downstream of
+one wrapper constant. 68.3 proposed targeting as *the* missing mechanism; that
+was half right -- targeting is necessary and **not sufficient**, and at a12 it
+is not even sufficient in principle.
+
+`DEFAULT_MAX_ACTIONS_PER_ROUND = 12` is also an asymmetry the opposition does
+not face: `GreedyPolicy` plans a whole phase at once and is uncapped. It costs
+the teacher little directly (control at 60 actions gains only 0.140, t=-1.45,
+entry 68.2) precisely because the teacher does not roll -- it is invisible until
+a policy wants the sink.
+
+### 69.3 What this does and does not license
+
+Marginal means marginal: c@6 = 9.90 against 9 needed is a *mean*, so roughly
+half of games fall short, and it assumes **perfect conversion** -- buying every
+single copy offered, which no policy achieves under gold and bench limits.
+
+What the current teacher converts, as peak copies held of one champion while
+alive (n=40; measured at a checkpoint, **not** at episode end, where a dead seat
+holds nothing and reads a vacuous zero):
+
+| arm | ceiling c@6 | teacher peak | share |
+|---|---|---|---|
+| a12 | 6.30 | 4.65 | 74% |
+| a12+roll@6 | 6.45 | 4.70 | 73% |
+| a60 | 6.50 | 4.65 | 72% |
+| a60+roll@6 | 9.90 | 5.70 | 58% |
+
+The non-targeting teacher already captures ~73% of the ceiling; at a60 the
+shop outruns it and the share falls to 58%. For a 3-star at a60, a targeting
+policy must reach **9 of 9.90 = 91%** of the ceiling. Concentrating purchases
+on one champion is exactly what raises that share, so the arm is not hopeless
+-- but it has to more than close a 58% -> 91% gap, on a mean that only just
+clears the threshold.
+
+So the targeting arm of 68.5 is **not closed, but it is conditional**: it can
+only pay at a raised action budget, and raising the budget is an engine
+decision, not a tuning one.
+
+*Lesson.* **A ceiling computed with hindsight is not a ceiling.** The selection
+step -- max over 63 champions -- was inside the statistic rather than inside the
+policy. The fix was to make the commitment explicit and early, which is what the
+strategy being measured actually requires. Same shape as 28.1's 90.7%: both
+measured how good the *best* option looked rather than how good the *chosen*
+one was.
+
+### 69.4 Still open
+
+- Whether to raise `max_actions_per_round`. It gates the entire economy and is
+  an asymmetry the bots do not face, but changing it invalidates every baseline
+  in this log (lesson 12).
+- The targeting teacher, now conditional on the above.
+- External validation against real TFT statistics, still never done.
+
+---
+
+## 70. External validation: the data is right, the policies cannot spend (08-06)
+
+69.4's open item, and the one thing never done in 70 entries: **every ceiling in
+this log was measured against the engine's own economy.** Entries 66-69 concluded
+gold has no sink, 3-stars never occur, and the action budget gates everything --
+all judged against the simulator itself.
+
+`scripts/engine_profile.py` emits the engine's side keyed by stage-round label,
+the form real TFT benchmarks are published in. Eight `GreedyPolicy` seats
+driving `Match` **directly, not through the RL wrapper**, so
+`max_actions_per_round` does not apply -- profiling through the wrapper would
+measure the wrapper and call it the engine.
+
+### 70.1 The economy tables are externally correct
+
+The LoL Wiki's XP table against `config.json`:
+
+| level -> next | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|---|
+| wiki | 2 | 6 | 10 | 20 | 36 | 60 | 68 | 68 |
+| engine | 2 | 6 | 10 | 20 | 36 | 60 | 68 | 68 |
+
+Exact. So are 4 gold -> 4 XP, 2 passive XP per round, and the 50-gold interest
+cap. Entry 66 checked these internally and called the data fine; that now has
+an external source behind it. 67.1's star scaling (3.24x health, 2.25x AD) was
+already verified. **The data is not the problem, and this closes that
+hypothesis properly rather than by assertion.**
+
+### 70.2 The divergence, quantified
+
+n=60, living players only:
+
+| stage-round | engine level | real TFT | engine gold |
+|---|---|---|---|
+| 3-2 | 5.67 | 6 | 46.9 |
+| 3-5 | 6.01 | 7 | 57.9 |
+| 4-1 | 6.67 | 7-8 | 68.1 |
+| 4-2 | 6.97 | 8 | 71.5 |
+| 5-1 | 7.01 | 8-9 | 99.4 |
+| 5-7 | 8.00 | 9 | 122.0 |
+
+The field runs **~1 level behind from stage 3 and 1.5-2 behind by stage 5, on
+roughly twice the gold**. Level 8 arrives at 5-7 against real TFT's 4-1/4-2 --
+about ten rounds late. Gold never stops climbing: 145 by 6-4, against real TFT
+where it sits near the 50 interest cap because everything above it is spent.
+
+**3-stars: 1 game in 60 (1.7%)**, first appearing at 6-2. In real TFT a 3-star
+1-cost is routine by stage 4-5.
+
+### 70.3 The cause: one purchase per round
+
+`GreedyPolicy.plan` calls `player.buy_xp()` **once** and `player.reroll()`
+**once** per planning phase. No loops. So a bot gains at most 4 purchased + 2
+passive = **6 XP per round** no matter how much gold it holds.
+
+Level 7 -> 8 costs 60 XP, so it takes **10 rounds** -- a prediction the profile
+confirms directly: level sits at 6.99 at 4-3 and reaches 8.00 at 5-7, which is
+11 rounds, while gold climbs 75.1 -> 122.0. A real player holding 100 gold makes
+15 purchases and levels in **one** round. That is a ~10x throttle, and it
+applies to all eight seats.
+
+### 70.4 What this overturns
+
+**"Gold has no sink" (66.3) is wrong as diagnosed.** The sink exists and is
+correctly priced; no policy in this project can *reach* it. There are two
+independent throttles, and entry 69 found only one:
+
+| | mechanism | applies to |
+|---|---|---|
+| opponents | 1 XP + 1 reroll per round, hard-coded | all 7 bot seats |
+| agent | `max_actions_per_round = 12` | the RL seat |
+
+69's "the action budget gates the entire economy" was right about the agent and
+**missed that the opposition field is throttled harder, by a different
+mechanism**. So 69's c@6 ceiling of ~6.3 copies was measured in a world where
+nobody can spend -- which is neither real TFT nor what the data describes. That
+ceiling stands as a fact about this configuration and **not** as a fact about
+the engine.
+
+**A consequence worth stating before it is measured.** `scripted_policy` acts
+through the action space and *can* buy XP repeatedly within its 12 actions, so
+the teacher levels faster than the field it plays against. Part of the teacher's
+3.030 may therefore be "it can spend and they cannot" rather than better play --
+which would sit consistently with entry 56, where the teacher fell to 4.387
+against a stronger field. Untested, and it is the discriminating question for
+every teacher-relative number in this log.
+
+*Lesson.* **Validate the model before optimising against it.** Seventy entries,
+four batches of experiments and an entire RL programme were tuned against an
+economy whose field could not spend its gold. The check cost one profile script
+and two web searches, and it reframed three of the last five entries. "The data
+checks out" (66) was true and not the same claim as "the simulation behaves like
+the game".
+
+### 70.5 Still open
+
+- Whether to let `GreedyPolicy` loop its purchases. It is a small change that
+  invalidates **every baseline in this log** (lesson 12), so it is a deliberate
+  call, not a fix to slip in.
+- Same question for `max_actions_per_round = 12`.
+- How much of the teacher's edge is the opponents' throttle (70.4).
+- Combat fidelity is still unvalidated; this entry covers the economy only.
+
+Sources: [LoL Wiki XP table](https://wiki.leagueoflegends.com/en-us/TFT:Experience),
+[Mobalytics standard leveling](https://mobalytics.gg/blog/tft/guide-standard-leveling-strategy/),
+[Mobalytics leveling guide](https://mobalytics.gg/blog/tft/leveling-guide/).
+
+---
+
+## 71. Real economies, and the field the agent had been training against (08-06)
+
+Entry 70 found the opposition ~1 level behind real TFT on twice the gold,
+because `GreedyPolicy.plan` bought XP **once** per round. Direction given: the
+goal is an RL model that can play *real* TFT, so fidelity is the objective --
+take whatever gives the highest accuracy going forward.
+
+### 71.1 The policy's economics were right; its execution was not
+
+`_spendable` already computed the interest floor correctly: interest is +1 per
+10 gold **capped at 50**, so gold above 50 earns nothing and holding it is
+waste. At 145 gold the old policy was *willing* to spend 95. It could spend 6 --
+one XP purchase (4) and one reroll (2) per round.
+
+So 66.3's "gold has no sink" was never an economy-design problem and 70.3's
+"one purchase per round" is the whole of it. The fix is loops, not new
+reasoning.
+
+### 71.2 Four archetypes, and what each produces
+
+`EconStrategy` carries `level_targets` (round label -> level, the form real
+benchmarks are published in) and `roll_floors` (round -> gold to spend down
+to). n=20 per arm, eight identical seats, real dataset:
+
+| archetype | 3-2 | 4-1 | 4-5 | gold shape | 3-star games |
+|---|---|---|---|---|---|
+| real TFT | 6 | 7-8 | 8 | ~50, dips on roll-down | routine by stage 4-5 |
+| **standard** | 6.00 | 7.00 | 7.98 | 47 -> **19** at 4-5 -> rebuilds | 10% |
+| **fast8** | 6.00 | 7.41 | 7.93 | 47 -> **10.8** at 4-1 -> rebuilds | **0%** |
+| **slowroll6** | 6.00 | 6.00 | 6.00 | holds ~50, rolls surplus | **30%** |
+| **hyperroll** | 5.00 | 5.99 | 6.00 | **12.4** by 3-2 | 15% |
+| legacy | 5.67 | 6.67 | ~7 | 47 -> 145 by 6-4 | 1.7% |
+
+`standard` reproduces the published curve almost exactly. The ordering on
+3-stars is the one real TFT has: reroll comps produce them (30%, 15%), fast 8
+does not (0%), and the first ones appear in stage 4 rather than 6-2.
+
+**A design error caught by the numbers.** The first archetype set had `fast8`
+levelling *slower* than `standard` at 4-1, which is backwards for a strategy
+whose whole point is being level 8 there. `roll_floors` applied from a round
+*onward*, so `fast8` rolled to 10 gold every round forever and never earned
+interest again. Real roll-down is once, then rebuild. `standard`/`fast8` now
+restore the save floor the round after their breakpoint; `slowroll6`/
+`hyperroll` keep a standing floor because continuous surplus-rolling is what
+those archetypes actually do.
+
+### 71.3 Two defaults changed
+
+**The field is now a mixed lobby** -- 3 standard, 2 fast8, 2 slowroll6, 1
+hyperroll. Eight identical bots is not a lobby, and a single-archetype field
+lets a learned policy overfit to one opponent model, which this project has
+never controlled for.
+
+**`DEFAULT_MAX_ACTIONS_PER_ROUND` 12 -> 50.** Entry 69 established 12
+forecloses every reroll strategy; with the opponents now genuinely rolling, it
+also made the agent the only throttled seat. It is a **cap, not a cost** --
+`END_PLANNING` advances the round whatever the budget, so a policy that
+finishes early pays nothing. An earlier claim in this session that raising it
+costs ~5x training time was wrong.
+
+### 71.4 What this invalidates
+
+**Every number in this log.** The teacher's 3.030, imitation's ~3.40 plateau,
+66-70's ceilings, the arc table -- all measured against a field that could not
+spend its gold and an agent that could not roll. Lesson 12 says re-measure both
+arms together; here there is no "both arms", because the world changed. The
+measurement history restarts at this entry.
+
+That is the correct trade for the stated goal and it is not a small one: it
+discards roughly 70 entries of calibration.
+
+### 71.5 Still open
+
+- Re-measure the teacher and the arc against the new field. Nothing downstream
+  means anything until this is done.
+- Whether `slowroll6` at 30% and the first 3-star in stage 4 is *close enough*
+  to real TFT, or still low. No external rate was sourced for this.
+- `hyperroll` produces fewer 3-stars (15%) than `slowroll6` (30%) despite being
+  the dedicated 1-cost reroll strategy -- its roll floor is restored at 3-2,
+  which likely stops it too early. Archetype tuning, not a mechanism problem.
+- **Combat fidelity is entirely unvalidated** and is now the largest gap.
+  `config.unverified` already flags `armor_mitigation_constant`,
+  `sudden_death_*` and the movement/projectile speeds as approximations.
+
+---
+
+## 72. What the teacher's 3.030 was actually measuring (08-06)
+
+Entry 71 gave the field real economies and declared every prior number void.
+This is the re-measure. All arms 300 shared seeds against the new mixed field,
+no training seed, so no replication caveat (entry 65).
+
+### 72.1 Most of the teacher's edge was opponent weakness
+
+Parity is 4.500 by construction. The teacher's distance below it:
+
+| world | teacher | edge over parity |
+|---|---|---|
+| old field (one purchase/round) | 3.030 | **1.470** |
+| real economies, archetypes capped at level 8 | 3.883 | 0.617 |
+| real economies, archetypes levelling to 9-10 | **4.120** | **0.380** |
+
+**The edge fell by 74%.** 70.4 predicted this before it was measured -- "part of
+the teacher's 3.030 may be *it can spend and they cannot*" -- and named entry
+56's 4.387-against-a-stronger-field as the corroborating evidence. It was right.
+
+Every imitation result in this log was cloning a policy that is barely better
+than average against opponents who play the economy properly.
+
+### 72.2 A real economy recovers about half of it
+
+> **WITHDRAWN by entry 73.** These arms were measured against a field whose
+> `slowroll6`/`hyperroll` seats placed 5.293 and 6.107 -- three of eight seats
+> were free wins. The direction ("a real economy beats no economy") is
+> re-measured in 73.6's follow-up; the numbers below are not usable.
+
+The teacher had no economic plan at all -- "buy XP whenever gold >= 30" -- while
+the field ran published strategies:
+
+| teacher econ | placement | vs incumbent | t |
+|---|---|---|---|
+| fast8 | **3.723** | -0.397 | -3.29 |
+| standard | 3.807 | -0.313 | -2.46 |
+| no-econ (incumbent) | 4.120 | -- | -- |
+| slowroll6 | 5.293 | +1.173 | +8.47 |
+| hyperroll | 5.843 | +1.723 | +11.58 |
+
+**`fast8` and `standard` are indistinguishable from each other**: -0.083 at
+t=-0.71, better in 118 games and worse in 110. The finding is "a real economy
+beats no economy" (t=-2.46 to -3.29), *not* that fast 8 is the best plan. Either
+is a defensible teacher; `standard` tracks the published curve most closely.
+
+### 72.3 The reroll archetypes are good opponents and bad agents
+
+`slowroll6` and `hyperroll` are catastrophic in the agent seat (+1.173,
++1.723) while being perfectly reasonable in opponent seats -- 71.2 measured
+them producing 30% and 15% 3-star games. The mechanism is entry 67's, holding
+across three worlds now: rolling costs levels, levels cost board slots, and
+slots decide fights. Entry 68's conclusion survives the world change intact,
+which is stronger evidence than the original measurement was.
+
+**Still open:** whether the `slowroll6`/`hyperroll` *seats* also place badly
+inside a game. Per-seat placement by archetype has not been measured, and if
+they do place badly the mixed field is a lobby of two weak archetypes, which
+would flatter the agent.
+
+### 72.4 A level cap that was mine, not the game's
+
+The first archetype set stopped at level 8. Real TFT reaches 9 from ~5-5 and
+`max_level` is 10, and in this engine board size dominates -- so a plan capping
+at 8 forfeits slots to a policy that simply keeps levelling. An n=8 spot check
+showed every econ arm losing, which was measuring that gap rather than the
+economies. All four now carry a late 9 and a 10 where the economy supports it.
+That change moved the incumbent 3.883 -> 4.120, because it strengthened the
+opponents.
+
+*Lesson.* **A `spawn` pool re-imports the module it was launched from.** The
+first version of 72.2 was a scratchpad script with no `if __name__ ==
+"__main__"` guard: every worker re-ran the module and spawned more workers. It
+burned 90 minutes and wrote a **745 MB** log of `RuntimeError` while reporting
+nothing. Silence was diagnosed as slowness for over an hour because the log's
+*size* was never checked -- and lesson 13, about `spawn` reading from disk, had
+been written the same day.
+
+---
+
+## 73. The field was not a lobby, and three fixes to get there (08-06)
+
+Entry 72.3 left one open item: whether `slowroll6` and `hyperroll`, catastrophic
+in the agent seat, also place badly *inside* a game. If so the default field is
+a lobby with weak seats -- which inflates every agent number measured against
+it, the exact defect 72.1 had just found in the *old* field.
+
+`scripts/field_check.py` measures placement per archetype with eight bot seats
+and no agent, so 4.500 is parity by arithmetic and the spread is the fairness
+metric.
+
+### 73.1 It was not a lobby
+
+| archetype | seats | placement |
+|---|---|---|
+| fast8 | 2 | 3.823 |
+| standard | 3 | 3.887 |
+| slowroll6 | 2 | **5.293** |
+| hyperroll | 1 | **6.107** |
+
+**Spread 2.283.** Three of eight seats were free wins, so entry 72's teacher
+figures (3.723 / 4.120) were measured against a weak field and are withdrawn.
+
+### 73.2 Fix 1: the policy could not buy what it rolled for
+
+`_buy_phase` gated every purchase at `_spendable` = gold - 50. A slow-roller
+rolls down to 50, hits the copy it was rolling for, and **cannot afford it** --
+it pays to search and then refuses the result. The interest floor governs
+*rolling*, not *buying*.
+
+Real bug, fixed in `GreedyPolicy` and `scripted_policy`. Effect on placement:
+**none** (spread 2.283 -> 2.309). Rather than accept the convenient conclusion
+that reroll is non-viable, the fix was checked for effect: `slowroll6` went from
+its prior behaviour to **46.5 rolls and 94.7 buys per game** against
+`standard`'s 14.5 and 65.2. The fix worked and did not matter -- which is what
+made the next step necessary rather than optional.
+
+### 73.3 Fix 2: targeting, which was the mechanism all along
+
+Rolling 46 times while spreading purchases across ~14 champions of a tier never
+concentrates copies. `EconStrategy` gained `target_cost`/`target_count`: commit
+to N champions of a tier, rank them by copies already held so the commitment
+emerges from what the shop offered, prefer them above synergy and cost, and
+never sell them.
+
+| | before | after |
+|---|---|---|
+| games with a 3-star | 40% | **100%** |
+| 3-star share of units at 5-1 | 0.3% | **8.4%** |
+| first 3-star | scattered to 5-3 | **4-1 to 4-3** |
+
+Stage-4 3-stars is the real TFT pattern. `slowroll6` went **5.430 -> 4.853**.
+This is entry 69.3's hypothesis confirmed, and it is a *policy* mechanism, not
+an engine one.
+
+### 73.4 Fix 3: an archetype that never transitioned
+
+`hyperroll` did not move (6.073 -> 6.067). Its curve held **level 5 from 2-3 to
+4-5** -- a five-unit board through all of stages 3 and 4. That is not
+hyper-roll, it is never transitioning. Real hyper-roll rolls in stage 2, hits,
+and rejoins a normal curve. Corrected to 4@2-1, 5@2-3, 6@3-2, 7@4-1, 8@4-5,
+9@5-5. **6.067 -> 5.093.**
+
+### 73.5 Where the field landed
+
+| archetype | seats | placement |
+|---|---|---|
+| fast8 | 2 | 4.107 |
+| standard | 3 | 4.229 |
+| slowroll6 | 2 | 5.003 |
+| hyperroll | 1 | 5.093 |
+
+**Spread 2.283 -> 0.987.** The econ archetypes cluster near parity; the reroll
+archetypes remain ~0.8-0.9 worse.
+
+**Tuning stops here, deliberately.** The remaining spread could be closed by
+further hand-fitting, but a field balanced by fitting is a field whose fairness
+is an artefact of the fitter. The residual is a *hypothesis worth testing
+rather than tuning away*: reroll trades board slots for star levels, and if
+stars do not pay for slots here, board size is overweighted relative to real
+TFT -- where a six-unit 3-star board genuinely beats an eight-unit 2-star one.
+That is a **combat**-fidelity question, and 67.1 only verified star *stats*, not
+whether they win fights.
+
+*Lesson.* **Three "the engine is broken" candidates in a row were the policy
+definitions.** The buy gate was a real code bug; the reroll weakness was a
+missing policy mechanism; the residual was a badly written level curve.
+Concluding "reroll comps are non-viable in this engine" at any of the three
+earlier points would have been wrong, and each time the tempting conclusion
+pointed at the simulator rather than at what had just been written.
+
+### 73.6 Still open
+
+- Re-measure the teacher against the fair field; 72.2's table is withdrawn.
+- The 0.987 residual: does a 3-star board beat a bigger 2-star board here?
+- Whether `standard`/`fast8` being ~0.4 better than the reroll pair is
+  *correct* -- real TFT strategy win rates differ, but no external rate was
+  sourced.
+- Combat fidelity, still entirely unvalidated.
+
+---
+
+## 74. The teacher was below average all along (08-06)
+
+73.6's follow-up, replacing 72.2's withdrawn table. Same five arms, 300 shared
+seeds, against the **fair** field of 73.5 (spread 0.987).
+
+| arm | placement | vs parity | vs incumbent | t |
+|---|---|---|---|---|
+| **standard** | **4.213** | **-0.287** | -0.610 | -4.04 |
+| fast8 | 4.337 | -0.163 | -0.487 | -3.44 |
+| hyperroll | 4.877 | +0.377 | +0.053 | +0.33 |
+| **no-econ (incumbent)** | **4.823** | **+0.323** | -- | -- |
+| slowroll6 | 6.077 | +1.577 | +1.253 | +8.34 |
+
+### 74.1 The number this project was built on
+
+**The teacher is worse than parity.** 4.823 against 4.500, on a field where
+every opponent runs a published economy plan. The policy that ~70 entries of
+imitation work cloned, and whose 3.030 anchored every comparison in this log, is
+*below average* against competent opposition.
+
+The arc of that number as the world got more honest:
+
+| field | teacher | edge over parity |
+|---|---|---|
+| one purchase per round | 3.030 | +1.470 |
+| real economies, capped at level 8 | 3.883 | +0.617 |
+| real economies to level 9-10 | 4.120 | +0.380 |
+| **fair field (73.5)** | **4.823** | **-0.323** |
+
+The original figure overstated the teacher's edge by more than a full placement
+and had the **sign wrong**. Entry 56 saw the shadow of this (4.387 against a
+stronger field) and 70.4 predicted it before measuring; neither went far
+enough, because both still assumed the teacher was good and the opposition
+merely weak.
+
+### 74.2 An economy is worth 0.610, and which one does not matter
+
+`standard` -0.610 (t=-4.04) and `fast8` -0.487 (t=-3.44) both clear the bar.
+Against each other: **+0.123, t=+1.05** -- indistinguishable, as they were in
+72.2 on the unfair field. The finding replicates across two fields and remains
+"a real economy beats no economy", *not* that either plan is the right one.
+
+`standard` is the recommended teacher: it is the only arm measurably better
+than parity, and it tracks the published level curve most closely.
+
+### 74.3 What this means for everything downstream
+
+Imitation cloned a below-parity policy to within ~0.36 (entry 66.2) and called
+the remainder a gap worth closing. The gap that mattered was never
+clone-to-teacher; it was **teacher-to-competent**, and it was never measured
+because the opposition could not spend gold.
+
+An agent trained to match this teacher is being trained to place 4.823. Nothing
+in the RL programme was wrong about optimisation; the target was wrong.
+
+### 74.4 Still open
+
+- ~~Plumb `--expert-econ` through `train_ppo.py`.~~ **Done.** The flag reaches
+  the single `expert_kwargs` dict (so the clone and every DAgger round share
+  one teacher), lands in the sidecar, and is read back by `teacher_gap` and
+  `teacher_check`. That read-back is the part that mattered: dropping it would
+  score a clone trained on the 4.213 teacher against the 4.823 one and produce
+  a plausible, meaningless gap. `tests/test_doc_refs.py` asserts the round trip
+  in both directions.
+
+  The first clone aimed at a better-than-parity target has **not** been
+  trained; nothing in this log yet describes one.
+- Whether `standard` at -0.287 is a *good* teacher or merely a less bad one.
+  Parity is not skill; it is the average of eight.
+- The 0.987 field residual and combat fidelity, both from 73.6.
+
+---
+
+## 75. Improving the teacher improves the agent, one-for-one (08-06)
+
+Entry 74 found the teacher below parity and 74.4 plumbed `--expert-econ`. This
+trains the first clone aimed at a better-than-parity target, with a matched
+control: **both clones trained in the same world, identical configuration,
+differing only in the teacher's economy.** 400 episodes, 50 epochs, label
+smoothing 0.02, slot head, seed 0. All placements 300 shared seeds.
+
+| teacher | teacher place | clone | clone place | gap | t |
+|---|---|---|---|---|---|
+| `standard` econ | **4.213** | `bc-econ-s0` | **4.740** | +0.527 | +3.53 |
+| no econ | 4.823 | `bc-noecon-s0` | 5.283 | +0.460 | +3.30 |
+
+### 75.1 The economy survives cloning
+
+**Econ clone - control clone = -0.543, t=-3.64**, better in 157 games and worse
+in 92. The teachers differ by 0.610, so imitation transmitted **89%** of the
+improvement. The two clone-to-teacher gaps are near-identical (+0.527, +0.460):
+imitation behaves the same whatever teacher it is given.
+
+This was not the expected outcome. Economy decisions are a handful of `BUY_XP`
+and `REROLL` actions among dozens of buys and placements per round, so a clone
+could plausibly hold high action match while missing exactly the decisions that
+set the economy. It does not: the plan transmits.
+
+### 75.2 What this says about the last twenty entries
+
+Entries 48-65 spent four experiment batches and an entire RL programme trying to
+beat a teacher by optimisation, and **every** attempt failed -- PPO at +0.113
+(t=+0.73), DAgger at nothing over plain BC, imitation saturated at ~3.40 across
+400 and 1500 episodes.
+
+The lever that moved the agent was making the teacher better. It cost one flag
+and a 13-minute training run, and it moved placement 0.543 -- larger than any
+effect the RL programme ever produced, in the right direction, at t=-3.64.
+
+*Lesson.* **When imitation is saturated, the ceiling is the teacher, not the
+method.** "Imitation is exhausted" (58.4) was true and was read as *this line of
+work is finished*. It meant *this teacher is finished*. Nine entries of
+optimisation followed a conclusion that pointed at the target rather than the
+optimiser.
+
+### 75.3 The agent is still below average
+
+4.740 against a 4.500 parity line. The teacher is *above* parity at 4.213 and
+the clone gives back more than that margin in the imitation gap. The honest
+statement is: the first clone trained toward a better-than-average target, and
+measurably better than the alternative -- **not** yet better than average.
+
+### 75.4 A number not to cite yet
+
+The econ clone reports **0.622 held-out critic EV**, against the 0.228-0.452
+this project has always seen, and the control reports 0.237 on the same code.
+An econ teacher following a deterministic level curve plausibly makes outcomes
+more predictable.
+
+But 58.2 measured the *ceiling* on knowable placement variance at ~0.5 mid-game,
+and 0.622 sits above it. Either that ceiling moved when the world changed, or
+the two quantities are not comparable. **Unresolved**, and 0.622 should not be
+quoted as a win until it is -- this is exactly the shape of the 90.7% ceiling
+that survived three entries before being re-derived (lesson 4).
+
+### 75.5 Still open
+
+- Whether the imitation gap (~0.5) can be closed now that the target is worth
+  hitting. Single training seed per arm here; 0.543 clears entry 65's 0.074
+  noise floor comfortably, smaller differences would not.
+- A better teacher still. `standard` at -0.287 is barely above parity, and
+  parity is not skill.
+- Reconcile 0.622 against 58.2's ceiling (75.4).
+- Combat fidelity and the 0.987 field residual, both from 73.6.
+
+---
+
+## 76. Combat prices stars correctly; the reroll shortfall is a gold budget (08-06)
+
+73.6 left a hypothesis: reroll trades slots for stars, so if stars do not pay
+for slots then board size is **overweighted** relative to real TFT -- a combat
+defect. Lesson 14 says validate the model before optimising against it, and
+combat was the only unvalidated half, so this was measured before any further
+teacher work.
+
+`scripts/star_vs_slots.py` fights the two boards directly. Whole-game
+measurements cannot isolate this: there, economy, items, augments and HP all
+vary at once. Both sides draw from the same cost tier and roster, and both use
+`place_team`'s default layout, so only star level and unit count differ.
+
+### 76.1 The hypothesis is refuted
+
+| small board | vs | small wins |
+|---|---|---|
+| 6x 3-star | 8x 2-star | **100.0%** |
+| 6x 3-star | 9x 2-star | 92.0% |
+| 7x 3-star | 9x 2-star | 100.0% |
+| *control:* 6x 2-star | 8x 2-star | **0.0%** |
+| *control:* 8x 3-star | 8x 2-star | **100.0%** |
+
+Both controls land exactly where they must -- the bigger board wins at equal
+stars, the 3-star board wins at equal slots -- so the harness is sound and the
+rows above are readable.
+
+**A six-unit 3-star board crushes an eight-unit 2-star board**, which is real
+TFT's behaviour and the entire reason reroll comps exist. Combat is not
+overweighting board size. The prediction was wrong and the axis is clean.
+
+### 76.2 What the shortfall actually is
+
+Reroll seats never *field* a 3-star board. Entry 73 measured 3-stars at 8.4% of
+units at 5-1 -- **under one per seat** -- against the six the matchup above
+assumes. The arithmetic at level 6, where 2-costs are 40% of a 5-slot shop
+across 13 champions:
+
+    P(specific 2-cost per roll) = 5 x 0.40/13 = 0.154
+    9 copies  ->  58 rolls      (one 3-star)
+    27 copies -> 176 rolls      (three)
+
+`slowroll6` manages **46 rolls per game**, so ~0.8 three-stars -- which is
+exactly the 8.4% observed. It is not being cheated by combat; it cannot afford
+what it is trying to buy. A game yields roughly 420 gold and it spends most of
+it on the units it hits (94.7 buys/game), so one 3-star costs ~200 gold all-in
+and three would cost more than the game pays out.
+
+Income matches real TFT (base 5, interest to 5, streak to 3, +1 on a win), and
+real 2-cost reroll comps typically land **one** carry rather than three. So the
+0.987 field residual is plausibly correct rather than a defect: reroll is a
+weaker line here, not a broken one.
+
+### 76.3 What this does and does not validate
+
+Validated: the **star-vs-slot exchange rate**, on its own axis, against a real
+TFT qualitative fact. Combined with 67.1 (star scaling exactly 3.24x health /
+2.25x AD) the unit-quality half of combat now has two independent checks.
+
+### 76.4 Three more constants, checked against published values
+
+Same method as 70.1's xp table -- compare the engine against a source rather
+than against itself:
+
+| quantity | published | engine |
+|---|---|---|
+| armor/MR mitigation | `100 / (100 + resist)` | `k/(k+resist)`, `k=100.0` |
+| mana per attack | 10 Assassin/Marksman/Fighter, 7 Caster, 5 Tank | identical |
+| tank mana from damage | 1% pre-mitigation, 3% post-mitigation | identical |
+| ...capped per instance | 42.5 | 42.5 |
+
+The mitigation *implementation* was checked, not just the constant: 100 damage
+into 50 armor yields 66.7, matching the published worked example.
+
+**`armor_mitigation_constant` can come off `config.unverified`** -- doc 01 sec 9
+flagged the "exact curve coefficient" as unconfirmed and it is now confirmed.
+The mana figures were already implemented from the same sources (entry 5.4) but
+had never been re-derived; they hold.
+
+**Still not validated:** targeting, positioning, attack speed and crit,
+projectile behaviour, and combat duration against real fight lengths.
+`sudden_death_*` and the movement/projectile speeds remain approximations that
+no source has been found for.
+
+*Lesson.* **Name the falsifiable version and build its controls.** The
+hypothesis was stated as a specific matchup with two controls that had to read
+0% and 100%, so the refutation was unambiguous rather than a judgement call.
+Three entries had circled "board size dominates" without ever fighting the two
+boards; the measurement took one script and refuted a hypothesis three entries
+had been leaning on.
+
+---
+
+## 77. Sensitivity analysis for the constants that cannot be validated (08-06)
+
+76.3 left `movement_hexes_per_second`, `projectile_hexes_per_second` and the
+`sudden_death_*` pair unvalidated. Unlike the xp table (70.1) or the mitigation
+curve (76.4), **these cannot be validated**: Riot does not publish them,
+`config.unverified` says so, and a search found nothing.
+
+Validation being impossible does not make the risk unmeasurable. The question
+that matters is not "is 2.0 hexes/second correct" but **"would any conclusion
+change if it were 1.0 or 4.0"**. `scripts/combat_sensitivity.py` answers that,
+overriding config in memory via `dataclasses.replace` -- `data/config.json` is
+hand-curated and nothing writes to it.
+
+### 77.1 Two metric traps, both caught before reading a result
+
+**The obvious metric was saturated.** 6x3-star vs 8x2-star reads 100% (76.1),
+and a rate pinned at its ceiling cannot register sensitivity *even where
+sensitivity exists* -- the floor-effect trap of 18.5 and 52.1. The script now
+calibrates across eight matchups and sweeps whichever sits nearest a coin flip;
+that is 5x3-star vs 9x2-star at 38.3%.
+
+**The first run was uninterpretable.** At n=40 the largest swing was 7.5pp
+against a sampling standard error of **7.7pp**. Reporting "these constants
+barely matter" from that would have been reading noise as a result. n=300 drops
+the standard error to 2.8pp.
+
+Placement was deliberately *not* the metric: it is zero-sum across eight seats
+and a global constant moves every seat at once, so an agent's placement can sit
+still while combat changes underneath it. That would look like insensitivity
+and be an artefact of the measure.
+
+### 77.2 Three of four are harmless
+
+n=300, baseline 38.3%, standard error 2.8pp:
+
+| variant | 5x3* beats 9x2* | delta | mean duration |
+|---|---|---|---|
+| baseline | 38.3% | -- | 28.9s |
+| movement 1.0 (half) | 41.0% | +2.7 | 29.9s |
+| movement 4.0 (double) | 36.3% | -2.0 | 28.3s |
+| projectile 6.0 | 39.0% | +0.7 | 29.2s |
+| projectile 24.0 | 38.3% | +0.0 | 28.8s |
+| sd damage 1%/s | 38.7% | +0.4 | 29.0s |
+| sd damage 6%/s | 38.0% | -0.3 | 28.9s |
+| **sudden death start 15s** | **33.0%** | **-5.3** | **17.8s** |
+| sudden death start 45s | 40.7% | +2.4 | 33.2s |
+
+`movement_hexes_per_second`, `projectile_hexes_per_second` and
+`sudden_death_damage_pct_per_second` move the strategic exchange rate by **less
+than one standard error across a 2x range in each direction**. Whatever their
+true values, nothing this project concludes rests on them.
+
+**`sudden_death_start_seconds` is the exception.** -5.3pp at 15s is ~1.9
+standard errors -- suggestive, not established -- and it halves mean fight
+duration. It is the one unsourced constant that plausibly decides which
+strategies work, and it should stay flagged.
+
+### 77.3 A duration check that came free
+
+Fights average **28.9s and time out 0% of the time** at baseline. Real TFT
+fights typically run ~20-35s and rarely hit the timer, so the duration model is
+in the right regime. This is a weak check -- no source was found for a real
+distribution -- and is recorded as a sanity reading, not a validation.
+
+### 77.4 Where combat fidelity now stands
+
+| axis | status |
+|---|---|
+| star scaling | verified (67.1) |
+| star-vs-slot exchange rate | verified (76.1) |
+| armor/MR mitigation | verified against published (76.4) |
+| mana per attack, damage-mana, cap | verified against published (76.4) |
+| crit chance / damage | verified: 25% / 1.4x, real TFT baseline |
+| targeting | verified: nearest, held until death; ties by uid is a deliberate determinism deviation |
+| movement, projectile, sd damage | unsourceable, **shown not to matter** (77.2) |
+| sudden death start | unsourceable, **may matter** (77.2) |
+| attack speed, base stats | from Riot's payload via the fetch script |
+
+*Lesson.* **When ground truth does not exist, measure sensitivity instead.** An
+unverifiable constant is not automatically a risk; it is a risk only if
+conclusions move when it moves. Three of these had been carrying an
+`unverified` flag since milestone 1 and could have been cleared at any point by
+a sweep that took one script.
+
+---
+
+## 78. Repositioning is worth 0.33, and the old default was the reason it looked worthless (08-06)
+
+Entry 52.4 established the teacher never repositions -- 173 bench selections
+and 0 board selections over 8 games. Entry 47.10 measured positional search at
+**-0.198 (t=-1.78)**, under this project's bar, and it was shelved. That figure
+came from the world entry 71.4 voided: throttled opponents, a 12-action budget,
+a teacher with no economy.
+
+Re-derived because three things changed that bear on it directly: targeting is
+now verified faithful (77.4), the star-vs-slot exchange rate is verified
+(76.1), and the teacher has an economy against a fair field (73.5, 74.2).
+
+**Augment choice was the other candidate and was dropped.** The augment pool is
+14 generic archetypes rather than the real Set 17 set (`config.unverified`,
+entry 17.1), so tuning it optimises invented data -- lesson 14's trap. Position
+uses the real hex board and verified targeting.
+
+### 78.1 What the budget buys
+
+300 shared seeds, teacher with `standard` econ, against the fair field:
+
+| arm | placement | vs control | t |
+|---|---|---|---|
+| control (no search) | 4.213 | -- | -- |
+| move c6 p1 | 4.100 | -0.113 | -0.87 |
+| **move c12 p1** | **3.883** | **-0.330** | **-2.53** |
+| move c6 p3 | 3.903 | -0.310 | -2.20 |
+
+Pairwise, so the ranking is not read off the column:
+
+| comparison | delta | t |
+|---|---|---|
+| c12 vs c6 | -0.217 | -1.85 |
+| c6p3 vs c6 | -0.197 | -1.48 |
+| c12 vs c6p3 | -0.020 | -0.14 |
+
+**Established:** a search at the larger budget beats no search (-0.31 to -0.33,
+t=-2.2 to -2.5). **Not established:** that more candidates beat more panel, or
+that c12 specifically beats c6 -- t=-1.85 is under the bar and the two larger
+arms are interchangeable at t=-0.14.
+
+### 78.2 Why 47.10 read a null
+
+47's default was `max_candidates=6, panel_size=1` -- the one arm here that
+*still* cannot be distinguished from control (t=-0.87). The old conclusion was
+not wrong about its own arm; it generalised from the cheapest configuration to
+the technique. 47.7's "more budget on candidates bought nothing" is the claim
+that misled, and it is **not** cleanly overturned here either (t=-1.85) -- what
+changed is that *some* larger budget now clears the bar where none did.
+
+### 78.3 The teacher's arc
+
+| teacher | placement | vs parity |
+|---|---|---|
+| no econ (the policy ~70 entries cloned) | 4.823 | **+0.323** |
+| + `standard` econ (74.2) | 4.213 | -0.287 |
+| + positional search c12 (78.1) | **3.883** | **-0.617** |
+
+Two changes, both cheap, moved the teacher from *below* average to 0.617 above
+it. Entry 75 measured teacher gains transmitting to the clone at 89%, so this
+is worth ~0.29 on the agent if it carries.
+
+### 78.4 Cost, and what it means for cloning
+
+The four arms took **84 minutes** -- each candidate move is a full combat
+simulation, so a search teacher is ~4x the cost per game. Collecting 400
+expert episodes with `c12 p1` is roughly 28 minutes rather than 7. Affordable,
+but it makes every future DAgger round and every re-clone materially slower,
+and that cost should be stated before it is spent.
+
+### 78.5 Still open
+
+- Train a clone on the search teacher and check the 89% transmission holds for
+  a *positional* improvement; 75 measured it for an economic one.
+- Whether the teacher's `_preferred_hex` rule can be improved directly, which
+  would be free at inference where search is not.
+- The `c12`-vs-`c6` question, still under the bar at t=-1.85 after 84 minutes.
+
+---
+
+## 79. The search teacher was not a function of the board, so it could not be cloned (08-07)
+
+Entry 78.3 recorded the plan: the teacher gains **0.330** from positional
+search, entry 75 measured teacher gains transmitting to the clone at **89%**,
+so the agent should gain ~0.29. It gained nothing. The reason turned out to be
+a property of the search itself, and it invalidates how 78 framed the result
+rather than the result.
+
+### 79.1 The clone measurement
+
+`bc-search-s0`: same pure-BC configuration as `bc-econ-s0` (400 expert
+episodes, 50 epochs, no DAgger, no PPO, seed 0), differing only in the
+teacher's `c12 p1` search. Both clones and the search teacher on shared seeds
+0-299, teacher reconstructed from the sidecar:
+
+| arm | placement | gap to own teacher | t |
+|---|---|---|---|
+| teacher, econ only (78.1) | 4.213 | -- | -- |
+| teacher, econ + c12 search | **3.883** | -- | -- |
+| `bc-econ-s0` | 4.740 | +0.857 | +5.78 |
+| `bc-search-s0` | **4.930** | **+1.047** | +6.90 |
+
+Clone to clone: **+0.190, t=+1.31, n=300** — under the bar, so the honest
+statement is that the search clone is *not better*, not that it is worse.
+Either way 0.330 of teacher strength produced nothing, and the gap to teacher
+**widened** from 0.857 to 1.047.
+
+The teacher arm reproduced 78.1's 3.883 exactly on the same seeds, which is
+also the first confirmation that the sidecar search reconstruction works.
+
+**The prediction in 78.3 failed.** 89% transmission was measured for an
+*economic* improvement and does not generalise to a positional one.
+
+### 79.2 Where the disagreement is
+
+Per-action-kind agreement with the teacher that actually labelled each run, on
+**expert states** with deterministic prediction:
+
+| action kind | econ teacher | search teacher |
+|---|---|---|
+| BUY | 96.7% | 96.2% |
+| BUY_XP | 94.7% | 95.0% |
+| PICK_AUGMENT | 99.2% | 99.2% |
+| REROLL | 95.0% | 86.9% |
+| **SELECT** | **84.0%** | **47.4%** |
+| **PLACE** | **78.8%** | **44.5%** |
+| *overall* | *90.8%* | *83.0%* |
+
+Every non-positional decision is untouched. The whole 7.8-point drop is the two
+positional kinds, and `SELECT` volume nearly doubled (910 -> 1644 labels): the
+teacher's improvement lives exactly where the clone fits worst.
+
+### 79.3 The cause, and the correction to 79.2
+
+47.4% on a clone's *own training set* reads as a failure to fit, which is a
+statement about the feature set (CLAUDE.md). Two setups could be at fault, with
+opposite remedies: the observation cannot express which hex is better, or the
+teacher is not a function of the observation at all.
+
+`best_move` builds the full ~200-move list, calls `rng.shuffle`, and evaluates
+the first `max_candidates`. With a free-running stream, two calls on a
+byte-identical board consider **different candidate moves entirely**. Measured
+over 60 states x 5 RNG streams:
+
+| | |
+|---|---|
+| modal-move agreement | **38.7%** |
+| states where all five streams agreed | 10.0% |
+| mean distinct answers per state | 4.03 of 5 |
+| states giving five different answers | 55% |
+| "no move" rate | 24.7% |
+
+**38.7% is a ceiling on SELECT/PLACE action match** — no student can agree with
+the teacher more often than the teacher agrees with itself. The clone's 47.4%
+is *above* it, the excess coming from the 24.7% of states where the search
+declines to move and the deterministic base policy answers.
+
+So 79.2's reading was wrong, in the way lesson 6 names: a rate quoted against
+an unstated maximum. The clone is not failing to fit the positional labels; it
+is fitting them about as well as they can be fitted. And the predicted
+explanation — the observation lacking the relation — is **not** the operative
+one. It remains untested, because the label noise masks it.
+
+This also explains 78.1's budget ranking without contradicting it. More random
+samples cover the move space better, so the teacher genuinely plays better while
+becoming *less* learnable. Better teacher, worse labels, pulling opposite ways —
+which is the observed pattern exactly.
+
+### 79.4 The fix
+
+Seed the candidate sample from a digest of the board layout, the occupied and
+free hexes, and the panel. The sampling *distribution* is unchanged — moves are
+still drawn uniformly from the same ~200 — so search quality should be
+untouched (measured in 79.7: +0.053, t=+0.39), while the draw becomes
+reproducible for a given state.
+`state_seeded=False` restores the free-running stream so every pre-79 number
+stays reproducible.
+
+**A trap inside the fix.** The first version keyed on `hash()`. Python
+randomises string hashing per process, so the key would have been deterministic
+in a single-process test and silently state-dependent across the `spawn` pools
+that `evaluate_scripted_parallel` and `collect_expert_data` both use — the exact
+defect, wearing the fix's clothes. It uses SHA-256, and
+`test_state_seeding_does_not_depend_on_pythonhashseed` runs the search in
+subprocesses under three `PYTHONHASHSEED` values and requires one answer.
+
+### 79.5 Tooling repaired
+
+`scripts/action_match.py` rebuilt its teacher from hand-passed CLI flags, with
+no `econ` and no search available at all. Run against these clones as written it
+would have measured disagreement with a policy neither model ever saw, and
+printed a plausible table. It now takes run directories and reconstructs from
+the sidecar, like `teacher_gap`. That is the third script in this project with
+this defect (37.4, 38.9, 45.2 are the earlier ones).
+
+`--expert-reposition` hardcoded `max_candidates=6, panel_size=1` — precisely the
+arm 78.1 measured at t=-0.87, the one budget indistinguishable from no search.
+Cloning it would have reproduced 47.10's null and read as a replication. The
+budget is now a flag, recorded in the sidecar, and reconstructed by
+`teacher_gap` and `teacher_check`.
+
+### 79.7 Determinism is free
+
+Three arms, 300 shared seeds, one run, with a source fingerprint checked
+between arms (lesson 13):
+
+| arm | placement | vs control | t |
+|---|---|---|---|
+| control (no search) | 4.213 | -- | -- |
+| c12 stream (pre-fix) | 3.883 | -0.330 | -2.53 |
+| **c12 state-seeded** | **3.937** | **-0.277** | **-2.13** |
+
+state-seed vs stream: **+0.053, t=+0.39, n=300**. Indistinguishable, which is
+what the mechanism predicts — the distribution is unchanged, only the draw's
+provenance. Control reproduced 78.1's 4.213 and the stream arm reproduced its
+3.883, both exactly.
+
+The three possible outcomes were named before the run finished (lesson: a story
+cannot be fitted afterwards). The third — state-seeding measurably *better* —
+would have been treated as an artefact to explain rather than a win, since no
+mechanism makes a reproducible draw beat an equivalent random one.
+
+### 79.8 Clean labels changed nothing, which is the real finding
+
+`bc-search-det-s0`: identical to the other two clones, teacher state-seeded.
+
+Determinism control first, because the whole reading rests on it -- 60 states x
+5 streams, same probe as 79.3:
+
+| | stream | state-seeded |
+|---|---|---|
+| modal-move agreement | 38.7% | **100.0%** |
+| states where all five agreed | 10.0% | **100.0%** |
+| distinct answers per state | 4.03 of 5 | **1.00** |
+
+The ceiling is fully lifted. Then, on shared seeds 0-299:
+
+| clone | placement | gap to own teacher |
+|---|---|---|
+| `bc-econ-s0` (no search) | **4.740** | +0.803 |
+| `bc-search-s0` (stream labels) | 4.930 | +0.993 |
+| `bc-search-det-s0` (clean labels) | **4.977** | +1.040 |
+
+det vs stream: +0.047, t=+0.32. det vs econ: +0.237, t=+1.54. All three clones
+are the same policy within noise; **no search teacher produces a better clone at
+any label quality**, while its teacher is 0.803 ahead.
+
+Per-action, against a teacher whose ceiling is now 100%:
+
+| | stream teacher | state-seeded teacher |
+|---|---|---|
+| SELECT | 47.4% (1644 labels) | **46.8% (1636 labels)** |
+| PLACE | 44.5% | **45.5%** |
+
+**Not one point of movement.** Under the stream, 47.4% sat *above* its 38.7%
+ceiling and was uninterpretable. With the ceiling at 100% the clone still reads
+46.8%. That is a real failure to fit, and it is now unconfounded.
+
+**A predicted mechanism failed and is recorded as failed.** State-seeding was
+expected to yield *fewer* positional labels, because repeated visits to an
+unchanged board would stop accumulating coverage. Counts are 1644 vs 1636.
+Dead -- and it was the explanation that would have excused a weak result.
+
+### 79.9 What this establishes
+
+The observation cannot express **which hex is better**. 79.3 dissolved the
+first attempt at this claim by showing the evidence for it was a ceiling
+artefact; this is the same claim with the artefact removed. The teacher is now
+a provable function of the board, and the clone still cannot follow it, so the
+gap is in what the observation carries -- CLAUDE.md's rule that a probe which
+cannot fit its own training set is a statement about the feature set.
+
+It is also the project's central finding restated. Which hex is better is a
+*relation* between our units' positions and the enemy's threats; the
+observation supplies a *description* of where units stand. Relational beats
+descriptive (§44, §57), and this is the relation not being supplied.
+
+Note what this does **not** say. The search teacher is genuinely stronger
+(3.937, -0.277 vs control, t=-2.13) and remains the best teacher measured. What
+fails is transmitting it by imitation through the current observation.
+
+### 79.6 Still open
+
+- Whether a positional *relation* in the observation -- threat range, distance
+  to the nearest enemy carry, front/back occupancy against the opposing shape --
+  closes it. This is the first concrete widening candidate since 57, and unlike
+  the rejected `features` encoding it is a comparison, not a description.
+- Whether `_preferred_hex` can be improved directly, which is free at inference
+  and needs no imitation at all. 78.5 raised this; 79.8 makes it the cheaper
+  path of the two.
+- Entry 75's 89% transmission stands for economic improvements and is now known
+  **not** to be a general rate.
+- Whether the observation can express *which hex is better*. Still untested —
+  79.2's evidence for it dissolved with the ceiling.
+- `best_swap` shuffles nothing, but selects candidates by `(star, cost)` order,
+  so it is already a function of the board. Untouched here.
+
+---
+
+## 80. The placement rule is already the best of three, and spacing barely matters here (08-07)
+
+79.6 left two paths. This is the cheap one: improve the teacher's *placement
+rule* rather than widen the observation. A rule is a deterministic function of
+the board, so it is free at inference and a clone can follow it -- PLACE match
+against the plain econ teacher is 78.8%, against 45.5% for the search teacher's
+moves (79.2). Search costs ~4x per game and transmits nothing (79.9), so the
+bar a free rule is measured against is **3.937**, not 4.500.
+
+### 80.1 Both alternatives are worse
+
+The incumbent sorts empty slots by depth and takes an end. That sort is
+**stable**, so within the chosen row ties break by slot index and every unit
+lands on the same flank -- the board clumps into a corner. Two alternatives,
+varying only the column chosen within the target row, 300 shared seeds:
+
+| rule | placement | vs rows | t |
+|---|---|---|---|
+| `rows` (incumbent) | **4.213** | -- | -- |
+| `centre` | 4.500 | +0.287 | **+2.21** |
+| `spread` | 4.440 | +0.227 | +1.71 |
+
+`rows` reproduced 78.1's 4.213 exactly. `centre` is significantly **worse**;
+`spread` is worse and under the bar. The hypothesis that flank-clumping is a
+defect was wrong -- of the three, clumping is the best.
+
+### 80.2 Why, and a correction made before publishing it
+
+Clumping is punished in real TFT mainly by **area abilities**, so the null
+invited a fidelity explanation. A first pass at `engine/effects.py` found one
+radius-based champion ability in 63 and was about to be written up as "AoE is
+essentially unmodelled".
+
+That count was wrong. Per-champion behaviour lives in `engine/abilities.py` --
+the *second* registry, which this file's own conventions name explicitly -- and
+searching one of two registries produced a number 9x too low. Corrected:
+
+| ability shape | champions | spacing matters? |
+|---|---|---|
+| radius / line / adjacency | 9 (14%) | yes |
+| multi-target, count-based | 21 (33%) | **no** |
+| single target or self | 33 (52%) | n/a |
+
+`_spread_targets` returns "the primary target plus the *nearest other
+enemies*, up to `count`" -- there is no radius cutoff, so a third of champions
+hit the same number of units however the board is spaced. Spreading mitigates
+9 champions' abilities, not 30.
+
+So the null is **partly** explained by the engine: the specific skill `spread`
+was built to exploit is under-priced. It is not fully explained -- 14% of
+champions are genuinely position-sensitive, and 47.2's 5.78-unit best-worst
+spread from rearranging a fixed board shows position pays through melee/ranged
+geometry and targeting regardless of AoE. This is not a clean fidelity defect
+and should not be cited as one.
+
+### 80.3 What it changes
+
+Nothing in the teacher: `rows` stays. `place_rule` is kept as a parameter with
+`rows` the default, because the two alternatives are now measured rather than
+untried, and a future entry that wants to revisit spacing should start from
+these numbers rather than re-deriving them.
+
+The cheap half of 79.6 is now closed, and it did not pay. The remaining path is
+the expensive one: supply the positional *relation* the observation lacks.
+
+### 80.4 Still open
+
+- Whether a positional relation in the observation closes 79.9's gap. Now the
+  only live lead on position.
+- Whether `_spread_targets` should take a radius, which is a **fidelity**
+  question rather than an agent one, and would change what any spacing
+  experiment measures. Flagged, not assumed: no source was checked for how Set
+  17 abilities actually select secondary targets.
+- 78.5's `c12`-vs-`c6` question, still unresolved and now lower value given
+  search does not transmit.
+
+---
+
+## 81. DAgger closes the distribution gap and buys nothing (08-07)
+
+79.9 left the clone 0.803 behind its teacher and read the cause as the
+observation. Before spending on observation width, the competing explanation
+was worth eliminating: **distribution shift**. 79.2 showed the signature
+plainly -- the clone held 90.8% agreement on the teacher's states and fell to
+69.5% on its own, with BUY_XP collapsing 94.7% -> 38.0%. DAgger is the standard
+fix and was off in every clone measured that day (`dagger_rounds: 0`).
+
+Not untried: 24.2 measured DAgger raising match 81.8% -> 88.7% with no placement
+movement. That was against a teacher placing 4.823, *below* parity, in the world
+71.4 voided. "Following a bad teacher more faithfully doesn't help" is a
+different claim from "following a good teacher more faithfully doesn't help".
+
+A **dose-response** (0 / 2 / 5 rounds) rather than one arm, so a flat line is a
+strong replication rather than a single null. Rounds 1-2 of the 5-round arm
+reproduced the 2-round arm's transition counts and match exactly -- same seed,
+nested comparison, not two independent draws.
+
+### 81.1 The result
+
+300 shared seeds, paired against the 0-round control:
+
+| arm | placement | vs 0 rounds | t | gap to teacher |
+|---|---|---|---|---|
+| TEACHER | 4.213 | -- | -- | -- |
+| `bc-econ-s0` (0 rounds) | 4.740 | -- | -- | +0.527 |
+| `dagger-r2` | 4.657 | -0.083 | -0.57 | +0.443 |
+| `dagger-r5` | 4.730 | -0.010 | -0.07 | +0.517 |
+
+r5 vs r2: +0.073, t=+0.52. Flat at every dose.
+
+### 81.2 DAgger did its job -- that is what makes this decisive
+
+The null is **not** DAgger failing to work. On student states:
+
+| action kind | 0 rounds | 2 rounds |
+|---|---|---|
+| overall | 69.5% | **75.8%** |
+| BUY_XP | 38.0% | **67.0%** |
+| SELECT | 37.5% | **62.7%** |
+| PLACE | 46.3% | **56.9%** |
+
+Expert-state match rose 89.6% -> 96.5%, closing two thirds of the residual
+disagreement. Student-state agreement rose 25-29 points on the two decision
+types 79.2 identified as the collapse. Placement moved -0.083 (t=-0.57).
+
+**Agreement with this teacher does not determine placement.** That is a
+stronger statement than 24.2's, which could be dismissed as a fact about a
+below-parity teacher; here the teacher is 0.617 above parity and the result is
+identical.
+
+### 81.3 More rounds are actively worse
+
+| round | match | loss |
+|---|---|---|
+| 1 | 96.5% | 0.318 |
+| 2 | 96.5% | 0.327 |
+| 3 | 96.5% | 0.331 |
+| 4 | 96.3% | 0.339 |
+| 5 | 96.1% | 0.344 |
+
+Each round adds ~55k student transitions to what becomes a 459k aggregate, so
+the expert's own distribution is progressively diluted. All the agreement
+arrives in round 1; rounds 2-5 are cost with a small negative drift. This was
+named as a risk before the run and is why the dose-response was included.
+
+### 81.4 What is now eliminated
+
+The clone-teacher gap has three candidate causes. Two are now closed:
+
+| cause | test | result |
+|---|---|---|
+| label noise | 79.8, state-seeded search | no movement |
+| distribution shift | 81.1, DAgger 0/2/5 | no movement |
+| observation cannot represent the policy | -- | untested |
+
+Imitation is exhausted in a stronger sense than the founding claim meant. It is
+not that the teacher is the ceiling (16); it is that **at ~96% agreement the
+remaining disagreement does not carry placement**, so no imitation method can
+close 0.527.
+
+### 81.5 Still open
+
+- The observation, now the only surviving explanation and no longer a guess.
+  Both alternatives were tested and eliminated rather than argued away.
+- Why 0.527 survives 96% agreement at all. A 4% disagreement rate costing a
+  fifth of the placement range implies the residual is concentrated on
+  decisions of very high leverage; which ones is unmeasured, and identifying
+  them is cheaper than widening the observation blind.
+- `dagger()` accepts `expert_kwargs` but **not** `search_kwargs`, so DAgger with
+  a search teacher would silently label with a non-search one. Latent; the fifth
+  instance of the family 79.5 catalogues. Not hit here because this teacher has
+  no search.
+
+---
+
+## 82. The residual disagreement that costs placement is positional (08-07)
+
+81.4 left the observation as the only surviving explanation for the clone's
+0.527 gap. Widening it blind costs a training run per guess -- and the same
+champion encoding has been rejected three times for want of a target. A 4%
+disagreement rate costing a fifth of the placement range implies the residual
+is concentrated on a few high-leverage decisions; this finds which.
+
+**The counterfactual.** At a state where clone and teacher disagree: play the
+rest under the clone, versus substitute the teacher's action *once* and then
+continue under the clone. The placement difference is that decision's leverage.
+`deepcopy` cannot fork the env (`mappingproxy`), so branches replay from the
+seed -- verified deterministic first, so both branches share every RNG draw and
+differ only in the substituted action.
+
+One detail that would have silently invalidated it: `scripted_policy` closes
+over the env it was built with and reads live player state from it, not from
+the observation it is handed. The teacher needs its own env stepped in lockstep
+with the **executed** action, or the games diverge and every later
+"disagreement" is between different boards.
+
+### 82.1 Leverage by action kind
+
+900 counterfactuals over 300 episodes, clone = `dagger-r2`. Negative means the
+teacher's action was better.
+
+| action kind | n | share | mean delta | t |
+|---|---|---|---|---|
+| PICK_OFFERING | 42 | 4.7% | -0.405 | -1.55 | *(**REFINED by 84**: -0.133 at n=631)* |
+| SELECT | 148 | 16.4% | -0.230 | -1.76 |
+| PLACE | 161 | 17.9% | -0.161 | -1.46 |
+| BUY | 89 | 9.9% | -0.101 | -0.84 |
+| BUY_XP | 52 | 5.8% | +0.019 | +0.08 |
+| **SELL** | **346** | **38.4%** | **+0.020** | **+0.32** |
+| EQUIP | 32 | 3.6% | +0.031 | +0.10 |
+| END_PLANNING | 25 | 2.8% | +0.200 | +0.96 |
+| REROLL | 5 | 0.6% | +0.800 | +1.09 |
+
+Overall: -0.076, t=-1.65 -- **under the bar**, so "correcting one action helps"
+is not established in aggregate.
+
+Pooled, grouping the two positional kinds:
+
+| group | n | mean delta | t |
+|---|---|---|---|
+| **positional (SELECT + PLACE)** | 309 | **-0.194** | **-2.28** |
+| everything else | 591 | -0.014 | -0.25 |
+| economic (BUY / BUY_XP / SELL / REROLL) | 492 | +0.006 | +0.11 |
+
+The grouping is post-hoc in the sense that per-kind numbers were seen first, but
+it is confirmatory of the standing hypothesis from 78-80 rather than fished.
+t=-2.28 at n=309 is solid, not overwhelming.
+
+### 82.2 Why DAgger bought nothing
+
+`SELL` is **38.4% of all disagreements and carries +0.020 (t=+0.32)**. Nearly
+two fifths of the mismatch DAgger was closing costs nothing. Economic
+disagreement as a whole is +0.006 -- indistinguishable from zero across 492
+samples.
+
+81 raised student-state BUY_XP agreement 38.0% -> 67.0% and SELECT 37.5% ->
+62.7%, and moved placement -0.083. This says why: the economic half of that was
+worthless by construction, and the positional half is where the value is but is
+also where the observation cannot support the choice (79.9).
+
+### 82.3 Stage profile
+
+| stage | n | mean delta | t |
+|---|---|---|---|
+| 2 | 202 | -0.163 | -1.26 |
+| 3 | 214 | -0.159 | -1.36 |
+| 4 | 269 | -0.033 | -0.59 |
+| 5 | 165 | +0.067 | +1.21 |
+
+Leverage is early and decays to nothing by stage 5, consistent with compounding
+-- a bad board on 2-3 is carried, a bad board on 5-5 has little game left to
+matter. No stage clears the bar alone.
+
+### 82.4 What it specifies
+
+Three independent lines now converge on the same target:
+
+| entry | finding |
+|---|---|
+| 79.9 | the clone cannot imitate positional choices even with clean labels |
+| 80.1 | hand-written placement rules do not help; the incumbent is best of three |
+| 82.1 | positional disagreement is the only kind whose correction pays |
+
+The observation should gain a positional **relation**, not a description --
+distance from each fielded unit to the nearest scouted enemy, how many enemies
+can reach it, our board's shape against the opposing shape. Descriptions have
+failed three times (§44); comparisons have worked every time.
+
+### 82.5 Still open
+
+- The feature set itself, and whether it closes any of the 0.527.
+- The aggregate one-step effect is under the bar (t=-1.65); only the positional
+  subset clears it. A multi-step counterfactual would test whether the teacher's
+  advantage is in sustained sequences rather than single choices.
+- ~~PICK_OFFERING has the largest magnitude (-0.405) on the smallest n (42).~~
+  **Re-measured in 84: -0.133 at n=631.** The row was a thin-cell artefact.
+
+---
+
+## 83. Supplying attack range does nothing, and the clone noise floor is 0.14 (08-07)
+
+82.4 specified the observation as the remaining target. Reading it first
+sharpened the target considerably:
+
+| information | encoded? |
+|---|---|
+| own board positions | **yes** -- units are written per hex, so slot index *is* the hex |
+| the **selected** unit's attack range | **yes** (`SELECTION_FEATURES` index 6) |
+| board/bench units' attack range | **no**, under the `index` encoding |
+| opponent geometry | **none** -- scouting is a composition summary |
+
+The teacher's placement rule is `ranged = attack_range > 1` -> deepest row
+(corner-most under `corner_carry`), else front. It is **purely
+self-referential**: it never reads enemy positions. So imitating it needs no
+enemy geometry, only one missing quantity -- per-unit attack range, behind an
+identity match the policy cannot invert (CLAUDE.md). One float per slot: 418 ->
+455, against ~1800 for the `features` encoding rejected three times (44).
+
+### 83.1 It does nothing
+
+Three paired seeds, 300 shared episodes each:
+
+| seed | `econ` | `range` | diff |
+|---|---|---|---|
+| 0 | 4.740 | 4.513 | -0.227 |
+| 1 | 4.470 | 4.580 | +0.110 |
+| 2 | 4.703 | 4.770 | +0.067 |
+| **mean** | **4.638** | **4.621** | **-0.017, t=-0.16** |
+
+Seed 0 was a favourable draw. Had it been run alone -- as every clone
+comparison in 79 and 81 was -- it would have read -0.227 and been written up as
+promising.
+
+### 83.2 The predicted mechanism failed too
+
+The prediction was that PLACE and SELECT agreement would rise, since that is
+the rule the feature feeds. On fresh expert states:
+
+| | `bc-econ-s0` | `bc-range-s0` |
+|---|---|---|
+| PLACE | 79.0% | 78.5% |
+| SELECT | 84.0% | 83.1% |
+| overall | 90.8% | 90.2% |
+
+Slightly **lower** on all three, while training-set match rose ~0.85pp. The
+feature buys fitting capacity, not generalisation.
+
+### 83.3 A number this entry got wrong before catching it
+
+The training-match gain was first reported as **89.6% -> 95.9%**. The 89.6% was
+`bc-search-s0`'s -- a clone of the *search* teacher, which 79.3 established is
+much harder to fit because its labels were near-random. `bc-econ-s0` predates
+this session and has no log. Measured properly at seeds 1 and 2, `econ` trains
+to 95.1%/95.0% and `range` to 95.9%/95.9%: **+0.85pp, not +6.3**.
+
+Lesson 12 says engine changes invalidate cross-run comparisons. It applies to
+cross-*teacher* comparisons identically, and was not applied.
+
+### 83.4 The noise floor is twice what was assumed
+
+Within-arm seed-to-seed spread, n=3 each, 300 episodes per point:
+
+| arm | placements | sd |
+|---|---|---|
+| `econ` | 4.740 / 4.470 / 4.703 | **0.146** |
+| `range` | 4.513 / 4.580 / 4.770 | **0.133** |
+
+~0.14, against the **0.074** training-seed figure this project has been quoting.
+At one seed only effects above ~0.4 are detectable. That calibrates several
+single-seed clone comparisons made today -- 79.1's +0.190 and 79.8's +0.047 were
+both reported as under the bar, and are now quantifiably inside noise rather
+than merely unproven.
+
+It does **not** touch measurements where both arms share one policy and differ
+only in evaluation seeds -- 78.1, 79.7, 80.1 and 82 are paired on shared
+episode seeds with no retraining, and carry no training-seed variance at all.
+
+### 83.5 What is left
+
+`unit_range` stays in the code as an off-by-default flag: it is measured, and a
+future entry revisiting the observation should start from these numbers.
+
+Three targeted interventions have now failed: clean positional labels (79.8),
+better placement rules (80.1), and supplying attack range (83.1). 82's leverage
+finding stands independently -- positional disagreement is the only kind whose
+correction pays -- so the remaining candidate is the information that is
+genuinely absent rather than merely encoded awkwardly: **enemy geometry**. Every
+positional relation worth computing needs opponent positions, and the
+observation contains none.
+
+### 83.6 Still open
+
+- Enemy geometry in the observation, and whether it closes any of the 0.527.
+  Note the teacher itself does not use it, so a clone with it would be
+  *exceeding* the teacher's information -- which imitation cannot reward. This
+  is an argument for RL from a clone, not for more cloning.
+- Every future clone comparison needs >=3 seeds. Single-seed clone results
+  should be treated as direction, not evidence.
+
+---
+
+## 84. PICK_OFFERING's leverage was a thin cell (08-07)
+
+82.5 flagged it: largest magnitude of any action kind (-0.405) on the smallest
+n (42, t=-1.55), and explicitly "worth a targeted re-measure before anything is
+built for it". 82.1 sampled disagreements uniformly, so a kind holding 4.7% of
+them got 42 samples -- and the table was *sorted by mean*, so the extreme cell
+was also the least precise one.
+
+`disagreement_cost.py` gained a `--kind` filter. Stratifying spends the same
+episode budget on the question being asked; the per-kind mean is unbiased
+either way, only its precision changes. It yields ~2.3 samples per episode
+instead of 0.14.
+
+| | n | mean delta | t |
+|---|---|---|---|
+| 82.1, uniform sampling | 42 | -0.405 | -1.55 |
+| **84, stratified** | **631** | **-0.133** | **-1.72** |
+
+Direction holds; magnitude falls to a third and stays under the bar. Weighted
+by its 4.7% share the contribution is about **-0.006** against a 0.527 gap.
+
+**Not worth building for.** The intended follow-up was an `owned`-for-offerings
+feature -- the teacher's rule is `(champion_id in owned, cost)` and the clone
+matches it at 54-58%, its worst of any kind. `owned` is explicitly sanctioned
+by CLAUDE.md as a fact a player reads off the screen, so it would have been a
+legitimate feature built on an illegitimate number.
+
+Sorting a table by mean and reading the top cell selects for noise as much as
+for effect, and the smallest cells move most. 13 minutes of re-measurement
+against a training run and an observation change.
+
+### 84.1 Still open
+
+- Nothing new. 82's pooled positional finding (-0.194, t=-2.28, n=309) is
+  unaffected: it rests on the two *largest* cells, not the smallest.
+
+---
+
+## 85. Reroll is unplayable in the agent seat, and it is not the budget (08-07)
+
+84's econ table, re-derived against the fair field on 300 shared seeds:
+
+| econ | placement | vs standard | t |
+|---|---|---|---|
+| **standard** | **4.213** | -- | -- |
+| fast8 | 4.337 | +0.123 | +1.05 |
+| hyperroll | 4.877 | +0.663 | +4.42 |
+| **slowroll6** | **6.077** | **+1.863** | **+14.89** | *(**SUPERSEDED by 86**: 4.867)* |
+
+74's 4.823 (no econ) and 4.213 (standard) reproduced exactly. Archetype
+*selection* is settled -- `standard` is already the best of the four and
+`fast8` is indistinguishable from it -- so that lever yields nothing.
+
+`slowroll6` at 6.077 is the finding. Slow-rolling at 6 is a mainstream real-TFT
+line; here it is worse than having no economy at all. An agent trained here
+would learn reroll is a trap, which is false of the game being modelled.
+
+### 85.1 The profile
+
+Teacher in the agent seat, per round, sampled only while alive (a dead seat
+holds no units, and averaging those in reads as "no 3-stars" when it means
+"dead" -- entry 73's vacuous-zero trap):
+
+| | standard | slowroll6 |
+|---|---|---|
+| HP at 4-3 | 51.1 | 43.8 |
+| gold at 4-3 | 36.8 | **59.2** |
+| level at 5-2 | 7.8 | 7.0 |
+| **3-star units, any round** | 0.00 | **0.00** |
+
+**Zero 3-stars, ever.** Entry 73 recorded reroll archetypes reaching a 3-star
+in 100% of games -- but that profiled `GreedyPolicy` seats in the *field*,
+which plan a whole phase at once and are not action-budgeted. Same archetype,
+two execution paths, never controlled for. In the agent seat it is zero.
+
+Gold *climbs* to ~59 against a roll floor of 50, so 76's "the shortfall is a
+gold budget" does not describe the agent seat either: it is not gold-starved.
+
+### 85.2 Two hypotheses, both refuted
+
+**Action budget.** Per-round action counts showed rounds hitting the 50-action
+cap with SELL 23 / BUY 23 / REROLL 4 -- each reroll costs ~12 actions because
+the shop refreshes, several units are bought, and the surplus is sold. Raising
+the cap:
+
+| econ | budget 50 | budget 150 | budget 400 |
+|---|---|---|---|
+| standard | 4.213 | 4.370 | 4.370 |
+| slowroll6 | 6.077 | 5.940 | 5.940 |
+
+-0.137 (t=-1.70) from 50 to 150 and **exactly nothing** from 150 to 400 --
+identical placements. At budget 400 a round uses only 55 actions: the cap was
+never the binding constraint. Refuted. (`standard` got *worse* with more
+actions, +0.157 t=+2.44, unexplained.)
+
+**Buy/sell churn burning gold.** `sell_value` refunds the full combine cost for
+1-star units at every tier -- spread 0. The churn is gold-neutral. Refuted.
+
+### 85.3 What the arithmetic says
+
+Pool sizes (30/25/18/10/9), L6 shop odds (30/40/25/5/0) and 13 two-cost
+champions are all faithful to real TFT. So:
+
+* P(a given shop slot is a specific 2-cost at L6) = 0.40/13 = **0.031**
+* expected copies per roll (5 slots) = **0.154**
+* rolls to expect the 9 copies a 3-star needs = **58**, or ~117 gold
+
+Measured over a whole game, `slowroll6` performs **30-33 rerolls** and holds a
+maximum of **0** copies of any champion. It needs 58 and gets 30.
+
+The reason is timing, not gold rate: it reaches its 50-gold floor only at
+**4-1**, and is dead or nearly so by **5-2**, leaving ~8 rounds of rolling at
+~4 rolls each. A real slow-roll is rolling from ~3-2, which is roughly double
+the window.
+
+### 85.4 Status
+
+**Partial.** The mechanism is identified as a timing/window problem and two
+plausible causes are eliminated, but the fix is not established. `SLOWROLL6`'s
+`roll_floors={"3-2": 50}` is a plan that cannot start until gold reaches 50,
+which its own `level_targets` delay by spending on XP to level 6 at 3-2.
+
+This is the fourth time this session a defect read as the engine and was the
+harness or a plan definition (79.3 search sampling, 80.2 registry search,
+83.3 cross-teacher comparison, and this). Whether the residual is *also* a
+fidelity defect is untested.
+
+### 85.5 Still open
+
+- Whether an earlier roll floor (or a lower one) makes `slowroll6` viable.
+  Cheap: it is a config change and a teacher-side A/B, no retraining.
+- Why `standard` degrades with a larger action budget (+0.157, t=+2.44).
+- Whether reroll is *also* mispriced beyond the timing, which cannot be judged
+  until a plan that actually rolls 58 times exists.
+- 84's archetype table is sound for the agent seat but should not be read as a
+  statement about the strategies themselves.
+
+---
+
+## 86. The teacher never implemented reroll targeting (08-07)
+
+85 left the reroll question partial: `slowroll6` performs 30-33 rolls against
+the 58 needed, holds **0 copies of anything**, and reaches **0 three-stars** in
+the agent seat -- while entry 73 recorded the same archetype hitting a 3-star
+in 100% of games. 85.2 refuted the action budget and the buy/sell spread.
+86 finds the cause, and it is neither the engine nor the plan.
+
+### 86.1 The defect
+
+`EconStrategy` declares `target_cost` and `target_count`: which champions a
+reroll comp concentrates its copies into. Counting references:
+
+| module | `target_cost` | `target_count` | `_targets` |
+|---|---|---|---|
+| `rl/opponents.py` (`GreedyPolicy`, the seven opponent seats) | 6 | 4 | 10 |
+| **`rl/evaluate.py` (`scripted_policy`, the teacher)** | **0** | **0** | **0** |
+
+The teacher silently ignored both. In the agent seat `slowroll6` rolled the
+shop and then bought by generic `(owned, synergy, cost)` strength, scattering
+purchases across the roster. It was a reroll economy with the reroll removed.
+
+This also resolves 73's contradiction: 73 profiled `GreedyPolicy` seats in the
+*field*, which honour targeting. Same dataclass, same archetype, two code
+paths, opposite behaviour, no warning. 76's "the shortfall is a gold budget"
+described the field, not the agent seat, where gold *climbs* past its floor.
+
+### 86.2 The fix
+
+`_targets` lifted out of `GreedyPolicy` into a module-level `reroll_targets`
+that both callers share -- a second copy is what caused this. In the teacher:
+
+* a target outranks synergy and cost in `buy_key`: a fourth copy of the carry
+  beats a stronger unit the plan will never star up;
+* targets are never sold off the bench, since nine copies must be *held* long
+  enough to combine and the existing `_copies_owned < 2` guard would sell
+  singles of the carry;
+* with nothing yet held `reroll_targets` is empty, so any unit at the target
+  cost counts as a candidate carry -- otherwise the plan can never start. The
+  commitment then emerges from what the shop offered, as in `GreedyPolicy`.
+
+Per-game peak copies of one champion, and 3-stars reached:
+
+| | peak copies | 3-stars |
+|---|---|---|
+| before | 0, 0, 0, 0, 0, 0 | 0 every game |
+| **after** | **8, 9, 9, 9, 9, 8** | **0, 1, 1, 1, 1, 0** |
+
+### 86.3 What it is worth
+
+300 shared seeds, paired against 84's identical run:
+
+| econ | before | after | change |
+|---|---|---|---|
+| no-econ | 4.823 | 4.823 | **identical** |
+| standard | 4.213 | 4.213 | **identical** |
+| fast8 | 4.337 | 4.337 | **identical** |
+| **slowroll6** | **6.077** | **4.867** | **-1.210, t=-8.72** |
+| hyperroll | 4.877 | 5.203 | +0.327, t=+2.41 |
+
+The three archetypes without `target_cost` are **bit-identical placement for
+placement across 300 seeds** -- the blast radius is exactly the two reroll
+plans, which is what a correct fix predicts.
+
+`slowroll6` gains 1.210 and moves from worse-than-no-economy to near parity.
+It remains 0.653 behind `standard` (t=+4.23), with a boom-or-bust profile --
+11.7% firsts against standard's 13.0%, but 21.7% eighths against 8.3% -- which
+is what reroll looks like in real TFT.
+
+`hyperroll` got **worse**. Committing to three 1-costs is apparently worse than
+buying generically here. Unexplained; recorded as measured.
+
+### 86.4 What this voids
+
+- **84's reroll rows.** `slowroll6` 6.077 and `hyperroll` 4.877 measured
+  archetypes with the reroll removed. The `standard` / `fast8` / no-econ rows
+  are unaffected and reproduce exactly, so 84's conclusion that `standard` is
+  the best archetype still holds -- by a smaller margin.
+- **85's floor A/B.** The `2-5@20` result (-0.433, t=-3.53) was measured
+  pre-fix and should be re-derived before it is used.
+- **85.3's timing diagnosis** was partly right -- the window is genuinely short
+  -- but targeting, not timing, was the binding constraint.
+
+Every clone and teacher figure using `standard` is untouched, which is every
+imitation number in 74-83.
+
+### 86.5 Still open
+
+- Whether 0.653 behind `standard` is the right price for reroll, which is now
+  a *fidelity* question that can finally be asked, since the plan executes.
+- Why `hyperroll` degrades under targeting.
+- Re-derive 85's floor sweep on the fixed teacher.
+- Five defects this session were one code path honouring a setting another
+  ignored (79.5, 83.3, 86.1). No mechanism warns when a declared field is read
+  by one consumer and not another.
+
+---
+
+## 87. The roll floor is not a lever, and a guard for declared fields (08-07)
+
+86.5 left two items. Both are closed here.
+
+### 87.1 85's floor sweep, re-derived on the fixed teacher
+
+86.4 voided it: the sweep was measured against a teacher that ignored
+targeting. Re-run identically, 300 shared seeds, both controls holding
+(`standard` 4.213, incumbent now 4.867):
+
+| arm | pre-fix | post-fix | vs incumbent | t |
+|---|---|---|---|---|
+| 3-2@50 (incumbent) | 6.077 | 4.867 | -- | -- |
+| 3-2@30 | 5.967 | 4.913 | +0.047 | +0.33 |
+| **2-5@20** | **5.643 (-0.433, t=-3.53)** | **4.753** | **-0.113** | **-0.81** |
+| 3-2@0 | 6.053 | 5.157 | +0.290 | **+2.11** |
+
+**85's finding evaporated.** "Starting earlier is worth 0.433 (t=-3.53)" reads
+-0.113 (t=-0.81) once targeting works. It was compensating for the defect: an
+earlier start gave more shops to stumble into copies by accident. With the plan
+buying deliberately, it buys nothing.
+
+Rolling everything is now *significantly worse* (+0.290, t=+2.11) rather than
+neutral -- gold spent destroying interest is gold not spent on target copies.
+
+**The roll floor is not a lever.** The incumbent is fine and needs no change.
+
+### 87.2 A guard for declared fields
+
+Six defects this session were one code path honouring a declared setting while
+another ignored it (79.5, 83.3, 86.1). The encoder has a guard for exactly this
+-- `test_layout_options_covers_every_encoder_option` -- and it caught a real one
+during 86's gate: `unit_range` was added to `ObservationEncoder` and not to
+`LAYOUT_OPTIONS`, which would have made self-play seats mis-encode, the same
+381-vs-418 failure `copy_counts` once caused. `EconStrategy` had no equivalent.
+
+`tests/test_econ_fields.py` adds one. It must be **behavioural**, not textual: a
+grep reports **zero** references to `level_targets` and `roll_floors` in the
+teacher, which uses both through `econ.target_level()` / `econ.roll_floor()`
+accessors. A text audit would be confidently wrong in both directions.
+
+For each field, a variant that must change behaviour; assert the action
+sequence differs. Plus a coverage test so a new field cannot slip past
+unexercised.
+
+**Two ways it was vacuous before mutation testing caught them:**
+
+* `roll_floors={}` asserted nothing. The teacher falls back to `save_floor`
+  when no override applies, and `SLOWROLL6`'s only entry (3-2 -> 50) *equals*
+  its `save_floor` of 50. Now `{"2-1": 0}`.
+* A 900-step budget truncated before stage 4, where `slowroll6` first rolls, so
+  two identical openings were compared.
+
+**And a limitation, established rather than assumed.** Reverting 86's buy-side
+targeting *alone* leaves the cases passing: `target_cost` still reaches the
+bench-sell guard. Only reverting **both** use sites -- the actual pre-86 state
+-- fails `target_cost` and `target_count`. The test detects a field reaching the
+teacher at all, not that every consumer honours it. A field gaining a second
+consumer that ignores it would still slip through.
+
+### 87.3 Still open
+
+- Whether 0.653 behind `standard` is the right price for reroll -- the fidelity
+  question, now askable because the plan executes.
+- Why `hyperroll` degrades under targeting (+0.327, t=+2.41).
+- The imitation ceiling is unchanged: 81 showed agreement and placement
+  decoupled, and nothing since bears on it.
+
+---
+
+## 88. The level curve is at a local optimum; the economy is exhausted (08-07)
+
+The last untested economy lever. 84 settled archetype selection, 87.1 settled
+roll floors, 86 fixed reroll targeting (which `standard` does not use). The
+curve inside `standard` was hand-written in 74 and adopted on the strength of
+the +0.610 that having *any* economy bought -- never tuned.
+
+Economy is the one improvement class measured to transmit to the clone (89%,
+entry 75), so a gain here would reach the agent. 300 shared seeds, teacher-side:
+
+| arm | placement | vs incumbent | t |
+|---|---|---|---|
+| **incumbent** | **4.213** | -- | -- |
+| late-push (8 and 9 a stage earlier) | 4.227 | +0.013 | +0.15 |
+| early-6 (level 6 a round sooner) | 4.373 | +0.160 | +1.27 |
+| cap-8 (never level past 8) | 4.393 | +0.180 | **+4.49** |
+| late-hold (hold 7, bank, jump) | 4.627 | +0.413 | **+4.69** |
+
+No arm beats it; the nearest is indistinguishable and three are worse. The
+incumbent reproduced 4.213 exactly.
+
+**`cap-8` is significantly worse (+0.180, t=+4.49)**, which answers a real open
+question rather than being a null: levels 9 and 10 pay for themselves despite
+the gold they cost.
+
+### 88.1 What this closes
+
+| economy lever | status |
+|---|---|
+| archetype selection | settled -- `standard` best, `fast8` indistinguishable (84) |
+| reroll targeting | fixed, worth -1.210 on `slowroll6`, but `standard` unaffected (86) |
+| roll floors | not a lever (87.1) |
+| PICK_OFFERING | -0.006 contribution, negligible (84) |
+| **level curve** | **local optimum (88)** |
+
+The teacher is about as good as hand-written heuristics get here: **4.213**,
+0.287 above parity, and every economic knob measured.
+
+**86's -1.210 does not move the agent.** It is on `slowroll6`, which the
+teacher does not run; `standard` was bit-identical before and after. The
+largest fix of the session corrected the map, not the territory.
+
+So the binding constraint is what 81 established and nothing since has touched:
+at ~96% agreement the residual disagreement does not carry placement, so no
+imitation method closes the clone's ~0.5 gap. Improving the teacher is now
+exhausted as well.
+
+### 88.2 Still open
+
+- RL from a clone, which is the only remaining path that can *exceed* a
+  teacher. Nine prior entries of RL never beat imitation, but all predate the
+  validated engine (71.4) and a teacher above parity (74).
+- Whether 0.653 behind `standard` is the right price for reroll (fidelity).
+- Why `hyperroll` degrades under targeting.

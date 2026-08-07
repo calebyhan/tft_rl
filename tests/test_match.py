@@ -390,3 +390,88 @@ def test_greedy_policy_beats_the_random_baseline(data, registry):
     greedy_avg = sum(greedy_placements) / len(greedy_placements)
     random_avg = sum(random_placements) / len(random_placements)
     assert greedy_avg < random_avg, f"greedy {greedy_avg:.2f} vs random {random_avg:.2f}"
+
+
+# --- economy strategies (doc 99 entry 71) --------------------------------
+
+
+def _levels_by_round(data, econ, games: int = 4) -> dict[str, float]:
+    """Mean level of living players at each round label."""
+    import statistics
+    from collections import defaultdict
+
+    seen: dict[str, list[int]] = defaultdict(list)
+    for game in range(games):
+        policies = [GreedyPolicy(seed=seat, econ=econ) for seat in range(8)]
+        match = Match(data, policies, seed=game)
+        while not match.finished:
+            label = f"{match.round_id.stage}-{match.round_id.round}"
+            match.play_round()
+            for player in match.living_players:
+                seen[label].append(player.level)
+    return {label: statistics.mean(v) for label, v in seen.items()}
+
+
+def test_econ_strategy_defaults_off_so_prior_numbers_reproduce(data):
+    """~70 entries of measurements were taken against the legacy plan."""
+    plain = run_match(data, lambda s: GreedyPolicy(seed=s), seed=3)
+    explicit = run_match(data, lambda s: GreedyPolicy(seed=s, econ=None), seed=3)
+    assert plain.placements == explicit.placements
+
+
+def test_econ_strategy_reaches_its_level_targets(data):
+    """The defect doc 99 entry 70.3 measured, pinned as a test.
+
+    The legacy plan buys XP once per round, so it needs ~10 rounds for level
+    7->8 however much gold it banks and lands ~1 level under real TFT's curve.
+    An econ strategy must actually reach the level its plan calls for.
+    """
+    from engine.loader import load_all as _load_all
+    from rl.opponents import STANDARD
+    from tests.paths import REAL_DATA_DIR
+
+    legacy = _levels_by_round(data, None)
+    standard = _levels_by_round(data, STANDARD)
+
+    # Relative claim: holds on any dataset, since levelling depends only on
+    # gold and the xp table.
+    assert standard["4-1"] > legacy["4-1"], (
+        f"econ plan must level faster: {standard['4-1']:.2f} vs "
+        f"{legacy['4-1']:.2f} at 4-1"
+    )
+
+    # Absolute claim: "level 7 by 4-1" is a *real TFT* benchmark, so it is
+    # only meaningful on the real dataset. The 13-champion fixture has too few
+    # units to buy, which distorts the gold curve and lands it at ~6.5.
+    real = _load_all(REAL_DATA_DIR)
+    real_levels = _levels_by_round(real, STANDARD, games=2)
+    assert real_levels["4-1"] >= 6.9, (
+        f"STANDARD targets level 7 by 4-1, reached {real_levels['4-1']:.2f}"
+    )
+
+
+def test_econ_strategy_spends_down_to_the_interest_cap(data):
+    """Gold above 50 earns no interest, so a real economy never banks it.
+
+    Entry 70.2 measured the legacy field at 145 gold by 6-4 against real TFT's
+    ~50. This asserts the plan actually spends the surplus.
+    """
+    import statistics
+
+    from rl.opponents import STANDARD
+
+    def late_gold(econ) -> float:
+        held: list[int] = []
+        for game in range(4):
+            policies = [GreedyPolicy(seed=s, econ=econ) for s in range(8)]
+            match = Match(data, policies, seed=game)
+            while not match.finished:
+                match.play_round()
+                if match.round_id.stage >= 5:
+                    held.extend(p.gold for p in match.living_players)
+        return statistics.mean(held) if held else 0.0
+
+    legacy, standard = late_gold(None), late_gold(STANDARD)
+    assert standard < legacy, (
+        f"econ plan must spend its surplus: {standard:.1f} vs {legacy:.1f}"
+    )

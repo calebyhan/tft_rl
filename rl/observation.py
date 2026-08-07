@@ -181,6 +181,7 @@ UNIT_RANK_FEATURES = 2
 # score. The line from doc 99 entry 38.4 holds: facts yes, the expert's
 # lexicographic combination of them no.
 UNIT_COPY_FEATURES = 1
+UNIT_RANGE_FEATURES = 1
 
 
 @dataclass(frozen=True)
@@ -198,6 +199,7 @@ class ObservationSpec:
     champion_encoding: str = "index"
     scouting: str = "summary"
     copy_counts: bool = False
+    unit_range: bool = False
 
     @property
     def opponent_width(self) -> int:
@@ -221,8 +223,17 @@ class ObservationSpec:
                 + UNIT_STAT_FEATURES
                 + self.n_traits
             )
-        return base + UNIT_RANK_FEATURES + (
-            UNIT_COPY_FEATURES if self.copy_counts else 0
+        return (
+            base
+            + UNIT_RANK_FEATURES
+            + (UNIT_COPY_FEATURES if self.copy_counts else 0)
+            # Doc 99 entry 83: the teacher's whole placement rule thresholds on
+            # `attack_range <= 1`, and under the `index` encoding a unit's range
+            # is recoverable only by memorising champion id -> range. CLAUDE.md:
+            # a quantity behind an identity match will not be derived by a flat
+            # MLP, so it is supplied. One float per slot, against ~1800 for the
+            # `features` encoding that carries it (rejected three times, §44).
+            + (UNIT_RANGE_FEATURES if self.unit_range else 0)
         )
 
     @property
@@ -291,7 +302,7 @@ class ObservationSpec:
 # beside the class and pinned to its signature by
 # `test_layout_options_covers_every_encoder_option`, because the failure mode
 # for an omission is a shape error thrown deep inside torch, hours into a run.
-LAYOUT_OPTIONS = ("champion_encoding", "scouting", "copy_counts")
+LAYOUT_OPTIONS = ("champion_encoding", "scouting", "copy_counts", "unit_range")
 
 
 class ObservationEncoder:
@@ -305,6 +316,7 @@ class ObservationEncoder:
         champion_encoding: str = "index",
         scouting: str = "summary",
         copy_counts: bool = False,
+        unit_range: bool = False,
     ) -> None:
         if champion_encoding not in CHAMPION_ENCODINGS:
             raise ValueError(
@@ -319,6 +331,7 @@ class ObservationEncoder:
         self.champion_encoding = champion_encoding
         self.scouting = scouting
         self.copy_counts = copy_counts
+        self.unit_range = unit_range
         self.champion_ids = tuple(sorted(data.champions))
         self.trait_ids = tuple(sorted(data.traits))
         self.augment_ids = tuple(sorted(data.augments))
@@ -338,6 +351,7 @@ class ObservationEncoder:
             champion_encoding=champion_encoding,
             scouting=scouting,
             copy_counts=copy_counts,
+            unit_range=unit_range,
         )
         # Normalisers keep every feature roughly in [0, 1].
         cfg = data.config
@@ -621,15 +635,25 @@ class ObservationEncoder:
                 star_level=unit.star_level,
                 item_count=len(unit.items),
             )
-        width = UNIT_RANK_FEATURES + (
-            UNIT_COPY_FEATURES if self.spec.copy_counts else 0
+        width = (
+            UNIT_RANK_FEATURES
+            + (UNIT_COPY_FEATURES if self.spec.copy_counts else 0)
+            + (UNIT_RANGE_FEATURES if self.spec.unit_range else 0)
         )
         tail = cursor + self.spec.unit_width - width
         star, cost = (ranks or {}).get(id(unit), (0.0, 0.0))
         out[tail] = star
         out[tail + 1] = cost
+        tail += UNIT_RANK_FEATURES
         if self.spec.copy_counts:
-            out[tail + 2] = (copies or {}).get(id(unit), 0.0)
+            out[tail] = (copies or {}).get(id(unit), 0.0)
+            tail += UNIT_COPY_FEATURES
+        if self.spec.unit_range:
+            # `derived_stats()` rather than `champion.stats`: items and traits
+            # can change range, and the teacher reads the derived value.
+            out[tail] = min(
+                unit.derived_stats().attack_range / self._max_range, 1.0
+            )
 
     def _write_champion_features(
         self, out: np.ndarray, cursor: int, champion, star_level: int, item_count: int

@@ -83,6 +83,7 @@ class SnapshotPolicy:
         champion_encoding: str = "index",
         scouting: str = "summary",
         copy_counts: bool = False,
+        unit_range: bool = False,
         n_opponents: int = 7,
     ) -> None:
         self.model = model
@@ -102,6 +103,7 @@ class SnapshotPolicy:
             champion_encoding=champion_encoding,
             scouting=scouting,
             copy_counts=copy_counts,
+            unit_range=unit_range,
         )
 
     def plan(self, player: PlayerState, context: PlanningContext) -> None:

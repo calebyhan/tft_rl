@@ -13,7 +13,11 @@ Reports match per ``ActionKind``, on two state distributions:
 * **student states** -- what the policy actually faces at evaluation time,
   reached by letting the model drive while the expert still labels.
 
-    python scripts/action_match.py runs/m14_bc400/model.zip runs/m14_dagger/model.zip
+Takes run *directories*: the teacher and env config are reconstructed from
+each run's `metadata.json`, so the disagreement measured is with the policy
+that actually labelled it.
+
+    .venv/bin/python scripts/action_match.py runs/bc-search-s0 runs/bc-econ-s0
 """
 
 from __future__ import annotations
@@ -39,13 +43,13 @@ from scripts.train_ppo import (  # noqa: E402
 
 def match_by_kind(
     model, data, episodes: int, on_student_states: bool,
-    expert_kwargs: dict | None = None,
+    expert_kwargs: dict | None = None, search_kwargs: dict | None = None,
 ) -> dict:
     """Agreement with the expert, bucketed by the kind of action it chose."""
     actor = student_actor(model) if on_student_states else None
     obs, masks, expert_actions, _ = collect_expert_data(
         data, episodes, actor=actor, seed_offset=90_000,
-        expert_kwargs=expert_kwargs,
+        expert_kwargs=expert_kwargs, search_kwargs=search_kwargs,
     )
 
     env = build_env(data)
@@ -68,59 +72,31 @@ def match_by_kind(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("models", nargs="+", type=Path)
+    parser.add_argument("runs", nargs="+", type=Path,
+                        help="run directories, not model files")
     parser.add_argument("--episodes", type=int, default=40)
     parser.add_argument("--data", type=Path, default=Path("data"))
-    parser.add_argument(
-        "--expert-flags",
-        action="store_true",
-        help="label with buy_synergy + match_items + corner_carry as well",
-    )
-    parser.add_argument(
-        "--copy-counts",
-        action="store_true",
-        help=(
-            "must match what the model was trained with. Like "
-            "--champion-encoding, a mismatch is a shape error rather than a "
-            "helpful message (doc 99 entry 38.9)"
-        ),
-    )
-    parser.add_argument(
-        "--expert-sell",
-        action="store_true",
-        help=(
-            "label with the sell-capable teacher. Must match the teacher the "
-            "model was cloned from, or the disagreement measured is with a "
-            "policy it never saw (doc 99 entry 37.4)"
-        ),
-    )
-    parser.add_argument(
-        "--champion-encoding",
-        default="index",
-        help=(
-            "must match what the model was trained with -- a mismatch is an "
-            "opaque torch shape error, not a helpful message"
-        ),
-    )
     args = parser.parse_args()
-    ENV_DEFAULTS["champion_encoding"] = args.champion_encoding
-    ENV_DEFAULTS["copy_counts"] = args.copy_counts
 
     from sb3_contrib import MaskablePPO
 
+    from scripts.teacher_gap import teacher_config
+
     data = load_all(args.data)
-    for path in args.models:
-        model = MaskablePPO.load(path, device="cpu")
-        print(f"\n=== {path} ===")
+    for run_dir in args.runs:
+        # Every one of these was previously a hand-passed flag the caller had
+        # to match by eye, and this project has three separate entries about
+        # getting that wrong (37.4, 38.9, 45.2). The sidecar already records
+        # what the run was trained with, so it is read rather than re-asserted.
+        expert_kwargs, env_kwargs, search_kwargs = teacher_config(run_dir)
+        ENV_DEFAULTS.update(env_kwargs)
+        model = MaskablePPO.load(run_dir / "model", device="cpu")
+        print(f"\n=== {run_dir} ===")
+        print(f"  teacher: {expert_kwargs} search={search_kwargs}")
         for label, on_student in (("expert states", False), ("student states", True)):
             table = match_by_kind(
                 model, data, args.episodes, on_student,
-                expert_kwargs={
-                    "sell_bench": args.expert_sell,
-                    "buy_synergy": args.expert_flags,
-                    "match_items": args.expert_flags,
-                    "corner_carry": args.expert_flags,
-                },
+                expert_kwargs=expert_kwargs, search_kwargs=search_kwargs,
             )
             total_hits = sum(h for h, _, _ in table.values())
             total_n = sum(n for _, n, _ in table.values())
