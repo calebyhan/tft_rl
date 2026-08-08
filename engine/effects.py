@@ -56,6 +56,10 @@ class EffectTrigger(str, Enum):
 # (doc 99 entry 34.7).
 EFFECT_HOOKS: dict[str, list[tuple[EffectTrigger, Callable]]] = {}
 
+# Memo for `hooks_for`, invalidated by `register`. Keyed by (effect_id,
+# trigger); the value is the shared list callers iterate.
+_HOOK_CACHE: dict[tuple[str, "EffectTrigger"], list[Callable]] = {}
+
 # effect_id -> primary implementation / trigger, i.e. the first one registered.
 # Kept because abilities are single-trigger and read through these.
 EFFECTS: dict[str, Callable] = {}
@@ -87,16 +91,32 @@ def register(
         hooks.append((trigger, fn))
         EFFECTS.setdefault(effect_id, fn)
         EFFECT_TRIGGERS.setdefault(effect_id, trigger)
+        _HOOK_CACHE.clear()
         return fn
 
     return decorator
 
 
 def hooks_for(effect_id: str | None, trigger: EffectTrigger) -> list[Callable]:
-    """Every implementation registered for ``effect_id`` on ``trigger``."""
+    """Every implementation registered for ``effect_id`` on ``trigger``.
+
+    Memoised. This is called ~1.5M times per benchmark game, almost always to
+    discover that an item has no hook for the trigger being fired, and it used
+    to rebuild a filtered list on every one of those calls (doc 99 entry 95).
+
+    The returned list is **shared, not a copy** -- callers iterate it and must
+    not mutate it. :func:`register` clears the cache, so a hook registered at
+    runtime (which tests do) is still picked up.
+    """
     if effect_id is None:
         return []
-    return [fn for hook_trigger, fn in EFFECT_HOOKS.get(effect_id, ()) if hook_trigger is trigger]
+    key = (effect_id, trigger)
+    cached = _HOOK_CACHE.get(key)
+    if cached is None:
+        cached = [fn for hook_trigger, fn in EFFECT_HOOKS.get(effect_id, ())
+                  if hook_trigger is trigger]
+        _HOOK_CACHE[key] = cached
+    return cached
 
 
 # Emblems are implemented, just not here: ``engine.items.emblem_trait_id``

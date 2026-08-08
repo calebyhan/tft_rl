@@ -251,23 +251,37 @@ class UnitInstance:
 
     @property
     def is_stunned(self) -> bool:
+        # `status_effects` is empty for almost every unit on almost every
+        # tick, and these predicates are queried millions of times per game
+        # from the combat hot loop. The guard skips building a generator
+        # frame to iterate nothing (doc 99 entry 95).
+        if not self.status_effects:
+            return False
         return any(e.stun for e in self.status_effects)
 
     @property
     def is_rooted(self) -> bool:
+        if not self.status_effects:
+            return False
         return any(e.root or e.stun for e in self.status_effects)
 
     @property
     def is_disarmed(self) -> bool:
+        if not self.status_effects:
+            return False
         return any(e.disarm or e.stun for e in self.status_effects)
 
     @property
     def is_cc_immune(self) -> bool:
         """True while any status grants crowd-control immunity (Quicksilver)."""
+        if not self.status_effects:
+            return False
         return any(e.cc_immune for e in self.status_effects)
 
     @property
     def is_untargetable(self) -> bool:
+        if not self.status_effects:
+            return False
         return any(e.untargetable for e in self.status_effects)
 
     @property
@@ -278,6 +292,8 @@ class UnitInstance:
         carry, and Infinity Edge and Jeweled Gauntlet are pure stat sticks
         (doc 99 entry 36.2).
         """
+        if not self.status_effects:
+            return False
         return any(e.precision for e in self.status_effects)
 
     # -- per-combat counters ----------------------------------------------
@@ -333,6 +349,8 @@ class UnitInstance:
 
     def tick_statuses(self, dt: float) -> None:
         """Advance status/shield durations and drop the expired ones."""
+        if not self.status_effects and not self.shields:
+            return
         changed = False
         for effect in self.status_effects:
             effect.tick(dt)

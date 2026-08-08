@@ -46,7 +46,7 @@ DEFAULT_MAX_ACTIONS_PER_ROUND = 50
 
 # How dense shaping is computed. "potential" is policy-invariant; "bonus"
 # is the earlier standing-payment form, kept only for comparison.
-SHAPING_MODES = ("potential", "bonus")
+SHAPING_MODES = ("potential", "bonus", "per_action")
 
 
 class _AgentSeat:
@@ -205,6 +205,20 @@ class TFTEnv(gym.Env):
             reward += self.invalid_action_penalty
         self.actions_left -= 1
 
+        # Per-action potential (doc 99 entry 93). In `potential` mode the
+        # shaping fires only at round transitions, so a round's entire Phi
+        # change -- every purchase, every placement, the whole combat HP swing
+        # -- is credited to whichever action advanced the round, which is
+        # always END_PLANNING. Entry 92 measured that concentration at ~100x
+        # the credit of any board-building action, on the one action the
+        # collapsing policy already over-selects (89.1, 90).
+        #
+        # Applying `F = gamma*Phi(s') - Phi(s)` on *every* transition still
+        # telescopes to a boundary term, so policy-invariance is unchanged
+        # (Ng, Harada & Russell); what moves is where the credit lands.
+        if self.shaping_mode == "per_action" and self.reward_shaping:
+            reward += self._potential_delta()
+
         if finished_planning or self.actions_left <= 0:
             reward += self._advance_round()
             if not self.match.finished and self.player.alive:
@@ -360,6 +374,21 @@ class TFTEnv(gym.Env):
 
         # Potential-based. A terminal state has potential 0 by convention,
         # which is what makes the telescoping sum collapse cleanly.
+        terminal = self.match.finished or not self.player.alive
+        after = 0.0 if terminal else self._potential()
+        shaped = self.shaping_gamma * after - self._last_potential
+        self._last_potential = after
+        return shaped
+
+    def _potential_delta(self) -> float:
+        """`gamma * Phi(s') - Phi(s)` for a single action transition.
+
+        Shares `_last_potential` with the round-transition path so the two
+        cannot double-count: whichever fires updates the stored value, and in
+        `per_action` mode `_advance_round` contributes only the combat HP
+        change, which is genuinely attributable to the round rather than to
+        any one action.
+        """
         terminal = self.match.finished or not self.player.alive
         after = 0.0 if terminal else self._potential()
         shaped = self.shaping_gamma * after - self._last_potential

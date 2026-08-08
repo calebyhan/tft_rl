@@ -45,6 +45,7 @@ from rl.evaluate import (  # noqa: E402
     scripted_policy,
 )
 from rl.observation import CHAMPION_ENCODINGS, SCOUTING_MODES  # noqa: E402
+from rl.opponents import STRATEGIES  # noqa: E402
 from rl.timing import timed  # noqa: E402
 
 DEFAULT_RUN_DIR = Path("runs")
@@ -61,17 +62,71 @@ def build_env(data, seed: int | None = None, **kwargs) -> TFTEnv:
     return TFTEnv(data=data, seed=seed, **{**ENV_DEFAULTS, **kwargs})
 
 
+def _subproc_factory(rank: int, seed: int, shaping: bool, env_defaults: dict):
+    """Build one env *inside* its own process.
+
+    Module-level and data-free on purpose. `spawn` pickles this closure to the
+    child, and the loaded game data does not survive pickling (it holds a
+    `mappingproxy`, the same thing that stops `copy.deepcopy` working on an
+    env). Each child therefore calls `load_all` itself, which is what the
+    parallel evaluation harnesses in `rl.evaluate` already do.
+
+    ``env_defaults`` is passed explicitly rather than read from the module
+    global. `spawn` re-imports this module in the child, where `ENV_DEFAULTS`
+    is empty -- so a child would silently build an env with the *default*
+    observation layout while the parent's policy expects the configured one.
+    """
+
+    def _init():
+        import logging
+
+        from stable_baselines3.common.monitor import Monitor
+
+        from engine.loader import load_all
+
+        logging.getLogger("engine.loader").setLevel(logging.ERROR)
+        env = TFTEnv(load_all(), seed=seed + rank, reward_shaping=shaping,
+                     **env_defaults)
+        return Monitor(env)
+
+    return _init
+
+
 def make_vec_env(data, n_envs: int, seed: int, shaping: bool = False, pool=None,
-                 mix: float = 1.0):
+                 mix: float = 1.0, vec: str = "dummy"):
     """Build the training envs, optionally with self-play opponent seats.
 
     ``pool`` is a :class:`~rl.selfplay.SnapshotPool`. Passing one is safe from
     step 0: while it is empty every seat falls back to the scripted bot, so
     training begins against the heuristics and shifts to self-play as
     snapshots accumulate.
+
+    ``vec`` selects the vectorisation. `dummy` steps every env **serially in
+    one process**: `--envs 8` collected no faster than `--envs 1` and is why
+    every run in this project has managed ~66 env steps/sec on a 12-core
+    machine (doc 99 entry 95). `subproc` runs each env in its own process.
+
+    `subproc` cannot carry a self-play ``pool``: the pool is a live object the
+    trainer mutates between iterations, and a snapshot factory in a child
+    process would hold a stale copy. Asking for both is refused rather than
+    silently training against frozen opponents.
     """
     from stable_baselines3.common.monitor import Monitor
-    from stable_baselines3.common.vec_env import DummyVecEnv
+    from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+
+    if vec == "subproc":
+        if pool is not None:
+            raise SystemExit(
+                "--vec subproc cannot be combined with self-play (--selfplay): "
+                "the snapshot pool is mutated by the trainer and a child "
+                "process would hold a stale copy. Use --vec dummy, or train "
+                "against the scripted field."
+            )
+        return SubprocVecEnv(
+            [_subproc_factory(i, seed, shaping, dict(ENV_DEFAULTS))
+             for i in range(n_envs)],
+            start_method="spawn",
+        )
 
     def factory(rank: int):
         def _init():
@@ -100,12 +155,14 @@ class MetricsCallback:
         from stable_baselines3.common.callbacks import BaseCallback
 
         class _Callback(BaseCallback):
-            def __init__(self, data, every: int, episodes: int, run_dir: Path, verbose=1):
+            def __init__(self, data, every: int, episodes: int, run_dir: Path,
+                         verbose=1, workers: int = 1):
                 super().__init__(verbose)
                 self.data = data
                 self.every = every
                 self.episodes = episodes
                 self.run_dir = run_dir
+                self.workers = workers
                 self.history: list[dict] = []
                 self._eval_env = build_env(data)
 
@@ -116,11 +173,31 @@ class MetricsCallback:
                 return True
 
             def _record(self) -> None:
-                result = evaluate(
-                    self._eval_env,
-                    sb3_policy(self.model),
-                    seeds=range(self.episodes),
-                )
+                if self.workers > 1:
+                    # Evaluation was ~40% of a training run's wall clock: 360
+                    # episodes played serially in the training process while 11
+                    # cores idled (doc 99 entry 95.4). `evaluate_model_parallel`
+                    # loads from a path rather than a pickled model -- an SB3
+                    # model carries an optimiser and a live env reference -- so
+                    # the policy is checkpointed first. It reassembles results
+                    # in seed order, so this is the same measurement as the
+                    # serial path, not merely a comparable one.
+                    from rl.evaluate import evaluate_model_parallel
+
+                    snapshot = self.run_dir / "_eval_policy"
+                    self.model.save(snapshot)
+                    result = evaluate_model_parallel(
+                        snapshot,
+                        seeds=range(self.episodes),
+                        workers=self.workers,
+                        env_kwargs=dict(ENV_DEFAULTS),
+                    )
+                else:
+                    result = evaluate(
+                        self._eval_env,
+                        sb3_policy(self.model),
+                        seeds=range(self.episodes),
+                    )
                 entry = {"timesteps": self.num_timesteps, **result.as_dict()}
                 self.history.append(entry)
                 self.logger.record("eval/avg_placement", result.avg_placement)
@@ -769,7 +846,8 @@ def write_metadata(run_dir: Path, data, args, metrics: dict, elapsed: float) -> 
 # any of these makes the checkpoint's weights the wrong shape for the model
 # being built -- which `set_parameters` catches, but only as a tensor-shape
 # error naming a layer, from which the actual cause is not obvious.
-ARCHITECTURE_FLAGS = ("copy_counts", "champion_encoding", "scouting", "slot_head")
+ARCHITECTURE_FLAGS = ("copy_counts", "champion_encoding", "scouting", "slot_head",
+                      "unit_range")
 
 
 def check_init_flags(checkpoint: Path, args) -> None:
@@ -804,7 +882,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--timesteps", type=int, default=50_000)
     parser.add_argument("--envs", type=int, default=4)
+    parser.add_argument("--vec", choices=("dummy", "subproc"),
+                        default="dummy",
+                        help="dummy steps envs serially in one process "
+                             "(the historical default); subproc runs "
+                             "each env in its own process")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--eval-workers", type=int, default=1,
+                        help="processes for periodic evaluation; >1 runs "
+                             "the eval episodes in parallel (entry 95.4)")
     parser.add_argument("--eval-episodes", type=int, default=100,
                         help="30 episodes gives a 95%% CI of about +/-0.7 placement, "
                              "which is wider than the effects worth detecting")
@@ -833,6 +919,19 @@ def main() -> int:
         help=(
             "teacher spends spare gold rerolling from this level up; 0 is off. "
             "Inert without --expert-sell (doc 99 entry 37.4)"
+        ),
+    )
+    parser.add_argument(
+        "--expert-econ",
+        choices=sorted(STRATEGIES),
+        default=None,
+        help=(
+            "give the cloning teacher a real economy plan: level to a curve, "
+            "roll down to a floor. **Without this the teacher places 4.823 -- "
+            "below the 4.500 parity line -- against the current field, and any "
+            "clone of it inherits that** (doc 99 entry 74). `standard` is the "
+            "only arm measured better than parity (4.213). Omit to reproduce "
+            "every clone trained before 2026-08-06"
         ),
     )
     parser.add_argument(
@@ -943,6 +1042,27 @@ def main() -> int:
             "the one axis the incumbent leaves entirely untouched"
         ),
     )
+    # The search's budget, exposed because it is *not* a free parameter. Entry
+    # 78.2 measured c6/p1 -- the value hardcoded here until then, and the
+    # default entry 47.10 drew its null from -- at -0.113 (t=-0.87), the one
+    # arm still indistinguishable from no search at all. c12/p1 reads -0.330
+    # (t=-2.53). Leaving the budget fixed at the value that measures nothing
+    # would have reproduced 47.10's null and called it a replication.
+    # Doc 99 entry 83. Entry 82.1 localised the only disagreement that costs
+    # placement to SELECT/PLACE (-0.194, t=-2.28); the teacher's placement rule
+    # thresholds on `attack_range <= 1`, and under the `index` encoding that is
+    # behind an identity match the policy cannot invert. Adds one float per
+    # unit slot -- the `features` encoding supplies it too, at ~1800 floats,
+    # and was rejected three times (doc 99 44).
+    parser.add_argument("--unit-range", action="store_true")
+    parser.add_argument("--expert-reposition-candidates", type=int, default=12)
+    parser.add_argument("--expert-reposition-panel", type=int, default=1)
+    # Entry 79.4: seeding the candidate sample from the board makes the teacher
+    # a function of the observation. Costs nothing measurable (+0.053, t=+0.39,
+    # n=300, entry 79.7) and lifts the 38.7% ceiling on imitating its moves.
+    parser.add_argument("--no-expert-reposition-state-seeded",
+                        dest="expert_reposition_state_seeded",
+                        action="store_false", default=True)
     parser.add_argument("--run-dir", type=Path, default=None)
     parser.add_argument("--baseline-only", action="store_true")
     parser.add_argument("--device", default="cpu", help="cpu is faster for small MLPs")
@@ -1083,6 +1203,7 @@ def main() -> int:
     ENV_DEFAULTS["champion_encoding"] = args.champion_encoding
     ENV_DEFAULTS["scouting"] = args.scouting
     ENV_DEFAULTS["copy_counts"] = args.copy_counts
+    ENV_DEFAULTS["unit_range"] = args.unit_range
     ENV_DEFAULTS["shaping_mode"] = args.shaping_mode
     # The telescoping guarantee only holds if shaping uses the training gamma.
     ENV_DEFAULTS["shaping_gamma"] = args.gamma
@@ -1123,6 +1244,7 @@ def main() -> int:
         shaping=args.reward_shaping,
         pool=pool,
         mix=args.self_play_mix,
+        vec=args.vec,
     )
     if args.slot_head:
         from rl.policy import make_slot_policy
@@ -1158,12 +1280,19 @@ def main() -> int:
         "buy_synergy": args.expert_flags,
         "match_items": args.expert_flags,
         "corner_carry": args.expert_flags,
+        "econ": STRATEGIES[args.expert_econ] if args.expert_econ else None,
     }
 
-    # `mode="move"` is the positional variant; 47.10 measured it worth ~0.19
-    # pooled across five configurations, and no configuration beat another.
+    # `mode="move"` is the positional variant. Entry 78.2 re-derived its value
+    # in the validated world: -0.330 (t=-2.53) for the teacher at c12/p1,
+    # against 47.10's pooled -0.198 (t=-1.78) in the world entry 71.4 voided.
     search_kwargs = (
-        {"mode": "move", "panel_size": 1, "max_candidates": 6}
+        {
+            "mode": "move",
+            "panel_size": args.expert_reposition_panel,
+            "max_candidates": args.expert_reposition_candidates,
+            "state_seeded": args.expert_reposition_state_seeded,
+        }
         if args.expert_reposition
         else None
     )
@@ -1245,7 +1374,8 @@ def main() -> int:
         baselines["after_dagger"] = aggregated.as_dict()
         baselines["dagger_stats"] = dagger_stats
 
-    callback = MetricsCallback(data, args.eval_every, args.eval_episodes, run_dir)
+    callback = MetricsCallback(data, args.eval_every, args.eval_episodes,
+                               run_dir, workers=args.eval_workers)
     callbacks = [callback]
     if args.bc_anchor_coef > 0:
         if expert_dataset is None:

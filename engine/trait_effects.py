@@ -47,6 +47,9 @@ TRAIT_EFFECT_PREFIX = "trait_"
 # grants durability while shielded.
 TRAIT_HOOKS: dict[str, list[tuple[EffectTrigger, Callable]]] = {}
 
+# Memo for `trait_hooks_for`, invalidated by `register_trait`.
+_TRAIT_HOOK_CACHE: dict[tuple[str, "EffectTrigger"], list[Callable]] = {}
+
 # trait_id -> implementation, for traits whose effect happens *between* rounds
 # rather than during a fight (Anima's Tech, Oracle's reward, Factory New's
 # armoury). These take a ``PlayerState`` rather than a combat context, which is
@@ -77,6 +80,7 @@ def register_trait(
         if any(existing is trigger for existing, _ in hooks):
             raise ValueError(f"trait {trait_id!r} already has a {trigger.value} hook")
         hooks.append((trigger, fn))
+        _TRAIT_HOOK_CACHE.clear()
         return fn
 
     return decorator
@@ -112,7 +116,18 @@ def apply_round_end(player) -> None:
 
 
 def trait_hooks_for(trait_id: str, trigger: EffectTrigger) -> list[Callable]:
-    return [fn for hook_trigger, fn in TRAIT_HOOKS.get(trait_id, ()) if hook_trigger is trigger]
+    """Memoised for the same reason as :func:`engine.effects.hooks_for`.
+
+    The returned list is shared, not a copy; callers iterate and must not
+    mutate it. The registering decorator clears the cache (doc 99 entry 95).
+    """
+    key = (trait_id, trigger)
+    cached = _TRAIT_HOOK_CACHE.get(key)
+    if cached is None:
+        cached = [fn for hook_trigger, fn in TRAIT_HOOKS.get(trait_id, ())
+                  if hook_trigger is trigger]
+        _TRAIT_HOOK_CACHE[key] = cached
+    return cached
 
 
 def is_trait_implemented(trait_id: str | None) -> bool:

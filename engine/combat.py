@@ -296,6 +296,11 @@ class CombatSimulator:
         )
         self.units: list[UnitInstance] = [*self.teams[0], *self.teams[1]]
         self.by_uid: dict[int, UnitInstance] = {u.uid: u for u in self.units}
+        # `step` iterates units in uid order twice per tick to keep ties
+        # reproducible. That sort is over a list whose order changes only when
+        # a summon is added, so it is cached and invalidated there rather than
+        # rebuilt ~344k times per game (doc 99 entry 95).
+        self._uid_ordered: list[UnitInstance] | None = None
         self.projectiles: list[Projectile] = []
         self.burns: dict[int, Burn] = {}
 
@@ -440,7 +445,7 @@ class CombatSimulator:
         # implementation decides whether its interval has elapsed. Same
         # reasoning as ON_HIT above -- a PERIODIC item was previously
         # registered and unreachable (doc 99 entry 33.2).
-        for unit in sorted(self.units, key=lambda u: u.uid):
+        for unit in self._in_uid_order():
             if unit.alive:
                 self._fire_item_triggers(unit, EffectTrigger.PERIODIC)
                 self._fire_ability_triggers(unit, EffectTrigger.PERIODIC)
@@ -451,13 +456,23 @@ class CombatSimulator:
             self._apply_sudden_death(dt)
 
         # Fixed iteration order keeps ties reproducible across runs.
-        for unit in sorted(self.units, key=lambda u: u.uid):
+        for unit in self._in_uid_order():
             if not unit.alive:
                 continue
             self._act(unit, dt)
 
         if not self.living(0) or not self.living(1):
             self._finished = True
+
+    def _in_uid_order(self) -> list[UnitInstance]:
+        """Units in uid order, cached between summons.
+
+        Returned list is shared and must not be mutated by callers; it is
+        rebuilt only when :meth:`_summon` invalidates it.
+        """
+        if self._uid_ordered is None:
+            self._uid_ordered = sorted(self.units, key=lambda u: u.uid)
+        return self._uid_ordered
 
     def _act(self, unit: UnitInstance, dt: float) -> None:
         if unit.is_stunned:
@@ -1076,6 +1091,7 @@ class CombatSimulator:
 
         self.teams[team].append(unit)
         self.units.append(unit)
+        self._uid_ordered = None
         self.by_uid[unit.uid] = unit
         self._move_timers[unit.uid] = 0.0
         self.log.register(unit)

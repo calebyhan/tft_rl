@@ -166,6 +166,28 @@ def main() -> None:
             "the signal, which the advantages alone do not explain."
         )
 
+    # The REROLL verdict answers entry 61's question and only that. Naming one
+    # kind in advance is how the real signal stayed hidden: at the entry-89
+    # clone REROLL sits *at* the mean while END_PLANNING is the most-rewarded
+    # common action and BUY the least -- which is the drift, and neither is
+    # REROLL (doc 99 entry 90). So report the extremes rather than a suspect.
+    common = {k: v for k, v in summary.items() if v["n"] >= MIN_SAMPLES}
+    if len(common) >= 2:
+        best = max(common, key=lambda k: common[k]["mean"])
+        worst = min(common, key=lambda k: common[k]["mean"])
+        pooled = sum(v["n"] * v["positive_rate"] for v in common.values()) / sum(
+            v["n"] for v in common.values()
+        )
+        print(f"\nMost rewarded: {best} ({common[best]['mean']:+.4f}, "
+              f"{common[best]['positive_rate']:.1%} positive, "
+              f"{common[best]['n']} samples)")
+        print(f"Least rewarded: {worst} ({common[worst]['mean']:+.4f}, "
+              f"{common[worst]['positive_rate']:.1%} positive, "
+              f"{common[worst]['n']} samples)")
+        print(f"Pooled positive rate {pooled:.1%}. PPO moves mass from the "
+              f"bottom of this list\ntoward the top; whether that is good play "
+              "is the question the advantages cannot answer.")
+
     if args.json:
         args.json.write_text(json.dumps(summary, indent=1))
         print(f"per-kind results: {args.json}")

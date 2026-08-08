@@ -158,6 +158,29 @@ alone would have been written up as promising. This applies to anything
 requiring *retraining*; measurements that re-evaluate one fixed policy on
 shared episode seeds are unaffected. (§83.1, §83.4)
 
+**20. A per-action learning signal needs a *better* comparator, not just
+a counterfactual.** Substituting the teacher's action moved placement -0.194
+(t=-2.28); substituting an alternative from the clone's own peaked distribution
+moved nothing across 1098 samples. The same measurement answers "is this action
+good" only when the alternative is meaningfully different. (§91.2)
+
+**21. A defect being real is not evidence it is the binding constraint.**
+Shaping really did concentrate 64.6x of its credit on one action kind, and the
+per-action fix really did cut that to 12.0x. The policy collapsed exactly as
+before. Validating that a fix does what it claims is necessary and says nothing
+about whether it matters — the objective still has to be measured. (§93.3)
+
+**22. A reliability statistic is meaningless without the direction it
+points.** Perturbations at sigma 0.4 ranked with r=0.99 across disjoint seed
+blocks -- a near-perfect, entirely reproducible ranking of how badly each one
+*broke* the policy. The probe's verdict column read `followable`. Reproducible
+and useful are different properties, and only one of them is what a search
+climbs. (§94.3)
+
+**23. A rate measured over minutes need not hold over hours.** A 55k-step
+probe measured 184 env steps/sec; the 5M-step run it was used to project came
+in at 123 -- 33% short over 11 hours. Project long runs from long measurements.
+(§96.4)
 
 ---
 
@@ -262,6 +285,14 @@ shared episode seeds are unaffected. (§83.1, §83.4)
 | 86 | 08-07 | **The teacher never implemented reroll targeting: slowroll6 -1.210** | ✅ |
 | 87 | 08-07 | Roll floor is not a lever; behavioural guard for EconStrategy fields | ✅ |
 | 88 | 08-07 | **Level curve is a local optimum; every economy lever now measured** | ✅ |
+| 89 | 08-08 | **PPO still collapses to 8.000 unanchored; anchored it cannot move** | ✅ |
+| 90 | 08-08 | **The drift is END_PLANNING up / BUY down; REROLL is at the mean** | ✅ |
+| 91 | 08-08 | **Single actions do not measurably move placement; PPO fits noise** | ✅ |
+| 92 | 08-08 | **Shaping gives END_PLANNING ~100x the credit of board-building actions** | ✅ |
+| 93 | 08-08 | **Fixing the credit concentration does not stop the collapse** | ✅ |
+| 94 | 08-08 | **Flat fitness landscape then a cliff; ES viable only at 3-6 days of compute** | ✅ |
+| 95 | 08-08 | **Every RL run saw ~378 games; DummyVecEnv was serial; ~2.5x reachable** | ⚠️ |
+| 96 | 08-09 | **33x the data changes nothing; 95.1 refuted; every learning method now exhausted** | ✅ |
 
 ### The arc, in one table
 
@@ -8991,3 +9022,802 @@ exhausted as well.
   validated engine (71.4) and a teacher above parity (74).
 - Whether 0.653 behind `standard` is the right price for reroll (fidelity).
 - Why `hyperroll` degrades under targeting.
+
+---
+
+## 89. PPO still destroys a competent policy; only the anchor prevents it (08-08)
+
+88 exhausted the teacher and 81 exhausted imitation, leaving RL from a clone as
+the only path that can *exceed* a teacher. Nine prior entries of RL never beat
+imitation, but all predate the validated engine (71.4) and an above-parity
+teacher (74) -- so entry 60's collapse deserved a re-derivation rather than a
+citation.
+
+Three arms, all `--init-from runs/bc-econ-s0` (4.740), 150k steps, self-play,
+differing only in `--bc-anchor-coef`:
+
+| steps | coef 0.0 | coef 0.1 | coef 0.5 |
+|---|---|---|---|
+| 0 | 5.033 | 5.033 | 5.033 |
+| 25k | 6.733 | 4.983 | 4.767 |
+| 50k | 7.500 | 4.883 | 4.700 |
+| 75k | **7.967** | 4.783 | 4.383 |
+| 125k | **8.000** | 4.783 | 5.633 |
+| 150k | **8.000** | 4.717 | 4.783 |
+
+(n=60 in-run; the anchored columns wander inside a +/-0.6 CI and have no trend.)
+
+### 89.1 The collapse reproduces exactly
+
+Without an anchor, PPO walks a competent policy monotonically to **8.000** --
+the `do_nothing` baseline, to three decimals. Entry 60's failure was **not** an
+artefact of the voided world or a weak starting policy: validated engine,
+teacher 0.287 above parity, clone at 4.740, same result.
+
+Same mechanism, too. Action mix over three games:
+
+| run | top actions | actions/game |
+|---|---|---|
+| **coef 0.0 (collapsed)** | **REROLL 35%, END_PLANNING 21%** | **89** |
+| coef 0.5 | BUY 29%, SELL 20% | 396 |
+| `bc-econ-s0` | BUY 34%, SELL 25% | 389 |
+
+Mass flowed to the two always-legal, no-immediate-consequence actions entry 63
+measured as the drift targets (END_PLANNING +3.61, REROLL +1.58). The policy
+ends planning immediately and takes a quarter the actions of a healthy one.
+
+### 89.2 Anchored, it holds and never moves
+
+Paired against the clone it started from, 300 shared seeds:
+
+| arm | placement | vs its own clone | t |
+|---|---|---|---|
+| `bc-econ-s0` (init) | 4.740 | -- | -- |
+| coef 0.5 | 4.847 | +0.107 | +0.67 |
+| coef 0.1 | 4.873 | +0.133 | +0.89 |
+
+Both flat, both trending very slightly worse. A 5x change in anchor weight
+moves nothing, so this is not a tuning question.
+
+**The anchor is load-bearing, not a refinement.** It was introduced as a
+countermeasure against drift; it is the only thing holding the policy up.
+Remove it and the policy is destroyed; keep it and the policy cannot move,
+because the auxiliary loss pulls it back toward its initialisation. The flat
+pilot was the honest result, not an artefact of the hyperparameter -- which was
+the confound this sweep existed to rule out.
+
+### 89.3 What it means
+
+RL is not currently a path here, and not because PPO is under-tuned. Entry 61
+measured the advantages directly and found the optimiser doing exactly what it
+should: the signal favours `REROLL`. That diagnosis now survives into the
+validated world.
+
+So the constraint is the **reward**, which this project has never seriously
+changed. Placement arrives once, at the end of a ~450-action episode, so nearly
+every action receives credit it did not earn.
+
+### 89.4 Still open
+
+- Whether the reward signal can distinguish a good action from a null one at
+  all. **Measure that before building shaping** -- the ceiling-first discipline
+  that saved a training run in 84 and would have saved four hours in 85.
+  `--reward-shaping` and `--shaping-mode potential` exist and are untested
+  against this failure.
+- All three arms are single-seed. A collapse to 8.000 is an order of magnitude
+  outside 83's 0.14 noise floor and readable at n=1; the two flat results are
+  not, though a 5x anchor change producing nothing is itself evidence.
+- Whether 0.653 behind `standard` is the right price for reroll (fidelity).
+- Why `hyperroll` degrades under targeting.
+
+---
+
+## 90. The drift is END_PLANNING and BUY, not REROLL (08-08)
+
+89 established that PPO destroys a competent policy without an anchor and
+cannot move with one, and located the constraint in the reward. 89.4 said to
+measure whether the signal distinguishes a good action from a null one
+**before** building shaping -- the ceiling-first discipline that saved a
+training run in 84 and would have saved four hours in 85.
+
+`advantage_probe.py` reads PPO's own `RolloutBuffer` after
+`compute_returns_and_advantage`, so what is measured is what the optimiser
+consumed. 24576 transitions at the `bc-econ-s0` clone, shaping off:
+
+| action kind | n | share | mean adv | % positive | vs pooled 45.5% |
+|---|---|---|---|---|---|
+| PICK_OFFERING | 197 | 0.8% | +0.0052 | 55.3% | +9.8pp |
+| **END_PLANNING** | 1388 | 5.6% | **+0.0004** | **50.1%** | **+4.6pp (t~+3.4)** |
+| PLACE | 2698 | 11.0% | -0.0014 | 48.4% | +2.9pp |
+| SELL | 6490 | 26.4% | -0.0018 | 49.0% | +3.5pp |
+| SELECT | 2762 | 11.2% | -0.0050 | 46.1% | +0.6pp |
+| REROLL | 471 | 1.9% | -0.0051 | 46.3% | **+0.8pp (t~+0.35)** |
+| BUY_XP | 1431 | 5.8% | -0.0054 | 45.1% | -0.4pp |
+| **BUY** | **8195** | **33.3%** | **-0.0109** | **41.1%** | **-4.4pp (t~-8.0)** |
+| EQUIP | 795 | 3.2% | -0.0123 | 41.9% | -3.6pp |
+| PICK_AUGMENT | 149 | 0.6% | -0.0282 | 32.9% | -12.6pp |
+
+### 90.1 REROLL is at the mean
+
+**REROLL is not preferentially rewarded** (+0.8pp, t~+0.35). Entry 61's
+conclusion survives into the validated world.
+
+But 60 and 61 both framed the collapse as *converging onto REROLL*, and named
+it in advance. `END_PLANNING` is the most-rewarded common action and `BUY` --
+**a third of all transitions** -- is the least, both significant. PPO moving
+mass from BUY toward END_PLANNING is a complete and sufficient account of a
+policy that ends planning immediately and takes 89 actions per game instead of
+389 (89.1). REROLL rising to 35% in the collapsed policy is a *consequence* of
+mass leaving BUY, not a preference for rolling.
+
+Naming the suspect in advance is what hid this for thirty entries. The probe
+now reports the extremes rather than a named kind.
+
+### 90.2 What it does not establish
+
+That buying is bad. Advantage is `return - V(s)`, and the critic's held-out EV
+is ~0.58 (58.2 puts the knowability ceiling near 0.5). BUY happens in
+systematically identifiable states -- holding gold, board not yet full -- so a
+critic that misestimates those states hands every BUY in them the same bias.
+This is as consistent with **credit misassignment** as with buying being
+genuinely bad, and the advantages alone cannot separate them.
+
+That distinction decides the fix: a better critic, or a reward that does not
+lean on it.
+
+### 90.3 Still open
+
+- Separate the two readings of 90.2. The entry-82 counterfactual machinery
+  measures an action's *true* effect on placement; comparing that against the
+  advantage the same action receives would show directly whether the signal
+  tracks the truth. This is the ceiling measurement 89.4 asked for and it is
+  not yet done.
+- Only then, shaping. `--reward-shaping` and `--shaping-mode potential` exist
+  and remain untested against this failure.
+- Single seed, one clone. The BUY and END_PLANNING gaps are many SE wide, but
+  they describe *this* policy's state distribution.
+
+---
+
+## 91. Single actions do not measurably move placement (08-08)
+
+89.4 asked for this before any shaping work: can the reward distinguish a good
+action from a null one? 90 measured PPO's advantages; 90.3 said to compare them
+against an action's *true* effect, since advantages alone cannot separate
+"buying is bad" from "the critic misestimates states where buying happens".
+
+The counterfactual: replay to a state, substitute an alternative drawn from
+**the policy's own distribution**, let the policy play on, difference the final
+placements. Positive means losing that action hurt. Per kind, this is directly
+comparable to 90's per-kind advantages.
+
+1098 deviations at `bc-econ-s0`:
+
+| kind | n | true cost | t | PPO adv | adv rank | cost rank |
+|---|---|---|---|---|---|---|
+| BUY_XP | 79 | +0.114 | 0.84 | -0.0054 | 7 | 1 |
+| SELL | 331 | +0.033 | 0.39 | -0.0018 | 4 | 2 |
+| BUY | 328 | -0.088 | -1.11 | -0.0109 | 8 | 3 |
+| SELECT | 97 | -0.206 | -1.32 | -0.0050 | 5 | 6 |
+| PLACE | 132 | -0.280 | -1.82 | -0.0014 | 3 | 7 |
+| END_PLANNING | 68 | -0.294 | -1.12 | +0.0004 | 2 | 8 |
+
+### 91.1 Nothing is significant, and that is the finding
+
+Largest |t| is **1.82**. Overall mean across all 1098 samples is -0.101
+(t~-1.4). The correlation between advantage and true cost is **r = -0.38 over
+6 kinds** -- with n=6, |r| > 0.81 is needed for significance, so **the signal
+is not shown to be inverted**. 90.2's two readings remain unseparated, and the
+reason is that the ground truth itself is unmeasurable here.
+
+**Within the policy's own action distribution, a single action does not
+measurably change placement.** There is essentially nothing for the advantage
+signal to track.
+
+### 91.2 Why 82 found an effect and this did not
+
+82 substituted the **teacher's** action and measured -0.194 (t=-2.28) pooled
+across positional kinds. This substitutes an alternative from **the clone's own
+peaked distribution** (training logits ~28) and measures nothing.
+
+The difference is the quality of the alternative, not the method. The clone's
+top-two actions are near-equivalent, so choosing between them does not matter;
+the teacher's action is meaningfully better, so substituting it does. Both
+results are consistent, and together they say the per-action signal exists only
+against a *better* policy, not within one.
+
+### 91.3 What it means for RL
+
+Per-action credit assignment from terminal placement is not achievable here at
+practical sample sizes. About 400 actions per episode each carry no
+individually measurable effect, while collectively determining an outcome
+spanning 7 placements.
+
+PPO's advantages are not so much wrong as **fitting noise**. That is a complete
+account of 89: unanchored, the policy follows noise to the `do_nothing`
+attractor; anchored, it cannot move because the anchor is the only real signal
+present. It also explains why 60's four proposed mechanisms were each refuted
+-- critic quality, entropy, reward sparsity, transient improvement. None was
+the cause because the cause is that the per-action signal-to-noise is near
+zero.
+
+### 91.4 What would follow
+
+- **Shaping is now the indicated direction rather than a guess**: a dense
+  potential-based signal exists precisely to supply per-action information that
+  terminal reward cannot. `--reward-shaping` / `--shaping-mode potential` are
+  untested against this failure.
+- But shaping must be *validated the same way* before it is trained against:
+  re-run this probe with shaping on, and check whether shaped per-action credit
+  correlates with true cost. A shaped signal that also fails to track truth
+  would be a denser source of the same noise.
+- A method that does not need per-action credit -- evolutionary search over
+  policy parameters, or search at inference -- sidesteps the problem entirely.
+  Search was measured at -0.277 for the teacher (79.7) and does not transmit by
+  cloning, but it does not require credit assignment.
+
+### 91.5 Still open
+
+- Single clone, single seed. The nulls are wide, and "not significant" at
+  n~100-300 per kind is weaker than "zero".
+- Whether 0.653 behind `standard` is the right price for reroll (fidelity).
+- Why `hyperroll` degrades under targeting.
+
+---
+
+## 92. Shaping concentrates all credit on END_PLANNING (08-08)
+
+91.4 named shaping the indicated direction and said to **validate it the same
+way before training against it** -- a shaped signal that also fails to track
+truth would be a denser source of the same noise. This is that check, and it
+fails much harder than expected.
+
+Mean shaped reward per action kind, `bc-econ-s0`, 40 episodes,
+`shaping_mode="potential"`, against 91's measured true costs:
+
+| kind | n | mean shaped r | true cost (91) |
+|---|---|---|---|
+| **END_PLANNING** | 1126 | **0.01492** | -0.294 |
+| SELL | 5125 | 0.00023 | +0.033 |
+| PLACE | 1537 | 0.00015 | -0.280 |
+| BUY | 6482 | 0.00011 | -0.088 |
+| BUY_XP | 1121 | 0.00000 | +0.114 |
+| SELECT | 1548 | -0.00000 | -0.206 |
+
+`END_PLANNING` receives **~100x more shaped credit than any action that builds
+the board**. Correlation with true cost is r = -0.51 across 6 kinds -- not
+significant at n=6, and beside the point next to the concentration.
+
+### 92.1 Why
+
+`_shaping_reward` is called **only at round transitions**, and its docstring
+says so: "Dense per-round shaping". Phi = 0.03 * board_strength + 0.01 *
+hp_fraction, and a round's entire Phi change -- every purchase, every
+placement, and the combat HP swing -- is attributed to whichever action
+advanced the round. That action is always `END_PLANNING`.
+
+So shaping is dense *per round* (~17 actions), not per action. It cannot supply
+the per-action credit 91 showed is missing, **by construction**.
+
+### 92.2 It would make 89's collapse worse
+
+90 measured `END_PLANNING` as already the most-rewarded common action
+(+4.6pp positive rate) with shaping **off**, and 89.1 showed the unanchored
+policy collapsing to 89 actions per game -- ending planning immediately.
+Turning shaping on multiplies the credit on exactly that action by ~100.
+
+Every RL run in 89 had shaping off (`--reward-shaping` not passed). Had it been
+on, the collapse would very likely have been faster. This is the second time a
+plausible next step would have made things worse: 80's `centre` placement rule
+was the first.
+
+### 92.3 The implementable fix
+
+Evaluate the potential **after every action**, not every round. Phi is already
+a pure function of board strength and HP, so a `PLACE` that improves the board
+would be credited at the moment it happens rather than pooled into the round's
+terminal action.
+
+The telescoping guarantee is unaffected in kind -- `F = gamma*Phi(s') - Phi(s)`
+applied on every transition still sums to a boundary term, so it cannot change
+which policy is optimal (Ng, Harada & Russell). What changes is *where the
+credit lands*, which is the entire problem 91 identified.
+
+**Not yet measured.** The same validation applies: re-run the credit probe with
+per-action potential and check the correlation against 91's true costs before
+any training run is spent on it.
+
+### 92.4 Still open
+
+- Implement and validate per-action potential.
+- 91's caveat stands: the true costs it compares against are themselves not
+  significant, so a correlation against them is weak evidence either way. The
+  *concentration* finding does not depend on them.
+- Whether 0.653 behind `standard` is the right price for reroll (fidelity).
+- Why `hyperroll` degrades under targeting.
+
+---
+
+## 93. Fixing the credit concentration does not stop the collapse (08-08)
+
+### 93.1 Why
+
+92.3 proposed evaluating the potential after **every action** rather than every
+round, so a `PLACE` that improves the board is credited when it happens instead
+of being pooled into the round's terminal `END_PLANNING`. Implemented as a third
+`SHAPING_MODES` entry (`per_action`), leaving `potential` and `bonus` untouched
+so every prior number still reproduces — including 89's collapse, which is the
+control this is measured against.
+
+The validation 92.3 required, run before spending a training run:
+
+| | `potential` | `per_action` |
+|---|---|---|
+| concentration on `END_PLANNING` | 64.6x | **12.0x** |
+| `PLACE` credit | 0.00015 | **0.00115** |
+| r vs 91's true costs | -0.51 | -0.56 |
+
+The fix works as designed: concentration down 5.4x, `PLACE` credit up 7.7x. The
+residual 12x is legitimate — the combat HP swing lands on the round-advance step
+and is not attributable to any single planning action. The correlation did not
+improve, but 91 showed the true per-action costs are not individually
+significant, so there may be nothing there to correlate with.
+
+### 93.2 The test, and the outcomes named in advance
+
+Not "does it improve a good policy" but **can the signal hold a policy up on its
+own** — 89 established the BC anchor is the only thing preventing collapse. Two
+unanchored (`--bc-anchor-coef 0.0`) 150k runs from `runs/bc-econ-s0` (5.033),
+one per shaping mode. Outcomes named before the runs finished:
+
+* `per_action` holds, `potential` collapses — fix confirmed. 92.2 predicted
+  `potential` would collapse *faster* than no shaping.
+* both collapse — credit distribution was not the binding constraint.
+* both hold — shaping in general is the fix; would need checking for reward
+  hacking (shaped term dominating the terminal signal).
+
+### 93.3 Both collapse
+
+| steps | `potential` | `per_action` |
+|---|---|---|
+| 0 | 5.033 | 5.033 |
+| 25k | 5.867 (floor 30%) | 6.467 (floor 43%) |
+| 50k | 6.983 (floor 60%) | 7.733 (floor 90%) |
+| 75k | — | 7.967 (floor 97%) |
+| 150k | — | **7.733 (floor 88%)** |
+
+The second outcome. `per_action` gave back the entire 5.033 start by 75k and
+finished *worse than the scripted baseline* (6.467) — the log's "+0.267 over
+random" is framing, not a result. Same trajectory as 89's unshaped unanchored
+run.
+
+Redistributing the credit did not help, because 91 had already shown there is no
+per-action signal to redistribute: 1098 counterfactual deviations, max |t| =
+1.82. **Concentration was real and was fixed; it was not the binding
+constraint.** 91 is the deeper finding and this is its consequence, not a
+separate failure.
+
+### 93.4 A prediction that failed, and a stopped run
+
+92.2 predicted `potential` shaping would make the collapse *faster*. It is
+consistently **slower** — better at both shared checkpoints (5.867 vs 6.467,
+6.983 vs 7.733) with half the floor rate. The mechanism proposed there is wrong
+in sign. Both still collapse, so this changes no conclusion, but it is recorded
+as failed rather than quietly dropped.
+
+The `potential` arm was **stopped at 50k**, not run to 150k. Its per-step cost
+decayed 15x (~1400 -> ~90 steps/min) while `ep_len_mean` stayed flat at ~390, so
+steps were getting more expensive, not longer: the self-play pool grows every
+25k and every opponent seat runs policy inference. `per_action` masked this by
+collapsing — dead seats are cheap. Its trajectory was already unambiguous at 50k
+and it is a control arm, so the remaining runtime bought precision on a
+prediction already seen to fail.
+
+Single seed. Adequate here: 7.7 vs 5.0 is an order of magnitude outside 83's
+0.14 noise floor. It would not license a claim of *improvement*, and none is
+made.
+
+### 93.5 What this closes
+
+Shaping is now eliminated the same way label noise (79), distribution shift (81)
+and the observation (83) were. Every mechanism proposed for the RL failure that
+operates by **improving the per-action signal** has been measured and none
+moved placement. That is consistent with 91's finding that the per-action signal
+does not exist to be improved.
+
+### 93.6 Still open
+
+- 91.4's direction is now the surviving one: methods needing no per-action
+  credit — evolutionary/population search over policy parameters, or search at
+  inference. Neither has been tried.
+- Whether 0.653 behind `standard` is the right price for reroll (fidelity).
+- Why `hyperroll` degrades under targeting (+0.327, t=+2.41).
+- The self-play pool's per-step cost growth is a measurement hazard for any
+  future long run where the policy *does not* collapse. Not a bug; worth knowing
+  before budgeting.
+
+---
+
+## 94. The fitness landscape around the clone is flat, then a cliff (08-08)
+
+### 94.1 Why
+
+93 closed the last of the per-action fixes. Label noise (79), distribution
+shift (81), observation width (83) and shaping (93) all work by improving the
+*per-action* learning signal, and none moved placement, because 91 had already
+shown no single action measurably changes the outcome.
+
+91.4's surviving direction is methods needing no per-action credit.
+Population/evolutionary search is the cheapest: perturb the policy
+*parameters*, play whole episodes, keep what places better. It never asks which
+action was responsible.
+
+It has its own precondition, and this measures it before a search is spent. ES
+climbs a ranking of perturbations by episode-level fitness, so that ranking must
+be **reproducible**. Each perturbation is evaluated on two *disjoint* seed
+blocks and the two are correlated across members. `r` is the reliability of the
+ranking, and it decides the direction.
+
+### 94.2 The sigma grid had to be measured, not guessed
+
+The first grid (0.002-0.05) was mostly dead on arrival: at sigma 0.002 a
+perturbation changed **0 of 120 actions**. The clone's logits are ~28, so small
+weight changes leave the argmax intact. Measured across 600 fixed states:
+
+| sigma | 0.002 | 0.005 | 0.01 | 0.02 | 0.05 | 0.1 | 0.2 | 0.4 |
+|---|---|---|---|---|---|---|---|---|
+| decisions changed | 0.5% | 0.6% | 0.8% | 1.3% | 2.9% | 4.8% | 11.2% | 28.2% |
+
+Two of the three original arms would have measured an unchanged policy against
+itself and reported "no signal" for entirely the wrong reason.
+
+The first attempt at this curve was also wrong, and non-monotonically so (11.8%
+at sigma 0.002 against 5.7% at 0.005). It measured action changes *along the
+perturbed rollout*: once one action differs the trajectory diverges and every
+later step compares two different games. Measuring on a fixed set of base states
+gives the clean curve above. Same divergence hazard `disagreement_cost.py`
+handles by replaying from seed -- it recurs whenever two policies are compared
+by playing them rather than by querying them.
+
+### 94.3 Flat, then a cliff
+
+12 members per sigma, two disjoint 40-game blocks, base = 5.037.
+
+| sigma | mean | best | sd(A) | noise | sd_true | r(A,B) |
+|---|---|---|---|---|---|---|
+| 0.05 | 4.811 | 4.475 | 0.287 | 0.358 | **~0** | -0.37 |
+| 0.15 | 5.079 | 4.688 | 0.282 | 0.310 | **~0** | 0.24 |
+| 0.40 | 7.263 | 5.537 | 0.885 | 0.121 | 0.877 | 0.99 |
+
+`sd_true^2 = sd(A)^2 - noise^2` is **negative** at both usable sigmas: the
+spread between perturbations is smaller than the noise on measuring it, so the
+members are statistically indistinguishable. There is no ranking to climb.
+
+At sigma 0.4 there is a real, highly reliable ranking (r=0.99) -- of **damage**.
+Every member is ~2.2 placement worse than base. The script's own verdict column
+printed `followable` there, which is why it now checks direction before
+reliability: a reproducible ranking that is entirely downhill is not a gradient.
+**A reliability statistic is meaningless without the direction it points**, the
+same shape of error as lesson 6.
+
+Winner's curse, checked rather than assumed: best-of-12 at sigma 0.05 was 4.475;
+expected best-of-12 under *pure noise* is 4.625. The apparent winner is what
+noise alone produces. Selecting it is selecting noise -- 91's failure exactly.
+
+### 94.4 A lead not claimed
+
+At sigma 0.05 the whole population averaged 0.226 better than base (t=-4.57),
+which would suggest the BC policy sits on a sharp point that smoothing helps.
+Not claimed, for two reasons. The t treats 12 member means as independent when
+they share seed blocks, so a seed-driven bias shifts all members together and
+never enters the error term -- anti-conservative. And sigma 0.15 gives +0.042,
+so the effect is not monotone in sigma the way real smoothing would be. Testing
+it needs per-seed pairing, which the first run did not save; the probe now
+stores per-seed placements so it can be tested.
+
+### 94.5 What it does and does not kill
+
+It does **not** strictly kill ES. The ES update averages fitness noise across
+the population, so per-member reliability near zero is survivable given enough
+members. What decides it is `sd_true`, which this run only **bounds** (below
+~0.15). At that upper bound a population of 50 gives a usable gradient at ~2000
+episodes per generation -- 20+ hours for a full search, with the payoff scaling
+on a number never measured. If `sd_true` is really 0.05, the same run is worth
+nothing.
+
+So the bound has to become a number before the budget is spent: sigma 0.05, 10
+members, 200-game blocks. Running.
+
+### 94.6 Still open
+
+- `sd_true` at sigma 0.05 (running).
+- Whether the sigma-0.05 population improvement in 94.4 survives paired testing.
+- Whether 0.653 behind `standard` is the right price for reroll (fidelity).
+- Why `hyperroll` degrades under targeting (+0.327, t=+2.41).
+- Search at inference, the other 91.4 direction, still untried.
+
+### 94.7 Resolved: sd_true is real, tiny, and too expensive to climb
+
+sigma 0.05, 10 members, two disjoint **200**-game blocks. Base 4.795 on both
+blocks (coincidence -- both sum to 959; the blocks were checked disjoint and
+their per-seed placements differ).
+
+| | sd(A) | noise | sd_true | r(A,B) |
+|---|---|---|---|---|
+| 40-game blocks (94.3) | 0.287 | 0.358 | ~0 (negative) | -0.37 |
+| **200-game blocks** | 0.178 | 0.135 | **0.117** | 0.10 |
+
+At the larger block size `sd_true^2` is finally positive: perturbations really
+do differ. But the second estimator disagrees -- computing it from the
+two-block averaged fitness gives **0.040**, not 0.117. Both estimate the same
+quantity, so the gap is small-sample instability (a variance estimate on 10
+members carries ~45% relative error). The defensible statement is
+**sd_true ~ 0.04-0.12**, which confirms 94.5's upper bound rather than
+improving on it. The observed r=0.10 and the r=0.43 implied by the variance
+decomposition also agree, given the ~0.38 standard error on a correlation at 10
+members.
+
+**94.4's lead is refuted.** Paired properly -- each member against base on the
+same 400 seeds -- the population is 0.063 better, t=-1.92. The unpaired version
+read 0.226 at t=-4.57. The caution in 94.4 was right and the effect is about a
+third the size and not significant. There is no evidence the BC policy is
+improved by parameter smoothing.
+
+**The cost.** ES does not need per-member reliability; the population averages
+the noise out. At sd_true ~ 0.1, and measured throughput of 4400 episodes per
+38 minutes:
+
+| episodes/member | noise | members for SNR 3-5 | episodes/gen | wall/gen |
+|---|---|---|---|---|
+| 200 | 0.135 | 50 | 10,000 | ~86 min |
+| 40 | 0.358 | 115 | 4,600 | ~40 min |
+
+A 100-generation search is **3-6 days of compute**, with an unknown per-
+generation step size, against a target gap of a few tenths of a placement. The
+precondition passes and the economics do not.
+
+**Not spent.** The other 91.4 direction -- search at inference -- is far cheaper
+to test and already has a positive precedent here in the teacher's positional
+search (79). It also needs no learning signal, which is the thing 91, 93 and 94
+have now each shown is absent.
+
+Scope: this tests sigma 0.05 only. A signal at some sigma between 0.05 and 0.4
+is not excluded, though 94.3 measured 0.15 as flat and 0.4 as uniformly
+destructive, so there is little room left for one.
+
+### 94.8 Still open (revised)
+
+- Search at inference for the planning decisions, not just positioning.
+- Whether 0.653 behind `standard` is the right price for reroll (fidelity).
+- Why `hyperroll` degrades under targeting (+0.327, t=+2.41).
+- ES remains technically viable at ~3-6 days of compute if the cheaper
+  directions are exhausted.
+
+---
+
+## 95. Throughput: the reframe, and how little of it is reachable (08-08)
+
+> **95.1's reframe is REFUTED by entry 96.** The throughput engineering in
+> 95.2-95.4 stands; the inference that 89-94 were measuring sample size does
+> not. A 5M-step run (33x the data) collapsed to 8.000 by 600k and stayed.
+
+### 95.1 The number that reframes entries 89-94
+
+**Every RL run in this project has seen ~378 games of TFT.** 150k timesteps
+divided by an `ep_len_mean` of 397. PPO on a game with this branching factor is
+normally given 1e7-1e8 steps; this is 1.5e5.
+
+Entries 89-94 each measured "the learning signal is absent" and read it as a
+statement about *method*. At 1e-3 of the usual data budget it is at least
+partly a statement about *sample size*. The probes were sound; the frame around
+them was too confident.
+
+Not fully self-cancelling: 91's finding that single actions do not measurably
+move placement is partly about the environment's outcome variance, which no
+training budget changes -- eight near-equal seats make placement noisy however
+long you train. But high variance and tiny samples compound, and both point at
+the same fix, so it strengthens the case rather than weakening it.
+
+### 95.2 Micro-optimisation bought 5%
+
+Predicted 3-10x from hoisting dispatch out of the combat hot path. Measured
+**1.05x**. Four changes, all verified fingerprint-identical by
+`scripts/engine_bench.py`:
+
+* `effects.hooks_for` and `trait_effects.trait_hooks_for` memoised -- they
+  rebuilt a filtered list on each of ~3.6M calls per benchmark game, nearly
+  always to return nothing. Registration clears the caches.
+* the twice-per-tick `sorted(self.units, key=uid)` cached, invalidated when a
+  summon appends.
+* empty-list guards on the six `status_effects` predicates, which built a
+  generator frame per call to iterate an empty list ~10.9M times per game.
+
+Why it could not have worked: **178M Python function calls per 4 games.** The
+cost is interpreter overhead spread across millions of tiny operations, not a
+hotspot that can be deleted. There is no 10x here without compiling combat.
+
+The first profile was also taken against a *random* policy, which places 8th
+every game and dies in stage 2, so it never simulates a late-game board.
+Optimising against it would have tuned the cheapest rounds in the game. The
+benchmark now plays the scripted teacher. **A profile is only as representative
+as the workload driving it.**
+
+### 95.3 `DummyVecEnv` was stepping every env serially
+
+Training built its vector env with `DummyVecEnv`, which steps envs **in one
+process, one after another**. `--envs 4` bought nothing on a 12-core machine,
+which is the whole explanation for 66 steps/sec against 264 for a single env.
+
+Fixing it to `SubprocVecEnv` gives **1.39x**, not the 8-10x the core count
+suggests:
+
+| vec | envs | steps/sec |
+|---|---|---|
+| dummy | 4 | 264 |
+| dummy | 12 | 278 |
+| subproc | 12 | **367** |
+
+A straggler effect: the vector env waits for every worker at every step, and
+per-step cost here is wildly unbalanced -- a combat round is ~100x a planning
+action -- so throughput is gated by whichever env is mid-combat. This is
+exactly why `evaluate_scripted_parallel` scales and this does not: the eval
+harness parallelises at **episode** granularity with no per-step sync.
+Step-lockstep parallelism does not suit an env with variable step cost.
+
+`--vec subproc` refuses to combine with self-play rather than silently training
+against a stale snapshot pool, and the env options are passed explicitly into
+each child: `build_env` reads a module global that `spawn` leaves empty in the
+child, so children would otherwise have built the *default* observation layout
+while the parent's policy expected the configured one. Caught before running,
+not after.
+
+### 95.4 What the budget actually becomes
+
+Training carries ~4x overhead on top of env stepping, most of it evaluation
+(360 episodes run serially per run, against a parallel harness that already
+exists).
+
+Parallel evaluation was verified equivalent before being used, not assumed:
+24 episodes, serial 65.3s vs parallel 13.6s (**4.82x**), with **every placement
+identical**, not merely the mean. A silently different eval would have shifted
+every metric in the run with nothing to flag it.
+
+Measured end to end at the real eval cadence (50k steps, `--envs 12 --vec
+subproc --eval-workers 10`), rather than by multiplying the parts:
+
+| scope | before | after | |
+|---|---|---|---|
+| marginal rate (scales with steps) | 72 | **184** steps/s | **2.55x** |
+| end-to-end on a 50k run | 66 | 101 steps/s | 1.53x |
+
+The two differ because ~190s of fixed cost (baselines, final evaluation, setup)
+dominates a short run and is negligible in a long one. For a 5M run the fixed
+cost is 3 minutes of 7.6 hours, so the marginal rate is the one to project
+from.
+
+**2.55x, not 100x.** 1e7 steps stays out of reach without compiling combat. But
+**5M steps is a 7.6h overnight run, and that is ~13,000 episodes against the
+378** every conclusion in 89-94 rests on -- enough to test whether more data
+changes the answer, which is not the same as a full-scale RL run.
+
+Where the 2.55x came from, against what was predicted:
+
+| change | measured | predicted |
+|---|---|---|
+| engine micro-optimisation | 1.05x | 3-10x, wrong |
+| `DummyVecEnv` -> `SubprocVecEnv` | 1.39x | 8-10x, wrong |
+| serial -> parallel evaluation | 4.82x on eval | 1.8x, understated |
+
+The two changes predicted to matter did not; the one treated as secondary
+cleanup carried the result. **The engine was never the bottleneck -- evaluation
+was**, running 360 episodes serially while 11 cores idled.
+
+### 95.5 Still open
+
+- The 5M-step run itself, and what it says about 89-94. It trains against the
+  **scripted field**, not self-play: `--vec subproc` cannot hold the mutable
+  snapshot pool. That makes it a different experiment from 89-93, to be
+  labelled rather than compared across.
+- Compiling combat (Cython/numba/rewrite) is the only route past ~165 steps/sec.
+  Not attempted; large, and it would need the fingerprint as its safety rail.
+- Whether 0.653 behind `standard` is the right price for reroll (fidelity).
+- Why `hyperroll` degrades under targeting (+0.327, t=+2.41).
+
+---
+
+## 96. 33x the data changes nothing: unanchored PPO collapses and stays (08-09)
+
+### 96.1 The test 95 was written to enable
+
+95.1 reframed 89-94: every RL run in this project had seen ~378 games, so "no
+learning signal" might have been a statement about sample size rather than
+method. 95's throughput work existed to test that. First run at the new budget:
+**5M steps, unanchored (`--bc-anchor-coef 0.0`), 12 subproc envs, against the
+scripted field**, initialised from `bc-econ-s0` (5.033).
+
+| steps | placement | floor rate |
+|---|---|---|
+| 0 | 5.033 | -- |
+| 300k | 7.867 | 92% |
+| 600k | **8.000** | **100%** |
+| 600k -> 5M | 8.000 | 100% |
+
+~12,594 episodes against the 378 of every prior run. It reaches the floor by
+600k and sits there for the remaining 4.4M steps.
+
+### 96.2 95.1's reframe is refuted
+
+**Recorded as a failed prediction.** More data did not change the answer: the
+collapse reproduces at 33x the budget and against a *different* opponent field
+(scripted, not self-play -- `--vec subproc` cannot hold the mutable snapshot
+pool). 89's result was not an artefact of a small sample.
+
+What survives from 95 is only the engineering: the throughput work is real and
+the 378-game figure was worth knowing. What does not survive is the inference
+drawn from it. **A constraint being real is not evidence it is the binding
+one** -- lesson 21, learned in 93 about shaping, and repeated here about data
+volume within a day.
+
+### 96.3 The floor is absorbing, so most of the run is uninformative
+
+At 100% last place there is no outcome variance, so there is no gradient to
+recover on -- the codebase's own baseline check has flagged this since 18.5
+("too little outcome variance to compare against"). Everything after 600k is a
+policy sitting in an absorbing state, not evidence about learning. The finding
+is entirely in the first 600k; the remaining 4.4M steps only establish that it
+does not climb back out, which is worth knowing once and never again.
+
+This is consistent with 91: no per-action signal to learn from, plus a
+degenerate terminal signal once the floor is reached.
+
+### 96.4 Throughput came in below projection
+
+5,000,000 steps in 40,610s = **123 steps/sec**, against the 184 projected in
+95.4 from a 55k probe. 33% short. Not investigated -- candidates are thermal
+throttling over 11 hours, and the subproc straggler effect (95.3) behaving
+differently over a long run than a short one. Recorded so the next projection
+starts from 123, measured over 11 hours, rather than 184, measured over 5
+minutes. **A rate measured over minutes does not necessarily hold over hours.**
+
+### 96.5 What this closes, and what it leaves
+
+Closed: unanchored PPO in this environment, at any data budget reachable
+without compiling combat. Combined with 89 (anchored PPO cannot move), 93
+(shaping does not help), and 94 (ES has no gradient at usable sigma), every
+learning method tried here has now been measured and none beats the scripted
+teacher.
+
+Left, and the reason 95's engineering still matters: the agent is being trained
+to place well in a simulator with a **known mispricing** -- `slowroll6`, a
+mainstream real-TFT line, places 1.8 worse than standard (85, 86) and has sat
+under "still open" for ten entries while the RL directions were exhausted one
+by one.
+
+A shop-odds check run against this (level 6, 2-cost): 0.0308 per slot, 0.1538
+copies per roll, **58.5 rolls** for a 3-star, derived from `shop_odds` and
+`pool_sizes` -- both community-documented, and matching real TFT's arithmetic.
+So the roll odds are **not** the mispricing, despite `shop_draw_weighting`
+being an invented constant. That leaves two candidates:
+
+* **the window** -- 85.3 already located it: gold reaches 50 only at 4-1 and
+  the seat is dead by 5-2, ~8 rounds of rolling where real TFT gets roughly
+  double. A survival question.
+* **the payoff** -- what the 3-star is worth once acquired, governed by the
+  invented combat constants (`max_duration_seconds`, `sudden_death_*`,
+  `tick_seconds`, movement/projectile speeds). 76 validated the star-vs-slot
+  exchange rate against the engine's *own* combat, which cannot detect an error
+  in those constants.
+
+Both are testable against real-TFT elimination-stage and game-length
+distributions. `scripts/engine_profile.py` already emits the engine's side; the
+reference side has never been collected.
+
+### 96.6 Still open
+
+- Fidelity: collect real-TFT reference distributions and compare (the gate).
+- Which of window / payoff explains the reroll mispricing.
+- Why `hyperroll` degrades under targeting (+0.327, t=+2.41).
+- The eval-cadence aliasing found in this run: `_on_step` fires on
+  `num_timesteps % every == 0` and `num_timesteps` advances by `n_envs`, so
+  `--envs 12 --eval-every 100000` evaluated every **300,000** (LCM). Harmless
+  here, silent, and wrong for any `n_envs` that does not divide `eval_every`.
