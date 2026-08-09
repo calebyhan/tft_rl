@@ -10044,3 +10044,243 @@ for a 3-star.
 - The eval-cadence aliasing from 96.6 is unfixed.
 
 ---
+
+## 98. The carousel fix: elimination timing closes, a late-game stalemate appears (08-09)
+
+97.3 found `realm.rounds` stopping at `[4,4]` while real TFT has a no-combat
+round at every `x-4`. Fixed: the schedule now runs `[1,1]` and `[s,4]` for
+stages 2-9, with `cost_tiers` continuing the documented 1/2/3/4 pattern capped
+at 5. **The tier offered at 5-4 and later is not sourced** and is flagged in
+`config.unverified`; the *schedule* is, by the reference data.
+
+**This is an engine rules change, so every placement number measured before it
+is void** (lesson 12). The arc table's rows are not comparable across it.
+
+### 98.1 Four predictions, named before the run
+
+Recorded as stated, then scored:
+
+| | prediction | outcome |
+|---|---|---|
+| P1 | 5-4 / 6-4 eliminations collapse to ~0 | ✅ exactly 0 |
+| P2 | mean elimination round rises toward the reference | ✅ closed |
+| P3 | game length rises, *widening* its gap | ✅ and worse than expected |
+| P4 | 3-star rate rises toward 34.5% | ❌ **refuted** |
+
+### 98.2 What closed
+
+300 games, mixed field, against the same 1,000-match challenger reference:
+
+| | before | after | reference |
+|---|---|---|---|
+| eliminations on 5-4 + 6-4 | 306 (14.6%) | **0** | 10 (0.14%) |
+| mean elimination round | 29.78 (t=-5.67) | **30.57 (t=+1.79)** | 30.36 |
+| share eliminated in stage 6+ | 29.9% | **37.5%** | 37.2% |
+| max cumulative gap (KS) | 0.143 | **0.063** | -- |
+
+The elimination *distribution* is now a good match: the mean is within 0.21 of
+the reference and no longer significant, and the stage-6+ share lands within
+0.3 points. 97.2 already said the window was not the problem; it is now not the
+problem by a wider margin.
+
+### 98.3 What the fix exposed
+
+Game length went the wrong way, as P3 said it would, and by three times as much:
+
+| | before | after | reference |
+|---|---|---|---|
+| mean game length | 37.15 (t=+6.33) | **38.99 (t=+18.14)** | 36.28 |
+| eliminations at 7-1 or later | -- | **5.3%** | 1.7% |
+
+Mean elimination round matches while mean game length is 2.71 rounds too long,
+which is only possible if the discrepancy sits in the tail -- game length is a
+max-statistic over the seven eliminations. It does: the engine matches the
+reference through ~94% of the field and then its **last one or two seats
+survive far too long**, at three times the reference's rate of very-late
+eliminations.
+
+The obvious reading is a top-of-lobby resolution problem -- two strong boards
+failing to finish each other, implicating `combat.max_duration_seconds` and
+`combat.sudden_death_*`. **That reading is probably backwards and is not
+asserted here.** `combat.py:1337` decides a timed-out fight by remaining
+health, so a timeout still produces a winner, and a winner with *many*
+survivors: round damage is `stage_base_damage + damage_per_surviving_unit x
+survivors`, so stalled fights deal **more** damage and should kill players
+*faster*.
+
+The competing and simpler reading is that total damage per game is now too low
+-- removing two combat rounds removed two damage events, and the phantom rounds
+had been compensating. `stage_base_damage` and `damage_per_surviving_unit` are
+both `community_documented` and were corrected against the wiki at 36.4, so if
+they are right the deficit is in how often damage is dealt, not how much.
+
+Which of the two it is has not been measured. It is 98.6's first item, and the
+probe must distinguish them rather than assume either.
+
+Removing the phantom combat rounds did not create this. It removed the
+confound that was masking it: two extra damage-dealing rounds per game were
+compensating for a late game that cannot close itself.
+
+### 98.4 P4 refuted: two more carousels and a longer game buy no 3-stars
+
+| | before | after | reference |
+|---|---|---|---|
+| 3-star holder rate | 21.5% | **21.7%** | 34.5% (z=-11.90) |
+| gold at elimination, 5-3 | 47.9 | 47.9 | 7.5 |
+| 1-cost 3-star placement | 3.479 | 3.612 | 4.425 |
+
+**Recorded as a failed prediction.** Two extra draft acquisitions and 1.8 more
+rounds of life moved 3-star incidence by 0.2 points, and gold at elimination
+did not move at all. This strengthens 97.4 rather than weakening it: the field
+is not short of *time* or *opportunities*, it is unable to convert gold into
+board. Giving a hoarder a longer game produces a longer hoard.
+
+### 98.5 A casualty: the level cap no longer frees gold into rerolls
+
+`tests/test_evaluate.py` failed on the fixed config, and it was not brittleness.
+The claim it pinned -- 68's mechanism, that capping levels stops XP consuming
+the gold so rolling becomes reachable -- is now false. Both arms re-measured
+together at n=24 (lesson 12), across the config change and nothing else:
+
+| REROLL actions | uncapped | capped (cap 7) | delta |
+|---|---|---|---|
+| before the carousel fix | 780 | 821 | **+41** |
+| after | 822 | 818 | **-4** |
+
+The *uncapped* arm gained 42 rerolls from the fix and the capped arm gained
+nothing. Longer games hand the uncapped policy the rolls it previously had to
+free up by capping, so the cap's advantage was an artefact of the truncated
+carousel schedule.
+
+Where the freed gold goes instead, n=24, by action kind:
+
+| kind | uncapped | capped | delta |
+|---|---|---|---|
+| BUY_XP | 250 | 179 | **-71** |
+| REROLL | 822 | 818 | -4 |
+| BUY | 5041 | 5143 | **+102** |
+| SELL | 4282 | 4387 | **+105** |
+
+Roughly 284 gold stops being spent on XP and reappears as **102 more buys and
+105 more sells** -- the buy/sell churn 85.2 established is gold-neutral. This is
+97.4's "the field cannot convert gold into board" with a mechanism attached:
+given more gold, the policy does not roll more, it churns more.
+
+Only the XP half of the claim survives, and only that half is now asserted in
+the test. The churn direction is not stable at the n=4 the suite can afford
+(-10 at n=4, +9 at n=8, +102 at n=24), so it is recorded here rather than
+pinned there.
+
+### 98.6 Still open
+
+- **The late-game stalemate (98.3)**, now the largest unexplained gap in the
+  comparison and the first finding that points squarely at the `engine_artifact`
+  combat constants.
+- Everything still open from 97.9, unchanged: the gold conversion defect
+  (97.4), whether it is rules or `GreedyPolicy`, the 1-cost over-pricing
+  (97.7), `slowroll6` in the agent seat.
+- **Every pre-98 placement baseline is void.** Nothing in the arc table is
+  comparable across this entry.
+
+---
+
+## 99. The gold gap is the interest floor, and closing it buys nothing (08-09)
+
+97.4 found the field dying on 40-55 gold against a real challenger's ~8, the
+largest single discrepancy in the fidelity comparison. 98.5 added a mechanism
+from the other direction: gold freed from XP became buy/sell churn rather than
+rerolls. This entry finds the cause, fixes it, and measures the fix.
+
+### 99.1 The cause is a missing endgame clause
+
+`EconStrategy.save_floor` is 50 and every archetype's `roll_floors` restores 50
+by 4-6, so a seat spends only the income above 50. The reasoning in the
+docstring is sound as far as it goes -- 50 is the interest cap, below it you
+lose interest and above it you gain nothing -- and it **has no endgame
+clause**. A real player one hit from elimination rolls their whole bank; no
+plan here ever does. The economy is preserved up to the moment it dies.
+
+`scripts/gold_sink_probe.py`, 420 eliminations over 60 games, mixed field:
+
+| stage | n | gold at death | floor in force | at or above floor |
+|---|---|---|---|---|
+| 4 | 45 | 41.4 | 47.3 | 44% |
+| 5 | 215 | 41.1 | 50.0 | 47% |
+| 6 | 143 | 20.7 | 50.0 | 10% |
+
+Mean 33.6 gold unspent at death -- **16.8 rerolls or 8.4 XP purchases** -- and
+**24% of eliminated seats die holding 60+**. Predicted outcome O3 (binding
+mid-game, not late) was the one that landed. By archetype, `slowroll6` dies
+richest at 44.1 with 58% at or above its floor, which is the plan whose entire
+purpose is spending its gold.
+
+One column of the probe is vacuous and is called out here rather than quietly
+dropped: "gold when HP <= 20" reproduces the gold column exactly, because a
+seat being eliminated is at low HP by construction.
+
+### 99.2 The fix works mechanically
+
+`EconStrategy.desperation_hp` drops the roll floor to 0 once a seat is at or
+below that HP. **Default 0, i.e. off** -- enabling it changes every field
+number, so it is a measured A/B, not a silent default. `desperation_ab.py`,
+60 games, shared seeds, one field differing:
+
+| | off | hp=10 | hp=20 | hp=30 | reference |
+|---|---|---|---|---|---|
+| gold at elimination | 33.65 | 23.68 (t=-6.48) | 13.78 (t=-15.22) | **9.70 (t=-20.92)** | **~8** |
+| gap to reference closed | -- | 39% | 77% | **93%** | -- |
+| died holding 60+ | 24% | 16% | 5% | **0%** | -- |
+| elimination round | 30.64 | +0.18 (t=+0.55) | +0.14 (t=+0.43) | +0.10 (t=+0.32) | -- |
+
+Monotone in the threshold, and at hp=30 the engine essentially **reproduces the
+reference**: 9.70 against ~8, with nobody dying on a full bank. The diagnosis
+in 99.1 is therefore correct -- the floor was the binding constraint on
+spending, not the shop, the bench or the buy rule.
+
+Note the direction of the survival column: the closer the arm gets to real
+spending behaviour, the *smaller* its already-null effect on survival. Nothing
+here is a performance lever at any threshold.
+
+### 99.3 And it buys nothing
+
+Survival does not move at any threshold: +0.18 (t=+0.55), +0.14 (t=+0.43),
++0.10 (t=+0.32) at hp=10/20/30. Seats dump their whole bank into rerolls in the
+rounds before they die -- 24 gold apiece at hp=30, enough for twelve rolls --
+and last no longer for it.
+
+**Lesson 21 for the third time** -- shaping's credit concentration (93), the
+carousel schedule (98.3's tail), and now this. A defect can be real, correctly
+diagnosed, and cleanly fixable while not being the binding constraint on
+anything that matters. Validating that a fix does what it claims is a different
+measurement from validating that it matters, and only the second one licenses
+adopting it for effect.
+
+The fidelity argument for adopting it anyway is separate and is genuine: the
+project's goal is an agent that plays real TFT, and a field that hoards a bank
+it never spends is not a real lobby. That is a reason to turn it on, but it is
+not evidence of a placement gain, and it should never be cited as one.
+
+### 99.4 What is not yet measured
+
+The A/B changes **all eight seats** and reports a field-internal statistic.
+What matters for the project is the *agent seat* against a changed field, which
+is a different measurement and was not run. Entries 72 and 73 both moved every
+downstream number by changing the field; this would too.
+
+`desperation_hp` is an invented constant, on the same footing as the roll
+floors of 71. Real TFT has no published threshold. **hp=30 is the value the
+reference picks**, not one chosen for effect: it is where gold at elimination
+matches real players, and it was the last of three tried rather than the first.
+Nothing in 99.3's conclusion depends on the value, since the survival null
+holds at all three.
+
+### 99.5 Still open
+
+- Whether to adopt `desperation_hp` as a field default -- a fidelity call, not
+  a performance one (99.3), and it voids the field baselines again.
+- The agent seat against a spend-down field (99.4).
+- The residual 5.8 gold between hp=20's 13.78 and the reference's ~8.
+- Everything still open from 98.6, unchanged: the late-game tail (98.3), the
+  1-cost 3-star over-pricing (97.7), `slowroll6` in the agent seat.
+
+---

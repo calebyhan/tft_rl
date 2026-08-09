@@ -23,6 +23,18 @@ players only -- a dead seat has no economy, and averaging it in would drag
 every late-game figure toward zero.
 
     .venv/bin/python scripts/engine_profile.py --games 60
+    .venv/bin/python scripts/engine_profile.py --games 300 --fidelity-json e.json
+
+`--fidelity-json` emits a second, differently-conditioned profile in the schema
+`scripts/reference_profile.py` produces from real Riot matches, for doc 99
+entry 97's comparison. It is separate from the table above because Riot's
+match-v1 gives only *end-of-game state per participant* -- there is no
+reference counterpart to "mean gold at 4-3 over living players". What there is
+is a cross-section of players at the moment they died, so the fidelity view
+snapshots each player going into the round they were eliminated in. The two
+views answer different questions and are not interchangeable; comparing the
+living-player table against Riot's dying-player cross-section would be a
+mismatched comparison wearing a table.
 """
 
 from __future__ import annotations
@@ -35,6 +47,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling scripts
 
 from engine.loader import load_all  # noqa: E402
 from engine.match import Match  # noqa: E402
@@ -108,22 +121,187 @@ def mean(values) -> float:
     return statistics.mean(values) if values else 0.0
 
 
+# --------------------------------------------------------------------------
+# The fidelity view: same conditioning as Riot's match-v1 cross-section.
+# --------------------------------------------------------------------------
+
+def _snapshot(player) -> dict:
+    """A player's state as they go into a round -- the board they fight with.
+
+    Taken *before* `play_round`, because `Match._eliminate_dead` releases a
+    dead player's units back to the pool: after the round there is nothing left
+    to read, and their last surviving snapshot would be the previous round's.
+    """
+    # `board_units`, not `all_units`: Riot's per-participant `units` list is
+    # the fielded board. Counting the bench too reads 16-17 units against a
+    # real-data 8-9 and would show up as a fabricated board-size discrepancy,
+    # and a 3-star sitting on the bench would be counted here and invisible
+    # there.
+    board = player.board_units
+    return {
+        "level": player.level,
+        "gold": player.gold,
+        "units": len(board),
+        "three_star_costs": sorted({
+            unit.champion.cost for unit in board if unit.star_level == 3
+        }),
+    }
+
+
+def fidelity_profile(data, games: int, seed0: int = 0, econ=None,
+                     mixed_field: bool = False) -> dict:
+    """The engine's side of doc 99 entry 97, in `reference_profile`'s schema.
+
+    `mixed_field` fills the eight seats from `rl.opponents.DEFAULT_FIELD` (3
+    standard, 2 fast8, 2 slowroll6, 1 hyperroll) instead of giving every seat
+    the same plan. A real ranked lobby is a mixture of archetypes, so eight
+    identical economies is the wrong comparator for a real elimination curve
+    -- and it is also the field the RL environment actually trains against.
+    """
+    from rl.opponents import default_opponent  # noqa: PLC0415
+
+    def seats():
+        if mixed_field:
+            return [default_opponent(seat) for seat in range(8)]
+        return [GreedyPolicy(seed=seat, econ=econ) for seat in range(8)]
+    from reference_profile import (  # noqa: PLC0415 -- sibling script
+        last_round_to_label,
+        round_structure,
+        sd,
+        summarise_rows,
+    )
+
+    stage_one, per_stage = round_structure()
+
+    def flat_index(stage: int, round_: int) -> int:
+        return (round_ if stage == 1
+                else stage_one + per_stage * (stage - 2) + round_)
+
+    elimination_round: Counter[str] = Counter()
+    game_length_rounds: list[int] = []
+    at_elimination: dict[str, list[dict]] = defaultdict(list)
+
+    placements_all: list[int] = []
+    holder_placements: list[int] = []
+    placement_by_cost: dict[int, list[int]] = defaultdict(list)
+    holders_by_cost: Counter[int] = Counter()
+    n_participants = 0
+
+    for game in range(games):
+        match = Match(data, seats(), seed=seed0 + game)
+        # The state each player last went into a round with. For the eliminated
+        # that is the board they died on; for survivors, the board they end on
+        # -- which is exactly what Riot reports for each.
+        final: dict[int, tuple[str, dict]] = {}
+        alive_before = {p.player_id for p in match.living_players}
+
+        while not match.finished:
+            label = f"{match.round_id.stage}-{match.round_id.round}"
+            for player in match.living_players:
+                final[player.player_id] = (label, _snapshot(player))
+            match.play_round()
+
+            alive_now = {p.player_id for p in match.living_players}
+            for player_id in alive_before - alive_now:
+                eliminated_at, snapshot = final[player_id]
+                elimination_round[eliminated_at] += 1
+                at_elimination[eliminated_at].append(snapshot)
+            alive_before = alive_now
+
+        # `Match.finished` going true does not place the survivor -- only
+        # `Match.run()` finalises, and this loop cannot use it because the
+        # per-round snapshots have to happen between rounds. `rl/env.py:402`
+        # does the same thing for the same reason. Without it the winner is
+        # absent from `placements` and mean placement reads 5.000, not 4.5.
+        match._finalise_placements()
+
+        last = match.round_id
+        game_length_rounds.append(flat_index(last.stage, last.round))
+
+        for player in match.players:
+            n_participants += 1
+            placement = match.placements.get(player.player_id)
+            if placement is None:
+                continue
+            placements_all.append(placement)
+            _, snapshot = final.get(player.player_id, ("", {}))
+            costs = snapshot.get("three_star_costs", [])
+            if costs:
+                holder_placements.append(placement)
+                for cost in costs:
+                    holders_by_cost[cost] += 1
+                    placement_by_cost[cost].append(placement)
+
+    return {
+        "source": "engine",
+        "n_matches": games,
+        "n_participants": n_participants,
+        "elimination_round": dict(elimination_round),
+        "game_length_rounds": game_length_rounds,
+        "at_elimination": {
+            label: summarise_rows(rows) for label, rows in at_elimination.items()
+        },
+        "three_star": {
+            "n_holders": len(holder_placements),
+            "holder_rate": (len(holder_placements) / n_participants
+                            if n_participants else 0.0),
+            "placement_all": mean(placements_all),
+            "placement_all_sd": sd(placements_all),
+            "placement_holders": mean(holder_placements),
+            "placement_holders_sd": sd(holder_placements),
+            "holders_by_cost": {str(c): n
+                                for c, n in sorted(holders_by_cost.items())},
+            "placement_by_cost": {
+                str(cost): mean(values)
+                for cost, values in sorted(placement_by_cost.items())
+            },
+            "unknown_units": 0,
+        },
+        "_round_label_warnings": [],
+        # `last_round_to_label` is imported to keep the two scripts on one
+        # definition of the mapping; referencing it here makes that explicit.
+        "_label_of_first_round": last_round_to_label(1, stage_one, per_stage),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--games", type=int, default=60)
     parser.add_argument("--json", type=Path, default=None)
     parser.add_argument(
+        "--fidelity-json", type=Path, default=None,
+        help="write the reference-comparable profile (doc 99 entry 97) here "
+             "and skip the living-player table",
+    )
+    parser.add_argument(
         "--econ",
         default=None,
         help="economy strategy for all 8 seats: standard, fast8, slowroll6, "
-             "hyperroll. Omit for the legacy one-purchase-per-round plan",
+             "hyperroll, or 'mixed' for rl.opponents.DEFAULT_FIELD. Omit for "
+             "the legacy one-purchase-per-round plan",
     )
     args = parser.parse_args()
 
     from rl.opponents import STRATEGIES
 
-    econ = STRATEGIES[args.econ] if args.econ else None
+    mixed = args.econ == "mixed"
+    econ = STRATEGIES[args.econ] if args.econ and not mixed else None
     data = load_all()
+
+    if args.fidelity_json:
+        from reference_profile import report as reference_report
+
+        fidelity = fidelity_profile(data, args.games, econ=econ,
+                                    mixed_field=mixed)
+        fidelity["provenance"] = {
+            "band": f"engine/GreedyPolicy econ={args.econ or 'legacy'}",
+            "platform": "-", "queue_id": "-", "set_filter": 17,
+        }
+        reference_report(fidelity, fidelity["provenance"])
+        args.fidelity_json.write_text(json.dumps(fidelity, indent=1))
+        print(f"\nwritten to {args.fidelity_json}")
+        return
+
     result = profile(data, args.games, econ=econ)
     print(f"econ strategy: {args.econ or 'legacy (one purchase per round)'}")
     rows = result["rows"]

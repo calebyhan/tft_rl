@@ -270,17 +270,43 @@
       [
         4,
         4
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        6,
+        4
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        9,
+        4
       ]
     ],
     "cost_tiers": [
       1,
       2,
       3,
-      4
+      4,
+      5,
+      5,
+      5,
+      5,
+      5
     ],
     "extra_offerings": 1
   },
   "unverified": [
+    "realm.cost_tiers (doc 99 entry 98: the schedule now covers every x-4, which real match data confirms is a no-combat round at every stage. The tier *offered* at 5-4 and later is not sourced -- 'cost = stage, capped at 5' continues the documented 1/2/3/4 pattern and is an assumption)",
     "augments.rounds (doc 01 sec 9 explicitly flags the 2-1/3-2/4-2 reveal pattern as unconfirmed for the current patch)",
     "augments (doc 99 entry 17.1: augments.json is a set of generic archetypes, not the real Set 17 pool, which the CDragon payload does not expose)",
     "combat.movement_hexes_per_second (doc 01 sec 9: not publicly documented, approximated)",
