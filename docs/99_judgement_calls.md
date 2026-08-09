@@ -182,6 +182,18 @@ probe measured 184 env steps/sec; the 5M-step run it was used to project came
 in at 123 -- 33% short over 11 hours. Project long runs from long measurements.
 (§96.4)
 
+**24. An external reference has its own spread, and it must be measured
+before any gap against it is quoted.** The engine appeared to under-price a
+3-star by 0.125 placement. Splitting the *same* reference sample by patch moved
+that statistic 0.098 -- so the finding was the size of drift inside the
+comparator, and not assertable. This is lesson 2 one level up: there, a rate
+needed its achievable maximum; here, a discrepancy needs the reference's own
+variance. Both cost one command. The sequel matters as much: disaggregating by
+cost tier, the *same* reference was stable to 0.002 across two rank bands and
+four patches, and the engine's error there was larger and opposite in sign per
+tier. A reference too noisy to support a claim in aggregate can be precise
+enough in its parts. (§97.6, §97.7)
+
 ---
 
 ## Index
@@ -264,7 +276,7 @@ in at 123 -- 33% short over 11 hours. Project long runs from long measurements.
 | 65 | 08-06 | Training-seed sd is 0.074; imitation is saturated at ~3.40 | ✅ |
 | 66 | 08-06 | Every lever is closed; gold has no sink and 3-stars never happen | ✅ |
 | 67 | 08-06 | Board size dominates; star scaling is correct; slow-roll test was crude | ⚠️ resolved by 68 |
-| 68 | 08-06 | Slow-rolling fails when specified correctly; 3-stars need targeting | ✅ |
+| 68 | 08-06 | Slow-rolling fails when specified correctly; 3-stars need targeting | ⚠️ 98.5 |
 | 69 | 08-06 | 3-stars are unreachable at the default action budget by any policy | ⚠️ refined by 70 |
 | 70 | 08-06 | External validation: data is correct, but no policy can spend its gold | ✅ |
 | 71 | 08-06 | Real economy archetypes; field and action budget changed; **all prior numbers void** | ✅ |
@@ -318,6 +330,7 @@ is a different engine or observation, so **only adjacent rows are comparable**
 
 Rows 20 onward are n=150 rather than n=300; the engine's *rules* changed at
 row 20 (§36), so nothing above it is comparable to anything below.
+
 
 ---
 
@@ -978,6 +991,7 @@ Doc 03 milestone 9 is one line ("(Stretch) Augments, self-play, full
 board-scouting observations"), so nearly everything here is a judgement call.
 
 ### 17.1 Augments are **not** Riot-sourced, and could not be
+
 
 This is the significant finding of the milestone, and it breaks the project's
 standing rule that Riot is the source for everything.
@@ -9821,3 +9835,212 @@ reference side has never been collected.
   `num_timesteps % every == 0` and `num_timesteps` advances by `n_envs`, so
   `--envs 12 --eval-every 100000` evaluated every **300,000** (LCM). Harmless
   here, silent, and wrong for any `n_envs` that does not divide `eval_every`.
+
+---
+
+## 97. Real-TFT reference distributions: the window is fine, the field dies rich (08-09)
+
+96.5 named the fidelity comparison as the gate on everything downstream and
+narrowed the `slowroll6` mispricing to two candidates, **the window** and **the
+payoff**. The reference side had never been collected. It has now.
+
+### 97.1 What was collected
+
+1,000 ranked-standard Set 17 matches from NA challenger (8,000 participants)
+via Riot's `match-v1`, by `scripts/fetch_riot_matches.py`. Reduced by
+`scripts/reference_profile.py`; the engine's side comes from
+`scripts/engine_profile.py --fidelity-json --econ mixed` (300 games, 2,400
+seats, `rl.opponents.DEFAULT_FIELD`); `scripts/fidelity_compare.py` pairs them.
+Both sides import the same aggregation helpers, so the arms cannot drift apart
+in how they average.
+
+**Riot gives only end-of-game state per participant, not trajectories.** There
+is no reference counterpart to the living-player table `engine_profile` has
+emitted since entry 70. What there is is a cross-section: a participant with
+`last_round = R` shows their level, gold and board *at R*, because that is when
+they died. The engine side is conditioned identically -- each player is
+snapshotted going into the round they were eliminated in. The two views are not
+interchangeable and the old table is left untouched.
+
+**Four outcomes were named before the run finished** (they are in
+`fidelity_compare`'s docstring): window; accumulation; payoff; or all four
+axes match and `slowroll6`'s 0.653 is simply correct.
+
+### 97.2 The window hypothesis is refuted. Recorded as a failed prediction
+
+85.3 and 96.5 said the seat gets ~8 rounds of rolling where real TFT gets
+"roughly double". It does not.
+
+| | engine | reference | delta | t |
+|---|---|---|---|---|
+| mean elimination round | 29.78 | 30.36 | **-0.58** | -5.67 |
+| mean game length | 37.15 | 36.28 | **+0.87** | +6.33 |
+
+Significant at this n and negligible in size: 0.58 of a round against a
+36-round game, and the engine's games are *longer*, not shorter. Max
+cumulative gap (KS) 0.143, peaking at 5-4. Whatever prices reroll wrongly, it
+is not that the seat dies too early.
+
+### 97.3 The engine fights two rounds real TFT does not
+
+The KS peak has a cause. `data/config.json`'s `realm.rounds` is
+`[[1,1],[2,4],[3,4],[4,4]]` -- the Set 17 contested draft of entry 21 replaces
+the carousel, and it stops after stage 4. Real TFT has a no-combat round at
+**every** `x-4`.
+
+| eliminations on 5-4 and 6-4 | count | share |
+|---|---|---|
+| engine | 306 / 2,100 | **14.6%** |
+| reference | 10 / 7,000 | **0.14%** |
+
+A hundredfold gap, in the stages where 60% of all eliminations happen. The
+engine plays two extra PvP rounds per game and grants two fewer draft
+acquisitions. This is a concrete, externally-sourced defect, and it is the
+first thing in 97 that is unambiguously the *engine* rather than a policy.
+
+The mapping this rests on is validated by the data rather than by its own
+arithmetic: real eliminations show a hard trough at every `x-4` (carousel) and
+a near-trough at every `x-7` (PvE). An off-by-one would scatter those
+structural zeros onto ordinary combat rounds. `tests/test_reference_profile.py`
+asserts the trough and was mutation-tested against exactly that off-by-one.
+
+### 97.4 The field dies rich -- the largest number in the comparison
+
+Gold held at the moment of elimination, by round:
+
+| round | engine | reference | t |
+|---|---|---|---|
+| 4-3 | 50.2 | 8.4 | +9.7 |
+| 4-6 | 41.3 | 8.0 | +15.3 |
+| 5-1 | 42.4 | 8.0 | +21.0 |
+| 5-2 | 44.6 | 8.1 | +24.6 |
+| 5-3 | 47.9 | 7.5 | +28.6 |
+| 5-5 | 38.5 | 7.9 | +18.0 |
+| 6-3 | 23.2 | 6.4 | +9.2 |
+
+Real players die with about 8 gold. The engine's seats die with 40-55 through
+the whole mid-game, and are simultaneously **0.5 to 1.3 levels lower** at the
+same elimination round (t to -14.4). Hoarding, not poverty.
+
+This is 66.2's "gold has no sink" and 70's "no policy can spend its gold",
+confirmed for the first time against something outside the engine. Entry 70
+established it by profiling the engine against itself; this is the external
+check that was missing.
+
+**It indicts the scripted field, not necessarily the simulator.** The engine
+arm is eight `GreedyPolicy` seats; the reference arm is humans. A rules defect
+and a policy defect are indistinguishable in this measurement. That is the same
+shape as 85.4 and 86.1, where a defect that read as the engine was the teacher
+-- now six times.
+
+### 97.5 3-star incidence is 13 points short
+
+| | engine | reference |
+|---|---|---|
+| participants holding a 3-star at the end | **21.5%** (515) | **34.5%** (2,763) |
+
+z = -12.10. This is outcome 2: the pacing is right and the accumulation is not,
+which 97.4 explains directly -- gold that is never spent does not become
+copies. Note the engine reaches 21.5% only with the mixed field; eight
+`standard` seats give ~3%.
+
+The engine also never 3-stars a 4- or 5-cost (0 of 2,400 seats). Real
+challenger does, 67 and 13 times, placing 1.179 and 1.000 -- figures too
+confounded to price anything, since reaching a 3-star 5-cost mostly means the
+game was already won.
+
+### 97.6 The payoff hypothesis does not survive its control
+
+The comparable quantity is the *edge* a 3-star confers, since both sides
+average 4.5 over all seats by construction.
+
+| | engine | reference |
+|---|---|---|
+| placement of holders | 4.315 | 4.190 |
+| edge over the field | -0.185 | **-0.310** |
+
+The engine appears to under-price a 3-star by 0.125 placement. **It is not
+assertable.** Splitting the reference by patch -- 16.14 (n=396) against 16.15
+(n=604), both inside the same sample -- moves the same statistic by 0.098:
+
+| | 16.14 | 16.15 | drift | engine gap | survives? |
+|---|---|---|---|---|---|
+| 3-star rate | 33.2% | 35.4% | 2.2pp | 13.0pp | yes, 6x |
+| 3-star edge | -0.249 | -0.347 | **0.098** | **0.125** | **no** |
+| game length | 36.10 | 36.41 | 0.31 | 0.87 | yes, 3x |
+
+The *aggregate* payoff discrepancy is the size of drift within the reference
+itself between two patches three weeks apart. Lesson 2's shape, one level up: a
+discrepancy is uninterpretable without the reference's own spread, and
+measuring that spread cost one command.
+
+This kills the aggregate statistic, not the payoff question -- 97.7 takes it
+apart by cost tier, where the reference turns out to be stable to 0.002 and the
+engine's error is both larger and signed differently per tier.
+
+### 97.7 The aggregate hid it: per cost tier the payoff *is* mispriced
+
+A second reference band, 1,000 NA diamond matches (8,000 participants), was
+collected as the rank control. It also lands on older patches -- 16.10-16.12
+against challenger's 16.14-16.15, because diamond players play fewer games, so
+their last ten reach back months. The band control is therefore partly a second
+patch control, which makes what follows stronger rather than weaker.
+
+Placement conditional on holding a 3-star, **by cost**:
+
+| cost | engine (n) | challenger | diamond | reference drift | engine gap | t (lower bound) |
+|---|---|---|---|---|---|---|
+| 1 | **3.479** (48) | 4.425 | 4.426 | **0.002** | **-0.947** | **-2.82** |
+| 2 | **4.418** (462) | 4.165 | 4.177 | **0.013** | **+0.241** | **+2.01** |
+| 3 | 2.800 (5) | 4.012 | 3.989 | 0.023 | -1.189 | -1.16 |
+
+Across two rank bands and four patches the reference moves by **0.002** on the
+1-cost row. Against that, the engine's gaps are assertable, and they have
+**opposite signs**: the engine badly *over*-prices a 3-star 1-cost and mildly
+*under*-prices a 3-star 2-cost.
+
+The aggregate in 97.6 washed both out because the two populations have
+different composition -- **90% of the engine's holders are 2-cost**, against a
+reference spread of 47% / 54% / 32% across costs 1/2/3. A single "edge over the
+field" number averages a +0.24 and a -0.95 over incompatible mixtures. Lesson 7
+("aggregate metrics hide composition"), which has now cost this project four
+findings.
+
+t is computed with sd = 2.29, the standard deviation of a uniform placement on
+1-8 and therefore an upper bound on the true conditional spread, so both t are
+lower bounds. Both sides remain correlational: a player who 3-stars a 1-cost is
+often one who was forced into it, and the engine's selection process differs
+from a human's. What the comparison licenses is "the engine prices these two
+tiers differently from real TFT, in opposite directions", not a causal value
+for a 3-star.
+
+### 97.8 What this changes
+
+- **96.5's window candidate is refuted** (97.2), and its payoff candidate
+  survives only per cost tier, with opposite signs by tier (97.7) -- not as the
+  single under-pricing it was posed as.
+- **Two defects neither candidate named**, and both are larger than the payoff
+  effect: the field cannot convert gold into board (97.4) and the engine fights
+  two rounds real TFT does not (97.3).
+- **`slowroll6`'s 0.653 behind `standard` is no longer evidence of a simple
+  mispricing.** It has not been shown correct either; the measurement that
+  would settle it is a `slowroll6` agent-seat profile against this reference,
+  which 97 did not run.
+- The reference samples are kept at `data/reference/` with provenance blocks.
+  Nothing in them is loaded by the engine.
+
+### 97.9 Still open
+
+- **Fix `realm.rounds` to cover stages 5+ and re-measure.** Every placement
+  number in the log shifts (lesson 12); this is an engine rules change, so it
+  invalidates baselines by construction.
+- Whether 97.4 is a rules defect or a `GreedyPolicy` defect. The discriminator
+  is a human-comparable spending profile, not another engine-vs-engine run.
+- **Why the engine over-prices a 3-star 1-cost by 0.947** (97.7). The engine
+  side is n=48, and the combat constants tagged `engine_artifact` are the
+  obvious suspects, but 77 already showed 3 of 4 do not matter.
+- `slowroll6` in the agent seat against this reference (97.8).
+- Why `hyperroll` degrades under targeting (+0.327, t=+2.41) -- still open from 86.
+- The eval-cadence aliasing from 96.6 is unfixed.
+
+---
