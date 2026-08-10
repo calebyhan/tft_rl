@@ -119,3 +119,17 @@ def test_sidecar_round_trips_the_repositioning_budget(tmp_path):
         "mode": "move", "max_candidates": 6, "panel_size": 1,
         "state_seeded": False,
     }
+
+    # `swap` and `board` do not sample candidates, so they take no
+    # `state_seeded` -- and `best_swap` would raise TypeError on the key. A
+    # reconstruction that rebuilds an *uncallable* teacher is the same class of
+    # defect as one that rebuilds the wrong teacher (entry 79.5), and it is why
+    # `test_reconstructed_search_configs_are_callable` exists as well.
+    swap = written(expert_reposition=True, expert_reposition_mode="swap",
+                   expert_reposition_candidates=4, expert_reposition_panel=2,
+                   expert_reposition_state_seeded=True)
+    assert swap == {"mode": "swap", "max_candidates": 4, "panel_size": 2}, (
+        "swap mode must not carry state_seeded even when the flag is set"
+    )
+    assert written(expert_reposition=True, expert_reposition_mode="board")[
+        "mode"] == "board"

@@ -513,18 +513,31 @@ def test_level_cap_binds_without_delaying_the_climb_to_it(real_env):
     )
 
 
-def test_level_cap_frees_gold_for_the_reroll_branch(real_env):
-    """Capping is what makes rolling reachable: XP stops consuming the gold."""
+def test_level_cap_stops_xp_spending(real_env):
+    """The cap stops XP consuming gold. What that gold then buys is *not* here.
+
+    This test used to assert the rest of entry 68's mechanism -- that the freed
+    gold reaches the reroll branch. Doc 99 entry 98.5 falsified that: on the
+    corrected carousel schedule (98's `realm.rounds` fix) rerolls went +41
+    before to -4 after, at n=24, because the longer game hands the uncapped arm
+    the rolls it previously had to free up by capping. The freed ~284 gold
+    reappears as buy/sell churn, which 85.2 showed is gold-neutral.
+
+    Only the XP half is asserted, because only it is stable at the n a unit
+    test can afford: BUY_XP falls by 8 / 11 / 71 at n = 4 / 8 / 24, while the
+    churn direction flips sign (-10, +9, +102). Pinning the churn here would
+    pin noise; 98.5 records it with the n=24 evidence instead.
+    """
     seeds = range(4)
     base = dict(sell_bench=True, roll_at_level=6)
     uncapped = _action_kinds(real_env, scripted_policy(real_env, **base), seeds)
     capped = _action_kinds(
         real_env, scripted_policy(real_env, **base, level_cap=7), seeds
     )
-    assert capped["BUY_XP"] < uncapped["BUY_XP"], "the cap did not reduce levelling"
-    assert capped["REROLL"] > uncapped["REROLL"], (
-        f"freed gold must reach the reroll branch: "
-        f"{uncapped['REROLL']} -> {capped['REROLL']}"
+    assert uncapped["BUY_XP"] > 0, "the uncapped arm bought no XP -- vacuous"
+    assert capped["BUY_XP"] < uncapped["BUY_XP"], (
+        f"the cap did not reduce levelling: "
+        f"{uncapped['BUY_XP']} -> {capped['BUY_XP']}"
     )
 
 

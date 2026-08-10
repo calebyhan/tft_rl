@@ -194,6 +194,16 @@ four patches, and the engine's error there was larger and opposite in sign per
 tier. A reference too noisy to support a claim in aggregate can be precise
 enough in its parts. (§97.6, §97.7)
 
+**25. ~~An intervention that moves behaviour toward the reference and makes
+performance worse is evidence about the simulator.~~ WITHDRAWN by §103.1**,
+one hour after it was written. It generalised from §102.4, and §103 showed the
+0.343 loss was the *implementation* -- protecting every progressing copy
+congested the bench -- not the 3-star. A selective version costs nothing and
+still 3-stars. The lesson as written would have licensed skipping the very
+check that refuted it. The sound residue: an intervention is only evidence
+about the model once it is a *good* implementation of the behaviour, which is
+lesson 21 restated. Kept as a record of a generalisation made too fast.
+
 ---
 
 ## Index
@@ -331,6 +341,11 @@ is a different engine or observation, so **only adjacent rows are comparable**
 Rows 20 onward are n=150 rather than n=300; the engine's *rules* changed at
 row 20 (§36), so nothing above it is comparable to anything below.
 
+> **Every row above is void as of [§98](#98-the-carousel-fix-elimination-timing-closes-a-late-game-stalemate-appears-08-09).** The carousel schedule now covers
+> stages 5-9, which removes two combat rounds per game. No figure measured
+> before 08-09 is comparable to one measured after it. **Re-derived so far:**
+> the econ archetype table, unmoved ([§100](#100-the-reroll-mispricing-survives-both-fixes-and-86s-table-reproduces-exactly-08-09)), and the agent baseline
+> ([§104](#104-the-agent-baseline-re-derived-post-98-08-09)): clone **4.900**, teacher **4.750** on the same 60 seeds.
 
 ---
 
@@ -10006,6 +10021,14 @@ field" number averages a +0.24 and a -0.95 over incompatible mixtures. Lesson 7
 ("aggregate metrics hide composition"), which has now cost this project four
 findings.
 
+> **Confounded by archetype -- see [entry 101](#101-every-3-star-in-this-engine-is-produced-by-an-explicit-target-08-09).** 101 found that untargeted seats
+> reach a 3-star in 0.33% of games against a real 34.5%, so every engine holder
+> in the table above comes from the one archetype that targets that cost: the
+> 1-cost row is `hyperroll` seats, the 2-cost row is `slowroll6` seats. "The
+> engine over-prices a 3-star 1-cost" is not separable from "hyperroll seats
+> that hit their carry place well". The *reference* stability across bands
+> (0.002) stands; the engine side does not support a per-tier pricing claim.
+
 t is computed with sd = 2.29, the standard deviation of a uniform placement on
 1-8 and therefore an upper bound on the true conditional spread, so both t are
 lower bounds. Both sides remain correlational: a player who 3-stars a 1-cost is
@@ -10282,5 +10305,621 @@ holds at all three.
 - The residual 5.8 gold between hp=20's 13.78 and the reference's ~8.
 - Everything still open from 98.6, unchanged: the late-game tail (98.3), the
   1-cost 3-star over-pricing (97.7), `slowroll6` in the agent seat.
+
+---
+
+## 100. The reroll mispricing survives both fixes, and 86's table reproduces exactly (08-09)
+
+98 declared every prior placement baseline void, correctly: removing two combat
+rounds per game is a rules change. This re-derives the one table that the whole
+of 97-99 exists to explain -- the econ archetypes -- and asks whether
+`slowroll6`'s deficit, the original motivation, survived.
+
+### 100.1 Both arms measured now, not against a stored number
+
+The obvious shortcut was to compare the fixed engine against 86's recorded
+figures. That is the error lesson 12 exists to prevent, and here it had a
+specific hazard: 86 predates 87 and 88, both of which touched the econ plans,
+so any difference would confound the carousel fix with those. So the pre-98
+config was restored and **both arms were run now**, 300 shared seeds each,
+`scripts/econ_teacher_ab.py`, teacher configuration, mixed field.
+
+| arm | pre-98 | post-98 | delta | t |
+|---|---|---|---|---|
+| no-econ | 4.823 | 4.880 | +0.057 | +1.24 |
+| **standard** | **4.213** | **4.300** | +0.087 | +1.64 |
+| fast8 | 4.337 | 4.323 | -0.013 | -0.34 |
+| **slowroll6** | **4.867** | **4.853** | -0.013 | -0.26 |
+| hyperroll | 5.203 | 5.163 | -0.040 | -0.98 |
+
+**All five pre-98 values reproduce 86's stored table exactly** -- 4.823 /
+4.213 / 4.337 / 4.867 / 5.203, to three decimals, three days and two entries
+later. The confound worried about above does not exist, and the measurement
+chain is reproducible end to end. That is worth more than the entry's main
+result.
+
+### 100.2 The carousel fix changes nothing here
+
+No arm moves: every |t| <= 1.64 on 300 paired seeds. Gap to `standard`:
+
+| | pre-98 | post-98 | post-98 t |
+|---|---|---|---|
+| fast8 | +0.123 | +0.023 | +0.20 |
+| **slowroll6** | **+0.653** | **+0.553** | **+3.54** |
+| hyperroll | +0.990 | +0.863 | +5.16 |
+
+**Outcome 2 of the three named before the run.** `slowroll6` remains
+significantly behind `standard`, and the 0.10 narrowing is below the 0.2 that
+was declared in advance as the threshold for reading movement -- and is driven
+by `standard` getting *worse* (+0.087) rather than `slowroll6` improving
+(-0.013). Two extra carousels and ~1.8 more rounds of game, which should favour
+the plan that needs roll volume above all others, did nothing for it.
+
+### 100.3 What this means for 98's "all baselines void"
+
+98's banner was correct procedure and turned out not to matter for this table.
+Both statements hold at once, and the second does not license skipping the
+first next time: the reason to re-measure is that you cannot know in advance
+which way it will go, and the only way to learn that a rules change was
+harmless is to measure it. Nine invalidations taught the rule; this is the
+first case where re-measuring found nothing, and it cost 18 minutes.
+
+The banner stands for every *other* table. Only the econ archetypes have been
+re-derived.
+
+### 100.4 Where the mispricing can still live
+
+Four candidates existed at 96.5 and after. Three are now closed:
+
+* the **window** -- refuted (97.2), and unchanged by the carousel fix.
+* the **shop odds** -- exonerated by arithmetic (96.5).
+* the **gold budget** -- real, diagnosed and fixed to a null (99).
+
+What remains:
+
+* the **per-tier payoff error** (97.7): the engine over-prices a 3-star 1-cost
+  by 0.947 against a reference stable to 0.002, and under-prices a 2-cost by
+  0.241. A reroll plan's whole return is concentrated in exactly those tiers,
+  which makes this the best-fitting surviving explanation.
+* the **late-game tail** (98.3): games 2.71 rounds too long, concentrated in
+  the last one or two seats.
+
+### 100.5 Still open
+
+- Test the per-tier payoff error as the cause of the reroll gap (100.4).
+- The late-game tail (98.3) and its two competing readings.
+- Whether to adopt `desperation_hp=30` as a field default (99.5) -- a fidelity
+  call, worth nothing in placement.
+- `slowroll6` measured in the *agent seat* against the reference distributions,
+  still not run (97.9, 98.6).
+- The eval-cadence aliasing from 96.6, still unfixed.
+
+---
+
+## 101. Every 3-star in this engine is produced by an explicit target (08-09)
+
+100.4 nominated the per-tier payoff error as the best surviving explanation for
+the reroll gap. Before testing it, the per-tier *incidence* was split out, and
+it changed the question.
+
+### 101.1 The tier profile is inverted
+
+3-star holders as a share of seats, engine (300 games, mixed field) against the
+two reference bands:
+
+| cost | engine | challenger | diamond | ratio real/engine |
+|---|---|---|---|---|
+| 1 | **2.04%** | 16.39% | 19.02% | **8x** |
+| 2 | **19.29%** | 18.15% | 21.66% | **0.9x -- matches** |
+| 3 | **0.33%** | 10.12% | 12.79% | **30x** |
+| 4 | 0% | 0.84% | 1.29% | never |
+| 5 | 0% | 0.16% | 0.27% | never |
+
+The 2-cost rate is right and every other tier is missing. That is not a
+shortfall, it is the wrong shape: in real TFT a 1-cost is the *easiest* thing
+to 3-star -- 30 copies in the pool against a 3-cost's 18, and the best shop
+odds at low level -- so 2-costs being the common case and 1-costs being 8x rarer
+is inverted. 96.5 already exonerated the shop odds by arithmetic, so the
+distortion is downstream of them.
+
+### 101.2 Outcome A: targeting is not a multiplier, it is the gate
+
+`scripts/three_star_source.py`, 60 games, seats grouped by archetype. Peak
+copies is in copy-equivalents (a 2-star counts 4, a 3-star 9), so 9 is the
+threshold a 3-star must cross:
+
+| archetype | `target_cost` | seats | any 3-star | at c1 | at c2 | peak copy-equiv |
+|---|---|---|---|---|---|---|
+| standard | -- | 180 | **0.6%** | 0% | 0.6% | 6.59 |
+| fast8 | -- | 120 | **0.0%** | 0% | 0% | 5.94 |
+| slowroll6 | 2 | 120 | 81.7% | 0% | 81.7% | 11.24 |
+| hyperroll | 1 | 60 | 13.3% | 13.3% | 0% | 8.30 |
+
+**Untargeted seats reached a 3-star once in 300 games -- 0.33%, against a real
+34.5%.** Every 3-star this engine produces comes from an explicit
+`target_cost`, and only ever at that exact cost. Nothing anywhere reaches cost
+3 or above.
+
+Outcome A of the three named in advance. Targeting is a gate, not a multiplier.
+The untargeted seats are not close and unlucky either: they peak at 5.9-6.6
+copy-equivalents, which is a 2-star plus a spare, and never approach 9. A real
+player accumulates 3-stars *incidentally* -- holding early units, hitting pairs
+while playing for something else -- and no policy here does.
+
+### 101.3 What this costs entry 97.7
+
+97.7 read the per-tier placement gaps as a pricing error: the engine
+over-prices a 3-star 1-cost by 0.947 and under-prices a 2-cost by 0.241, against
+a reference stable to 0.002 across two bands and four patches.
+
+**The engine side of that comparison is archetype-pure.** Its 1-cost holders
+are `hyperroll` seats and its 2-cost holders are `slowroll6` seats, because
+nothing else ever produces one. "The engine over-prices a 3-star 1-cost" is
+therefore not separable from "hyperroll seats that hit their carry place
+well" -- a selection effect inside a single archetype, on n=48. 97.7 now
+carries a banner saying so.
+
+The reference-side stability is unaffected and remains the entry's durable
+part. What is withdrawn is the inference from it to a *pricing* claim about
+this engine.
+
+### 101.4 The reroll gap is not an execution failure
+
+`slowroll6` reaches its 3-star in **81.7%** of games and still places 0.553
+behind `standard` (t=+3.54, entry 100.2). Whatever is wrong, it is not that the
+plan fails to execute -- 86 fixed that, and this confirms the fix holds. The
+plan does what it is supposed to do, four games in five, and loses anyway.
+
+That leaves two readings, and 101 does not separate them:
+
+* the 3-star it gets is genuinely worth less here than in real TFT -- which is
+  97.7's claim, now unsupported on the engine side and needing a measurement
+  that is not archetype-confounded;
+* or the *cost* of getting there is too high -- the board it gives up while
+  concentrating, which no entry has priced.
+
+### 101.5 Still open
+
+- Price the reroll gap without the archetype confound: the comparison needs
+  seats that differ *only* in whether they hold a 3-star, which the current
+  field cannot supply (101.3).
+- **Why untargeted seats never 3-star anything** (101.2). The suspect is the
+  buy/sell rule spreading purchases and breaking pairs; it is a policy defect
+  in the same class as 99, not an engine-rules one.
+- Whether a field that never 3-stars incidentally is a fair opponent model at
+  all, given the agent trains against it.
+- Everything from 100.5 except the per-tier payoff item, which 101.3 narrowed.
+
+---
+
+## 102. The teacher can be made to 3-star, and it makes it worse (08-09)
+
+101 found untargeted seats reaching a 3-star in 0.33% of games against a real
+34.5%. This traces the mechanism, fixes it, and measures the fix. Lesson 16 is
+why it was worth doing: the teacher is the imitation ceiling, and improving it
+is the only lever that has ever moved the clone (75.2: 89% transmits).
+
+### 102.1 The mechanism is the sell rule breaking pairs
+
+A 1-star of a champion already held at 2-star is the start of the second pair a
+3-star needs. It is also the weakest unit on the bench, so "sell the weakest
+surplus" reaches for it first. Neither consumer protected it -- entry 86's
+recurring defect, and they disagreed on what they *did* protect:
+
+* `GreedyPolicy._sell_surplus`: reroll targets only.
+* the teacher: additionally `_copies_owned < 2`, keeping two copies *at the
+  same star level* -- which does not cover a single copy pairing with a 2-star.
+
+`scripts/teacher_copies_probe.py`, teacher, `standard` econ, 30 episodes:
+
+| | before |
+|---|---|
+| episodes reaching any 3-star | **0/30** |
+| peak copy-equivalents (9 = a 3-star) | 4.87, max 7 |
+| distribution of peaks | 4:18, 5:4, 6:2, 7:6 |
+| progress-breaking sells | **13.4%** (568/4238) |
+
+Eighteen of thirty games peak at exactly 4 -- one 2-star of one champion, and
+never anything more.
+
+*A correction inside this entry.* The first version of the probe counted a sell
+as progress-breaking if the seat held *any* 1-star matching *any* 2-star, not
+whether the unit actually sold was one. That read 29.4%. Reading the sold unit
+gives 13.4% -- the proxy over-counted by 2.2x. The corrected figure is the one
+above.
+
+### 102.2 The fix does what it claims
+
+`keep_pairs` prefers to sell something that is not progressing an upgrade,
+falling back when every candidate is (a full bench that cannot sell stalls
+every later purchase -- 37.4).
+
+| | before | after | real |
+|---|---|---|---|
+| episodes with a 3-star | 0/30 | **6/30 = 20.0%** | 34.5% |
+| by cost | -- | **{1: 3, 2: 2, 3: 2}** | spread across tiers |
+| peak copy-equivalents | 4.87 | **7.27, max 10** | -- |
+| progress-breaking sells | 13.4% | **3.7%** | -- |
+
+3-stars now appear at costs 1, 2 *and* 3 -- the tiers 101 measured as 8x and
+30x too rare.
+
+### 102.3 And it is worse. Outcome 3 of three named in advance
+
+300 shared seeds, `standard` econ, default field, one flag differing:
+
+| arm | placement | 1st | top4 | 8th |
+|---|---|---|---|---|
+| keep_pairs=off | **4.300** | 12.7% | 54.7% | 8.3% |
+| keep_pairs=on | 4.643 | 10.7% | 48.7% | 12.0% |
+
+**+0.343, t=+2.65.** The hoped-for outcome did not happen; "worse" was named as
+a possibility before the run and is what landed.
+
+`keep_pairs=off` reproduces 100's `standard` arm at 4.300 exactly, which is what
+licenses reading the difference.
+
+An earlier version of this A/B ran both arms against a field that also had the
+fix, giving +0.327 (t=+2.52). The field change was reverted and the A/B re-run
+so both arms face the project's actual default field; the numbers above are the
+re-run. Same conclusion, and the first version is recorded because it was run.
+
+### 102.4 Three lines now converge on the engine under-valuing a 3-star
+
+| | |
+|---|---|
+| `slowroll6` executes in 81.7% of games | and places +0.553 behind `standard` (100.2, 101.4) |
+| the teacher forced to 3-star, 0% -> 20% | places +0.343 worse (102.3) |
+| real challenger holds a 3-star 34.5% | and holders place **0.31 better** than the field (97.6) |
+
+In this engine, pursuing a 3-star is a losing strategy. In real TFT it is a
+mainstream line. The sign is flipped and the magnitude is roughly 0.6
+placement.
+
+This is 96.5's **payoff** candidate, supported for the first time by a *causal
+intervention* rather than by the conditional comparison 101.3 had to withdraw
+as archetype-confounded. An intervention that moves behaviour toward the
+reference and makes performance worse is evidence about the *simulator*, not
+about the behaviour.
+
+It may also unify with 98.3's unexplained late-game tail: a 3-star's advantage
+compounds over a long fight, so combat that fails to resolve truncates
+concentrated power specifically while also leaving late fights undecided. Both
+would follow from the duration constants -- `max_duration_seconds`,
+`sudden_death_*` -- which are `engine_artifact` and which 76 structurally could
+not test.
+
+### 102.5 The competing explanation, not yet excluded
+
+`keep_pairs` is blunt: it protects **every** progressing copy unconditionally,
+including copies of champions the seat will never play. A real player holds two
+or three pairs and abandons the rest. So the loss may be bench congestion
+rather than 3-stars being underpriced, and the two are not separated here.
+
+The evidence does not settle it either way. Against congestion: the arm does
+reach 20% 3-stars, so it is not merely hoarding dead copies. For congestion:
+the loss shows up as fewer top-fours (54.7% -> 48.7%) *and* more last places
+(8.3% -> 12.0%), which is what a weaker board looks like, not what a
+concentrated one does.
+
+### 102.6 Nothing is adopted
+
+`keep_pairs` defaults **off** and the `GreedyPolicy` change is reverted, so the
+tree behaves exactly as it did before this entry. A change that costs 0.343 is
+not adopted for fidelity's sake, and 99.3's warning applies again: the fidelity
+argument is real and is not evidence of a gain.
+
+### 102.7 Still open
+
+- **Separate underpricing from bench congestion** (102.5). A selective
+  `keep_pairs` -- cap the protected champions at two or three -- is the cheap
+  discriminator, and it must be run before 102.4 is treated as established.
+- **Test the duration constants directly.** `scripts/combat_sensitivity.py`
+  already runs both relevant probes: the star-vs-slots exchange rate and the
+  fraction of fights hitting the timeout. It has never been run against the
+  post-98 engine.
+- Everything from 101.5.
+
+---
+
+## 103. It was bench congestion: a selective keep_pairs is free (08-09)
+
+102.5 named bench congestion as the unexcluded alternative to 102.4's
+"the engine under-values a 3-star", and 102.7 named the discriminator: cap the
+number of protected champions instead of protecting every one. Run at n=300,
+shared seeds, `standard` econ, default field:
+
+| `keep_pairs` | placement | vs off | t | 3-star rate | 1st | top4 | 8th |
+|---|---|---|---|---|---|---|---|
+| 0 (off) | **4.300** | -- | -- | 0% | 12.7% | 54.7% | 8.3% |
+| **2** | **4.283** | **-0.017** | **-0.14** | **15%** | 14.7% | 55.3% | 10.3% |
+| 3 | 4.483 | +0.183 | +1.52 | 15% | 12.3% | 50.7% | 10.0% |
+| 99 (102.3's arm) | 4.720 | +0.420 | +3.33 | 20% | 9.0% | 47.3% | 12.0% |
+
+**Congestion, not underpricing.** The loss is monotone in how many champions
+are protected -- 0, +0.18, +0.42 -- and is *absent* at a cap of two, which
+still reaches a 3-star in 15% of games. If the engine were under-pricing the
+3-star itself, the arm that produces them at 15% would pay for it. It does not.
+
+### 103.1 What this withdraws
+
+**102.4's three-line convergence is broken, and the teacher line was the one
+carrying it.** Restated honestly:
+
+| line | status |
+|---|---|
+| `slowroll6` executes 81.7% and places +0.553 behind `standard` | **stands** (100.2, 101.4) |
+| real challenger holds a 3-star 34.5%, holders place 0.31 better | **stands** (97.6) |
+| ~~the teacher forced to 3-star loses 0.343~~ | **withdrawn** -- that was the implementation, not the 3-star |
+
+What survives is far weaker than 102.4 claimed. At the margin a 3-star in this
+engine is worth **approximately nothing** (-0.017, t=-0.14) where real TFT pays
+about 0.31. That is still a gap, and it is a *null against a positive* rather
+than the sign flip of 0.6 placement 102.4 asserted. It is not enough on its own
+to indict the combat constants.
+
+**Lesson 25 is withdrawn.** It generalised from 102.4 within the hour and the
+generalisation did not survive its own discriminator. The specific claim -- "an
+intervention that moves behaviour toward the reference and makes performance
+worse is evidence about the simulator" -- is only sound once the intervention
+has been shown to be a *good* implementation of the behaviour. Mine was not,
+and the lesson as written would have licensed skipping exactly the check that
+refuted it. What remains true is much smaller and already covered by lesson 21.
+
+### 103.2 A note on how this nearly went wrong
+
+102.4 was written from three measurements that agreed, and agreement is
+persuasive. The discriminator that broke it cost eight minutes and was named in
+the same entry (102.7) -- but only because 102.5 had been forced to write down
+the alternative explanation rather than leaving it implicit. Naming the
+competing reading in the entry is what made the check obligatory a step later.
+
+This is the fourth time in this project a tidy story assembled from agreeing
+measurements failed its first real test (23.3, 68.4, 95.1, and this).
+
+### 103.3 `keep_pairs=2` is worth adopting, on fidelity
+
+It costs nothing on the mean (-0.017, t=-0.14) and moves the teacher from 0% to
+15% 3-star incidence against a real 34.5% -- less unrealistic, not yet
+realistic. The distribution is boom-or-bust in the way real reroll play is:
+firsts 12.7% -> 14.7% and eighths 8.3% -> 10.3%, with top-four flat. LP is
+marginally up (3.81 -> 4.07) and well inside noise.
+
+That is a fidelity gain at no measured cost, which is a better case than either
+`desperation_hp` (99, free but inert) or the unconditional arm (102, costly).
+**Still not adopted here:** it changes every teacher number and so voids the
+clone baselines, and 99.3's rule applies -- a fidelity argument is not evidence
+of a gain. It is a decision, and it is recorded as one.
+
+### 103.4 Still open
+
+- The `slowroll6` deficit is **unexplained again**. 103.1 removed the
+  explanation 102.4 offered, and 100.4's other candidate (the per-tier payoff)
+  was withdrawn as confounded at 101.3.
+- Whether to adopt `keep_pairs=2` (103.3).
+- Why cap 3 is worse than cap 2 -- 0.18 for one more protected champion,
+  t=+1.52, not significant but monotone with the cap-99 arm.
+- The late-game tail (98.3), untouched by any of this and still the largest
+  raw fidelity gap.
+- Everything from 101.5.
+
+---
+
+## 104. The agent baseline, re-derived post-98 (08-09)
+
+98 voided every placement figure in this log, and nothing since had re-measured
+the *agent*. The arc table's last row predates two rules changes, so no claim
+about the model was checkable. This fixes that and nothing else.
+
+Two behaviour-cloning seeds, identical configuration to `bc-econ-s1`
+(`--warm-start 400 --warm-start-epochs 50 --expert-flags --expert-sell
+--expert-econ standard --slot-head`, 60 eval episodes). Two seeds because the
+clone training-noise floor is 0.14 and one seed resolves nothing below ~0.4
+(lesson 19).
+
+| | placement | ci95 | top4 | floor rate |
+|---|---|---|---|---|
+| clone, seed 0 | 4.867 | 0.612 | 50.0% | 21.7% |
+| clone, seed 1 | 4.933 | 0.475 | 33.3% | 10.0% |
+| **clone, mean** | **4.900** | -- | -- | -- |
+| **teacher, same 60 seeds** | **4.750** | -- | -- | -- |
+| teacher, seeds 0-299 | 4.300 | -- | -- | -- |
+
+**Gap to teacher: +0.150**, which is at the clone noise floor. The clone is at
+parity with its teacher, exactly as 81 established pre-98. Neither of today's
+engine changes moved that relationship.
+
+### 104.1 The seed set matters more than the sample size here
+
+The teacher scores **4.750 on seeds 0-59 and 4.300 on seeds 0-299**. Quoting
+the clone's 4.900 against the 300-seed figure gives a gap of 0.600 -- four
+times the real one -- purely because the first sixty seeds are harder than
+average.
+
+Both numbers are correct and comparing them is not. This is lesson 12's rule
+in a form it had not taken before: not "re-measure across commits" but
+**"compare on the same seeds"**, which matters just as much when the arms are
+n=60 and n=300 from the same run. `evaluate` takes `seeds=range(n)`, so a
+60-episode eval and a 300-episode eval are nested, not independent -- easy to
+forget precisely because they share code.
+
+### 104.2 What is now measurable again
+
+The arc table has a current row. Any future claim about the agent can be
+compared against 4.900 (2 seeds, n=60, seeds 0-59) or against the teacher's
+4.750 on the same seeds. Nothing else in the arc table has been re-derived and
+the banner still stands for all of it.
+
+### 104.3 Still open
+
+- Unchanged from 103.4. This entry adds no finding, only a measurable baseline.
+- The standing recommendation for what to do next is 79's diagnosis: search
+  produces better-than-policy decisions and **the observation is what stops
+  them transmitting**. Combined with lesson 1 -- relational features have
+  worked every time, descriptive ones never -- that is the one direction with a
+  live diagnosis and no negative result against it. Everything else named in
+  §8 is now measured: economy (88), imitation (81), RL (89-96), and fidelity
+  (97-103).
+
+---
+
+## 105. External review: the combat surrogate, and why this engine's search is capped by 91 (08-09)
+
+104 recorded that every internal lever is measured and none moves the agent.
+Two web searches -- the technique that produced lesson 14 -- did more to
+redirect the programme than any measurement since 97.
+
+### 105.1 What the field does
+
+**Riot's own TFT RL work** (GDC 2023, Ran Cao, *Simulating Teamfight Tactics
+Using Deep Learning for Fast Reinforcement Learning AI Training*). Their
+binding constraint was throughput, stated in the deck as "a full game takes
+minutes; we want one game to end in seconds". They could not use the game
+server, so they built a **custom Python game** -- and replaced combat
+simulation with a **learned combat model**: board states in, **damage
+distribution** out, via a CNN plus transformer encoder over champion
+embeddings with hex-position encodings (the deck frames a board as "a
+generalised image" and "a generalised sentence"). RL runs on top of that.
+
+**Auto-battler agents that beat strong humans are search-based, not
+model-free.** The Hearthstone Battlegrounds MCTS assistant reports losing 9.56%
+of turns against 26.26% for experienced human players.
+
+Neither line of work reports success from model-free per-action RL on a game of
+this shape, which is consistent with 89-96 rather than a rebuke of them.
+
+### 105.2 Where this project sits
+
+The throughput number matches: `rl/opponents.py` records a game as ~3-10s of
+pure-Python combat ticks and 97% of measurement time, and 96.4 measured 123 env
+steps/sec over 11 hours. Riot hit the same wall and solved it with a surrogate.
+
+This project is better placed than Riot was on exactly one axis: 97-104
+validated the combat engine against 2,000 real matches, so it is a *trustworthy
+generator of unlimited training data* for a surrogate. Riot had to work around
+a game server; we have a checked simulator.
+
+But a surrogate would **not** help the RL that has already failed. 96 measured
+33x the data changing nothing, so episode throughput is not the binding
+constraint on PPO here. A surrogate is worth building only to make **search**
+affordable, and only if search is worth having.
+
+### 105.3 Search in this engine is capped by 91, and the cap is structural
+
+`rl/search.py`'s `best_swap` is a one-ply search that moves **one bench unit
+onto the board**. That is a single action. 91 measured 1,098 single-action
+counterfactuals and found **max |t| = 1.82**: single actions do not measurably
+move placement.
+
+So 54's **+0.307** is roughly what 91 predicts, and widening that search buys a
+more precise estimate of a decision that does not matter. Measured cost of
+widening, 10 episodes, 10 workers:
+
+| arm | wall clock |
+|---|---|
+| no search | 5.2s |
+| default (4 candidates x 2 panel x 3 trials) | 60.7s (12x) |
+| wide (16 x 4 x 4) | 248.2s (48x) |
+
+A budget sweep at usable n is ~80 minutes for a result 91 already predicts. It
+was **not run**, and that is the finding: the existing search is the wrong
+shape, not the wrong size.
+
+### 105.4 What 91 does not cover
+
+91 tested *single-action* counterfactuals only. It says nothing about changing
+several actions at once, which is what a whole-board search does -- and a
+multi-swap candidate costs the same one combat to evaluate as a single-swap
+one. The untested hypothesis is that placement responds to **board-level**
+changes while being insensitive to unit-level ones, which is also what 67, 68
+and 72 ("board size dominates") would predict.
+
+That is the one search question this project has never asked, and it is cheap
+to ask before any surrogate is built.
+
+### 105.5 Recommended order
+
+1. **Multi-action board search, measured against the one-swap incumbent.** If
+   whole-board candidates do not beat +0.307 materially, search is dead here
+   and no surrogate is justified.
+2. Only then, the **combat surrogate**, to make deeper search affordable.
+3. Only then, deeper search or MCTS.
+
+Each step is gated on the previous one paying, which is lesson 2 applied to an
+engineering programme rather than to a statistic.
+
+### 105.6 Still open
+
+- Everything from 104.3, reframed by the above.
+- The macro-action reformulation (a plan-level action space) remains untried
+  and is the non-search alternative to the same diagnosis.
+
+---
+
+## 106. Multi-action search buys nothing over one swap; the surrogate is unjustified (08-09)
+
+105.5 set a gated programme: multi-action search first, and a combat surrogate
+only if depth paid. It does not.
+
+`best_board` changes up to three units at once for the same one combat per
+candidate. 150 shared seeds, teacher configuration, `standard` econ, all three
+arms measured together:
+
+| arm | placement | ci95 | LP | 1st | top4 | vs none | vs swap |
+|---|---|---|---|---|---|---|---|
+| no search | 4.553 | 0.353 | +1.04 | 10.0% | 48.7% | -- | -- |
+| **swap (1 action)** | **4.027** | 0.364 | +6.88 | 18.0% | 60.7% | **-0.527, t=-3.03** | -- |
+| board (3 actions) | 4.120 | 0.354 | +5.71 | 15.3% | 58.0% | -0.433, t=-2.46 | **+0.093, t=+0.59** |
+
+**Outcome 2 of the three named before the run.** Multi-action search is a null
+against single-action search, and marginally the wrong way.
+
+### 106.1 The hypothesis was wrong, and it was mine
+
+105.4 argued that 91 only tested *single-action* counterfactuals, so
+board-level changes might move placement where unit-level ones do not, as
+"board size dominates" (67, 68, 72) would predict. Changing three units at once
+buys nothing over changing one. Recorded as a failed prediction.
+
+**This closes 105.5 steps 2 and 3.** A combat surrogate exists to make deeper
+search affordable; depth is worth nothing here, so the surrogate is not
+justified. A multi-week build avoided by a 40-minute run, which is the entire
+point of gating it.
+
+### 106.2 What the same table says instead, and it is larger
+
+Search is worth **-0.527 (t=-3.03)** to the teacher on the current engine, with
+firsts 10.0% -> 18.0% and top-four 48.7% -> 60.7%. That is a bigger teacher gain
+than 54's +0.307, though the two are not comparable -- 54 was n=300 on the
+pre-98 engine, and only the three arms above were measured together (lesson 12).
+
+Lesson 16 and 75.2 say a teacher gain of that size should reach the clone at
+~89%. **79 says this particular one does not**: "search doesn't transmit --
+labels were fixable, the observation is the wall."
+
+So the live question is no longer *deeper search*. It is:
+
+> The teacher has a 0.527 gain that the student cannot absorb. 79 diagnosed the
+> observation as the reason, and lesson 1 says relational features close
+> exactly this kind of gap. Can the observation be widened to carry what the
+> search is deciding on?
+
+That is worth more than anything else currently open: 0.527 on the teacher, at
+89% transmission, is roughly 0.47 on the agent -- larger than every measured
+intervention in this log since 75.
+
+79's non-transmission result predates the post-98 engine and should be
+re-derived before being relied on.
+
+### 106.3 Still open
+
+- Re-derive 79's non-transmission on the current engine (106.2).
+- If it reproduces: what comparison does `best_swap` make that the observation
+  cannot express? It scores a candidate board by *simulated fight margin against
+  a panel of opponents* -- a relation between our board and theirs, which is
+  precisely the descriptive/relational distinction of lesson 1, and the
+  observation currently carries scouting only as a summary.
+- The macro-action reformulation (105.6), untouched.
+- Everything from 104.3.
 
 ---

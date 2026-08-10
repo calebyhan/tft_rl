@@ -25,7 +25,13 @@ from engine.loader import load_all  # noqa: E402
 from rl.action import ActionKind  # noqa: E402
 from rl.env import TFTEnv  # noqa: E402
 from rl.evaluate import evaluate, scripted_policy  # noqa: E402
-from rl.search import best_move, best_swap, clone_board, search_policy  # noqa: E402
+from rl.search import (  # noqa: E402
+    best_move,
+    best_swap,
+    clone_board,
+    move_search_candidates,
+    search_policy,
+)
 from tests.paths import REAL_DATA_DIR  # noqa: E402
 
 FLAGS = dict(sell_bench=True, buy_synergy=True, match_items=True, corner_carry=True)
@@ -304,13 +310,16 @@ def test_positional_search_is_a_function_of_the_board(data):
     # And the escape hatch still reproduces the pre-79 behaviour, so every
     # number measured before it stays reproducible.
     legacy = {
-        best_move(env, random.Random(stream), max_candidates=12, panel_size=1,
-                  state_seeded=False)
+        tuple((str(source), str(target)) for source, target in context[2])
         for stream in range(6)
+        if (context := move_search_candidates(
+            env, random.Random(stream), max_candidates=12, panel_size=1,
+            state_seeded=False,
+        )) is not None
     }
     assert len(legacy) > 1, (
-        "state_seeded=False must restore the free-running stream; if this "
-        "fails the flag is dead and the comparison arm is not reproducible"
+        "state_seeded=False must restore free-running candidate sampling; a "
+        "uniform None output can otherwise hide different candidate sets"
     )
 
 
