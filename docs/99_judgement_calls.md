@@ -10858,6 +10858,13 @@ engineering programme rather than to a statistic.
 
 ## 106. Multi-action search buys nothing over one swap; the surrogate is unjustified (08-09)
 
+> **106.2 WITHDRAWN by entries 107.1 and 108.2.** The three-arm table and the
+> surrogate conclusion stand. 106.2 does not, on two counts. 107.1: it
+> attributes the `best_swap` gain measured here to the `best_move`
+> non-transmission measured in 79, which are different searches — there was no
+> `move` arm in this table. 108.2: the **-0.527** itself does not replicate,
+> reading **-0.243 (t=-2.00)** at n=300 on the same budget. Do not quote it.
+
 105.5 set a gated programme: multi-action search first, and a combat surrogate
 only if depth paid. It does not.
 
@@ -10921,5 +10928,229 @@ re-derived before being relied on.
   observation currently carries scouting only as a summary.
 - The macro-action reformulation (105.6), untouched.
 - Everything from 104.3.
+
+---
+
+## 107. Search still doesn't transmit — and 79's own fix has now been ruled out as the reason (08-10)
+
+106.3 asked for 79's non-transmission result to be re-derived before being
+relied on. It reproduces, to within about a point in every cell. What is new is
+what the re-derivation *eliminates*.
+
+### 107.1 106.2 joined two different searches
+
+`--expert-reposition` builds `search_kwargs` with `mode="move"`
+(`scripts/train_ppo.py:1288`), dispatching to `best_move`. The **-0.527
+(t=-3.03)** in 106.2 came from `scripts/board_search_ab.py:72`, whose arms are
+`none` / `swap` / `board` — there was **no `move` arm in that table at all**.
+The two search a different decision:
+
+| | `best_move` | `best_swap` |
+|---|---|---|
+| decides | which fielded unit moves, and where | which bench unit is fielded |
+| candidates | ~200 legal moves, sampled | top-4 bench by (star, cost), fixed |
+| target hex | searched | first free, else weakest |
+
+Both halves of 106.2 are real measurements; the sentence joining them is not.
+"0.527 at 89% transmission is roughly 0.47 on the agent" attaches a
+`best_swap` gain to a `best_move` non-transmission. **Entry 106 flagged ⚠️.**
+
+### 107.2 79.1 was never re-run after 79's own fix
+
+`bc-search-s0` (79.1) trained on free-running-stream labels. 79.3 measured
+those at 38.7% self-agreement, 79.4 seeded the sample from the board to fix it,
+79.7 confirmed the fix costs no search quality (+0.053, t=+0.39). **No clone
+was ever trained afterwards.** `state_seeded=True` has been the default since;
+this is the first test of the remedy 79 prescribed for itself.
+
+Ceiling re-measured, `scripts/search_determinism.py --states 60 --repeats 5`,
+c12/p1:
+
+| | pre-79.4 (79.3) | now |
+|---|---|---|
+| modal-move agreement | 38.7% | **100.0%** |
+| states where all 5 streams agreed | 10.0% | **100.0%** |
+| mean distinct answers per state | 4.03 of 5 | **1.00 of 5** |
+| "no move" rate | 24.7% | 16.7% |
+
+The labels are single-valued. Lesson 6's achievable maximum is 100%.
+
+### 107.3 The measurement
+
+Two BC clones, seed 0, 400 expert episodes, 50 epochs, `--slot-head`,
+`--expert-econ standard`, identical but for `--expert-reposition` (c12/p1,
+state-seeded). Each scored against its **own** teacher reconstructed from its
+sidecar, n=300 shared seeds, paired:
+
+| arm | place | 1st | top4 | 8th | vs own teacher |
+|---|---|---|---|---|---|
+| teacher, econ only | 4.300 | 12.7% | 54.7% | 8.3% | — |
+| teacher, econ + move search | **3.903** | 18.7% | 62.7% | 8.3% | — |
+| `xmit-nosearch-s0` | 4.537 | 11.0% | 51.0% | 14.0% | +0.237, t=+1.60 |
+| `xmit-search-s0` | **4.770** | 7.0% | 45.3% | 11.0% | +0.867, t=+5.25 |
+
+- teacher, econ → econ+move: **-0.397, t=-3.11, n=300**
+- clone, nosearch → search: **+0.233, t=+1.52, n=300**
+
+Under the bar, so the honest statement is that the search clone is **not
+better**, not that it is worse. The gap to its own teacher widens 0.237 →
+0.867. 79.1 reproduces in structure and roughly in magnitude (there: teacher
+-0.330, clone +0.190 at t=+1.31, gap 0.857 → 1.047).
+
+**A failed read of mine.** The in-run n=60 evaluations said the opposite —
+nosearch 4.867 against search 4.467 — and I reported that as the transmitting
+direction before the paired n=300 reversed it. Same 60-episode trap as 104.1,
+one step after describing it.
+
+### 107.4 Per-action, against 79.2 — nothing moved
+
+Expert states, deterministic prediction, `scripts/action_match.py`:
+
+| action kind | 79.2 econ | **107 nosearch** | 79.2 search | **107 search** |
+|---|---|---|---|---|
+| BUY | 96.7% | 96.6% | 96.2% | 96.5% |
+| BUY_XP | 94.7% | 96.6% | 95.0% | 94.8% |
+| PICK_AUGMENT | 99.2% | 99.2% | 99.2% | 99.2% |
+| REROLL | 95.0% | 94.5% | 86.9% | 83.7% |
+| **SELECT** | 84.0% | **86.3%** | 47.4% | **47.7%** |
+| **PLACE** | 78.8% | **79.6%** | 44.5% | **45.5%** |
+| *overall* | *90.8%* | *90.8%* | *83.0%* | *83.5%* |
+
+SELECT volume 910 → 1644 in 79.2; 931 → 1677 here. A different engine, and the
+label ceiling raised from 38.7% to 100.0%, and every cell lands within about a
+point.
+
+### 107.5 What this eliminates, which is the point
+
+79.3 named two causes with opposite remedies and could only test one:
+
+> "the predicted explanation — the observation lacking the relation — is
+> **not** the operative one. It remains untested, because the label noise masks
+> it."
+
+The mask is now off. Labels are single-valued (107.2), and overall BC fit rose
+with them (79.2's search arm 83.0% → 83.5% here, and 89.9% at epoch 50 on the
+training objective against the econ arm's 95.0%). SELECT and PLACE did **not**
+rise, and placement did not transmit.
+
+So the fit was never limited by label noise. The clone fits 47.7% of positional
+labels that are now fittable at 100%. By CLAUDE.md's rule — a probe that cannot
+fit its own training set is a statement about the feature set, not the model —
+**the observation is the binding constraint, and this is the first time this
+project has isolated it rather than inferred it.** 79.3's suspicion was right
+for a reason 79.3 could not check.
+
+What `best_move` is comparing: it scores a *layout* by simulated fight margin
+against a panel of opponents. That is a relation between where our units stand
+and where theirs do. The observation carries opponents as six summary scalars
+(`SCOUT_FEATURES = 6`) and only under `scouting="full"`, which is off by
+default — and carries no opposing *positions* at all under any setting. Lesson
+1 says relational features are the only widening that has ever worked here.
+
+### 107.6 Still open
+
+- **The swap-search clone, which is now the cheapest live test.** 106.2's
+  0.527 belongs to `best_swap`, and no clone has ever been trained on it —
+  `--expert-reposition` cannot express `mode="swap"`. `best_swap`'s candidate
+  set is deterministic by construction, so it never had a label-noise problem;
+  and its decision is *which unit*, not *which hex*, which the observation may
+  already support. Needs a `--expert-reposition-mode` flag.
+- The relational scouting widening implied by 107.5, which should be
+  hypothesis-first: name the comparison `best_move` makes before encoding
+  anything.
+- The macro-action reformulation (105.6), untouched.
+- Everything from 106.3 and 104.3.
+
+---
+
+## 108. The swap search doesn't transmit either, and the residual is one decision kind (08-10)
+
+107.6 named the swap clone the cheapest live test: `best_swap` never had a
+label-noise problem, and it decides *which bench unit is fielded* rather than
+*which hex a unit stands on* — the axis 107.4 blamed. `--expert-reposition-mode`
+added so the teacher is expressible at all; flag, sidecar and
+`teacher_gap.search_config` all carry it, with
+`test_reconstructed_search_configs_are_callable` pinning the round-trip against
+79.5's three-time defect.
+
+### 108.1 Neither search transmits
+
+Same recipe as 107.3 at `best_swap`'s c4/p2 — entry 106's budget. All arms on
+shared seeds 0–299, paired:
+
+| arm | place | 1st | top4 | 8th | vs own teacher |
+|---|---|---|---|---|---|
+| teacher none | 4.300 | 12.7% | 54.7% | 8.3% | — |
+| teacher swap | 4.057 | 14.7% | 61.3% | 8.7% | — |
+| teacher move | 3.903 | 18.7% | 62.7% | 8.3% | — |
+| `xmit-nosearch-s0` | 4.537 | 11.0% | 51.0% | 14.0% | +0.237, t=+1.60 |
+| `xmit-swap-s0` | 4.703 | 8.7% | 45.3% | 10.0% | +0.647, t=+4.17 |
+| `xmit-search-s0` | 4.770 | 7.0% | 45.3% | 11.0% | +0.867, t=+5.25 |
+
+| comparison | Δ | t |
+|---|---|---|
+| teacher, none → swap | **-0.243** | -2.00 |
+| teacher, none → move | **-0.397** | -3.11 |
+| clone, none → swap | **+0.167** | +1.11 |
+| clone, none → move | **+0.233** | +1.52 |
+
+**Outcome 2 of the four named before the run.** Both teachers gain, neither
+clone does, both gaps widen. **My prediction of outcome 1 failed** — removing
+hex choice from the search does not make it transmissible.
+
+### 108.2 106.2's magnitude does not replicate either
+
+106 measured the swap teacher's gain at **-0.527 (t=-3.03), n=150**. Same
+budget, same econ, seeds from zero, **n=300: -0.243 (t=-2.00)** — less than
+half, and the two intervals barely meet. 107.1 already withdrew the *inference*
+106.2 drew; the number it drew it from is itself soft. It was the figure that
+made 105's surrogate programme look worth gating.
+
+Lesson 12 applies in the narrow sense — 106's arms were measured together and
+this one was not — but the no-search baselines differ too (4.553 there, 4.300
+here), so the honest reading is that neither figure is a constant and the
+n=150 one should not be quoted. **Entry 106 index status already ⚠️.**
+
+### 108.3 The residual is SELECT alone, which is the useful part
+
+Expert states, deterministic prediction, all three clones:
+
+| action kind | nosearch | **swap** | move |
+|---|---|---|---|
+| BUY | 96.6% | 96.3% | 96.5% |
+| BUY_XP | 96.6% | 95.0% | 94.8% |
+| REROLL | 94.5% | 97.6% | 83.7% |
+| PICK_AUGMENT | 99.2% | 100.0% | 99.2% |
+| **PLACE** | 79.6% | **76.0%** | 45.5% |
+| **SELECT** | 86.3% | **54.7%** | 47.7% |
+| *overall* | *90.8%* | *86.5%* | *83.5%* |
+
+PLACE comes back — 45.5% → 76.0%, against 79.6% with no search at all —
+exactly as removing hex choice predicts, since `best_swap` drops its unit on
+the first free hex or the weakest occupied one. SELECT does not: 54.7% against
+86.3%.
+
+So the imitation failure is **not** positional in general. It is one decision:
+*is this benched unit worth fielding?* And that is precisely what `best_swap`
+answers by simulating the fight — a comparison between a candidate unit and the
+opposing boards it would have to beat.
+
+This is a much sharper target than 107.5's. The observation encodes each unit
+descriptively (cost, star, items, role, stats, traits) and each opponent as at
+most six summary scalars, off by default. Nowhere does it carry *how a unit of
+ours fares against a board of theirs*. Lesson 1: description has failed every
+time, comparison has worked every time.
+
+### 108.4 Still open
+
+- The relational feature implied by 108.3, hypothesis-first: name the
+  comparison `best_swap` makes, encode that, and check whether SELECT fit
+  moves before checking whether placement does. SELECT fit is the discriminator
+  and it is cheap; placement is the expensive confirmation.
+- Whether a teacher gain of ~0.25–0.40 is even worth transmitting. Both are
+  smaller than 106.2's withdrawn 0.527, and lesson 16's 89% would put the
+  ceiling near 0.2–0.35 on the agent.
+- The macro-action reformulation (105.6), untouched.
+- Everything from 107.6, 106.3 and 104.3.
 
 ---

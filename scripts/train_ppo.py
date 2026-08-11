@@ -1057,6 +1057,24 @@ def main() -> int:
     parser.add_argument("--unit-range", action="store_true")
     parser.add_argument("--expert-reposition-candidates", type=int, default=12)
     parser.add_argument("--expert-reposition-panel", type=int, default=1)
+    # Which search the teacher is wrapped in. `move` is the historical default
+    # and the only one reachable until doc 99 entry 107.6 -- every search clone
+    # before then was `best_move`.
+    #
+    # `swap` was added to test whether removing hex choice makes a search
+    # transmissible. It does not (108.1): the teacher gains -0.243 (t=-2.00)
+    # and the clone +0.167 (t=+1.11, i.e. no gain), same shape as `move`.
+    #
+    # What it did buy is the localisation. PLACE fit returns to 76.0% against
+    # no-search's 79.6% -- `best_swap`'s target hex is deterministic -- while
+    # SELECT stays at 54.7% against 86.3%. The imitation failure is one
+    # decision, *is this benched unit worth fielding?*, which is the fight
+    # simulation itself and not the positional axis (108.3).
+    #
+    # Do not cite entry 106's -0.527 for `swap`; it reads -0.243 at n=300
+    # (108.2).
+    parser.add_argument("--expert-reposition-mode",
+                        choices=("move", "swap", "board"), default="move")
     # Entry 79.4: seeding the candidate sample from the board makes the teacher
     # a function of the observation. Costs nothing measurable (+0.053, t=+0.39,
     # n=300, entry 79.7) and lifts the 38.7% ceiling on imitating its moves.
@@ -1286,16 +1304,18 @@ def main() -> int:
     # `mode="move"` is the positional variant. Entry 78.2 re-derived its value
     # in the validated world: -0.330 (t=-2.53) for the teacher at c12/p1,
     # against 47.10's pooled -0.198 (t=-1.78) in the world entry 71.4 voided.
-    search_kwargs = (
-        {
-            "mode": "move",
+    search_kwargs = None
+    if args.expert_reposition:
+        search_kwargs = {
+            "mode": args.expert_reposition_mode,
             "panel_size": args.expert_reposition_panel,
             "max_candidates": args.expert_reposition_candidates,
-            "state_seeded": args.expert_reposition_state_seeded,
         }
-        if args.expert_reposition
-        else None
-    )
+        # Only `best_move` samples candidates, so only `best_move` takes this.
+        # `best_swap` picks the top bench units by (star, cost) and `best_board`
+        # likewise; both are already functions of the board.
+        if args.expert_reposition_mode == "move":
+            search_kwargs["state_seeded"] = args.expert_reposition_state_seeded
 
     started = time.perf_counter()
     if args.init_from:

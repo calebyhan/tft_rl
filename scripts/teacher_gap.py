@@ -63,18 +63,31 @@ def search_config(args: dict) -> dict | None:
     """
     if not args.get("expert_reposition", False):
         return None
-    return {
-        "mode": "move",
+    mode = args.get("expert_reposition_mode", "move")
+    config = {
+        # Defaults to "move" because that is the only mode that existed until
+        # doc 99 entry 107.6, and every run predating the flag was labelled by
+        # `best_move`. Reading it wrong is not a small error: `best_swap`
+        # decides *which bench unit is fielded* and `best_move` decides *where
+        # a fielded unit stands*, and 107.1 records the two being conflated in
+        # prose already.
+        "mode": mode,
         "max_candidates": args.get("expert_reposition_candidates", 6),
         "panel_size": args.get("expert_reposition_panel", 1),
+    }
+    # `state_seeded` is a `best_move` parameter. `best_swap` samples nothing --
+    # its candidates are the top bench units by (star, cost), so it is already
+    # a function of the board -- and passing the key would raise TypeError.
+    if mode == "move":
         # Defaults **False**, opposite to `best_move`'s own default. Runs
         # predating entry 79.4 were labelled by the free-running stream, and
         # rebuilding them state-seeded would score those clones against a
         # teacher that never labelled them -- the same failure this function
         # exists to prevent, arriving through a changed default rather than a
         # dropped key.
-        "state_seeded": args.get("expert_reposition_state_seeded", False),
-    }
+        config["state_seeded"] = args.get(
+            "expert_reposition_state_seeded", False)
+    return config
 
 
 def teacher_config(run_dir: Path) -> tuple[dict, dict, dict | None]:

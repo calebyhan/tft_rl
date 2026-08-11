@@ -30,6 +30,15 @@ cannot be settled by reading alone:
   picking between near-equivalent boards, and the churn buys nothing.
 
     .venv/bin/python scripts/search_determinism.py --states 60 --repeats 5
+
+**Answered, and it settled (1) vs (2) the other way** (doc 99 entry 107). With
+`state_seeded=True` -- the default since 79.4, and what this script now
+measures -- agreement is **100.0%**, all 60 states unanimous across 5 streams.
+(2) is fully repaired. A clone retrained on those single-valued labels fits
+SELECT 47.7% and PLACE 45.5%, against 79.2's 47.4% and 44.5%: unchanged. So
+(2) was real but was never the binding constraint, and (1) is the surviving
+explanation. Pass `state_seeded=False` in `probe_state` to reproduce 79.3's
+38.7%.
 """
 
 from __future__ import annotations
