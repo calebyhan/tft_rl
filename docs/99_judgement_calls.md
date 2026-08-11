@@ -204,6 +204,20 @@ check that refuted it. The sound residue: an intervention is only evidence
 about the model once it is a *good* implementation of the behaviour, which is
 lesson 21 restated. Kept as a record of a generalisation made too fast.
 
+**26. Relational features close a gap when the teacher's rule is a *function
+of the relation*. A teacher whose rule is a *simulation* has no such
+features.** Every relational widening that worked supplied a quantity the rule
+takes as an argument: `owned` and `synergy` for BUY, `copies` for SELL, the
+star and cost ranks for SELECT. Supply the argument and the label becomes
+nearly trivial — 91.2%, 100%, 100% on probes. `best_swap` is different in kind:
+its answer is the output of three combat trials against two boards, so no set
+of scoutable quantities determines it, and the one feature that would — the
+simulated margin — is the teacher's computation rather than a fact about the
+board. 41 hand-built relational floats moved the probe 2.5 points of a 32-point
+deficit. **Before widening an observation, check that the teacher's rule is a
+function of something, and not a procedure.** If it is a procedure, the student
+cannot be given its answer without being given its policy. (§110.3, §109.2)
+
 ---
 
 ## Index
@@ -10310,6 +10324,14 @@ holds at all three.
 
 ## 100. The reroll mispricing survives both fixes, and 86's table reproduces exactly (08-09)
 
+> **The measurement stands; the word "mispricing" is questioned by entry 111.**
+> `slowroll6` really does place +0.553 (t=+3.54) behind `standard`. But 111.4
+> decomposes that into a 23.6% miss branch placing 6.799 and a hit branch at
+> 4.516, and 111.5 argues the cause is that `slowroll6` cannot pivot off a
+> failed roll — a scripted-policy defect rather than a simulator one. The
+> engine's actual mispricing against real data is **+0.379 (t=+4.82)** and is
+> measured on 3-star holders across the whole field (111.2).
+
 98 declared every prior placement baseline void, correctly: removing two combat
 rounds per game is a rules change. This re-derives the one table that the whole
 of 97-99 exists to explain -- the econ archetypes -- and asks whether
@@ -11113,6 +11135,11 @@ n=150 one should not be quoted. **Entry 106 index status already ⚠️.**
 
 ### 108.3 The residual is SELECT alone, which is the useful part
 
+> **Quoted against the wrong maximum; see entry 109.3.** The localisation
+> stands. "54.7% against 86.3%" does not read as a fit failure: the
+> observation's achievable maximum for these labels is **61.2%**, and the clone
+> is at 89% of it — the same fraction it reaches in the plain arm.
+
 Expert states, deterministic prediction, all three clones:
 
 | action kind | nosearch | **swap** | move |
@@ -11152,5 +11179,496 @@ time, comparison has worked every time.
   ceiling near 0.2–0.35 on the agent.
 - The macro-action reformulation (105.6), untouched.
 - Everything from 107.6, 106.3 and 104.3.
+
+---
+
+## 109. The observation caps SELECT at 61% for the search rule and 93% for the plain one (08-10)
+
+108.4 asked for SELECT fit to be made the discriminator before any placement
+run. `scripts/select_probe.py` does it: train a probe on **nothing but the
+observation the clone already sees**, on **only** the SELECT decisions, and
+compare against the clone. No feature is invented, so nothing here depends on a
+judgement about what to encode.
+
+### 109.1 Read held-out, not training fit
+
+The obvious reading — CLAUDE.md's "a probe that cannot fit its own training set
+is a statement about the feature set" — does not apply directly. The
+observation is 381 continuous floats, so every row is unique
+(`duplicate_label_ceiling`: 100.0%, zero collisions across 6836 rows) and the
+probe reaches 100% train fit in every arm by memorising. Training fit
+discriminates only when memorisation is unavailable. The clone's own rate is
+measured on fresh episodes, so held-out is both the informative and the
+comparable quantity. Stated because the first version of this script asserted
+the opposite in its docstring.
+
+### 109.2 The measurement, with its control
+
+150 episodes each, identical teacher flags and econ, differing **only** in the
+search wrapper. 512 hidden, 4000 epochs, masked to legal slots, contested
+decisions only (>1 legal SELECT), 20% held out:
+
+| SELECT labels | contested n | majority | **probe held-out** | clone (108.3) | clone / probe |
+|---|---|---|---|---|---|
+| plain, `max(star, cost)` | — | — | **93.4%** | 86.3% | 92.4% |
+| swap, `best_swap` | 6836 | 28.2% | **61.2%** | 54.7% | 89.4% |
+
+**A 32-point split on the same observation with the same probe.** The plain
+rule reads quantities already carried per unit slot and the probe recovers it
+almost perfectly. The search rule is not recoverable.
+
+### 109.3 This reframes 108.3, and mostly in a good way
+
+The clone sits at **~90% of a dedicated probe in both arms** (92.4% and 89.4%).
+It is not differentially failing on the search labels; it tracks whatever the
+observation supports, and pays a uniform ~7-point multi-task cost for learning
+ten other action kinds at the same time.
+
+So 108.3's "SELECT 54.7% against 86.3%" is real but was quoted against the
+wrong maximum — lesson 6 again, and the third time in this project the same
+error has been caught (79.3, 101, here). Against its achievable 61.2% the clone
+is at 89%, which is *normal* transmission. **There is nothing to recover by
+training harder.** Better cloning, DAgger, more epochs and more capacity are
+all bounded above by 61.2%, and 81 already measured DAgger at -0.083 (t=-0.57).
+
+The remedy has to raise the 61.2%. That is the observation, and it is now a
+number that can be moved and re-measured in ~12 minutes per candidate feature
+instead of ~35 minutes per training run.
+
+### 109.4 Still open
+
+- Candidate features, hypothesis-first, each scored by this probe before any
+  clone is trained. The line CLAUDE.md draws matters here and should be stated
+  per candidate: `best_swap` decides by *simulated fight margin against a
+  panel*, so encoding that margin directly is copying the teacher's computation,
+  not learning. Legitimate candidates are the comparisons a player reads by
+  scouting — ours-versus-theirs on board value, star levels, trait tiers,
+  frontline counts — and the bench-versus-board comparison the argmax needs,
+  which requires a ranking across slots that a flat MLP will not derive.
+  61.2% is the number to beat.
+- Whether ~0.25-0.40 of teacher gain is worth the work at all (108.4).
+- The macro-action reformulation (105.6); everything from 108.4, 107.6, 104.3.
+
+---
+
+## 110. Relational features fail for the first time, and the reason is instructive (08-10)
+
+109.4 set 61.2% as the number to beat and named the line: encode the *inputs* to
+`best_swap`'s judgement, never the simulated margin itself, which is the
+teacher's computation rather than a fact about the board.
+
+### 110.1 The candidates, and why these
+
+Every relational feature the observation carries is **self-referential** —
+`owned` / `synergy` compare a shop slot to the player's own roster,
+`star_rank` / `cost_rank` / `copies` compare the player's units to each other.
+Nothing compares the player's board to an opponent's, and `best_swap` decides
+by fighting one. `star_rank` and `cost_rank` already span bench *and* board
+slots, which is exactly why the plain rule probes at 93.4%: the ordering its
+argmax needs is present.
+
+Two families added, 41 floats, both visible in the real client:
+
+- **trait delta, per unit slot** (37) — breakpoints the board gains by fielding
+  a benched unit, or loses by removing a fielded one. Hovering a unit shows
+  this. It is a dot product plus a threshold across slots, the operation 29 and
+  38.6 both measured a flat MLP failing to derive.
+- **board versus panel** (4) — unit count, value, best star, active trait tiers,
+  each as ours minus theirs, against the same panel `best_swap` uses.
+
+### 110.2 It does not work
+
+150 episodes, same seeds, same probe, 20% held out:
+
+| arm | width | probe held-out |
+|---|---|---|
+| observation only | 381 | **61.2%** |
+| + 41 relational floats | 422 | **63.7%** |
+| *(plain rule, for scale)* | 381 | *93.4%* |
+
+**+2.5 points against a 32-point deficit.** Held-out drifts 1-2 points across
+epochs in both arms (66.2% → 63.7% with features, 64.5% → 61.2% without), so
+the honest statement is that the effect is small and this single split does not
+establish it is real. Either way it is not a recovery. **Outcome 2 of the three
+named before the run.**
+
+### 110.3 The first failure of the relational rule, and what it refines
+
+CLAUDE.md states the project's most productive finding as: adding *description*
+has failed every time, adding a *comparison between* entities has worked every
+time. This is the first measured exception, and it does not overturn the rule so
+much as bound it.
+
+The comparisons that worked — `owned`, `synergy`, `copies`, the ranks — each
+supplied a quantity the teacher's rule **is a function of**. `max(bench,
+key=(star, cost))` is a function of ranks; the sell rule is a function of copy
+counts; BUY is a function of ownership and synergy. Supply the argument and the
+label becomes trivial.
+
+`best_swap`'s rule is not a function of any scoutable quantity. It is a function
+of a *combat simulation* — positions, ability timings, item procs, damage rolls
+over three trials against two boards. There is no small set of features whose
+value determines it, because the thing determining it is the simulator. The
+refinement:
+
+> Relational features close a gap when the teacher's rule is a **function of the
+> relation**. When the teacher's rule is a *simulation*, its output is not a
+> function of any feature short of running the simulation, and supplying the
+> output is copying rather than learning.
+
+That also retro-explains 79 and 108 better than "the observation is too narrow"
+did. Both searches were unclonable for the same reason, and no width of flat
+observation was ever going to fix it.
+
+### 110.4 What this closes
+
+The search-transmission programme, in full. Every branch is now measured:
+
+- deeper search — worth nothing (106)
+- removing hex choice — does not transmit (108)
+- fixing label noise — does not transmit (107)
+- training harder — bounded above by 61.2% (109)
+- widening the observation — +2.5 points (here)
+
+The prize was ~0.25-0.40 of teacher gain, of which none reaches the agent. This
+thread should stop. Recorded as a **negative result on a well-specified
+question**, which is the honest description: five entries and one day to close
+a direction that had been open and quoted since entry 47.
+
+### 110.5 Still open
+
+- **Fidelity, which matters more for the stated goal.** `slowroll6` still
+  places +0.553 (t=+3.54) worse than `standard` (100), and reroll lines are
+  viable in real TFT. An agent trained here learns something false about the
+  real game. That is a bigger obstacle to playing real TFT than the 0.3
+  placement this thread was chasing.
+- The macro-action reformulation (105.6) — the one remaining representation
+  change, and the only untried item that 110.3 does not argue against, since it
+  changes what a decision *is* rather than what describes it.
+- Everything from 109.4, 108.4, 104.3.
+
+---
+
+## 111. The reroll premise, measured at last: real lines are better, the engine's are neutral (08-10)
+
+Ten entries treated `slowroll6`'s **+0.553 (t=+3.54)** deficit (100) as a defect
+because reroll lines are mainstream, viable play in real TFT. The viability half
+came from general knowledge of the game and was never measured, while 2,000
+ranked Set 17 matches have sat in `data/reference/` since 97. Lesson 24 one step
+earlier: check the reference exhibits the phenomenon before quoting a gap
+against it.
+
+`scripts/reroll_reference.py` classifies a seat as **reroll** if its board at
+elimination holds a **cost-2 3-star** — the payoff `slowroll6` targets
+(`target_cost=2`), and the only trace the line leaves in end-of-game state,
+since Riot reports no roll counts and no level history.
+
+### 111.1 A methodology error of mine, recorded because it was tempting
+
+A seat that survives longer rolls more shops, so it both 3-stars more often and
+places better; the naive split is confounded. My first repair was to stratify on
+`last_round`, and it is **worse than the disease**. Elimination order essentially
+*is* placement in TFT — measured here, round 27 → 6.88, round 37 → 1.68 — so
+conditioning on it conditions on the outcome. Every within-stratum delta duly
+collapsed to ±0.18 and the survival-controlled mean read +0.069, which I briefly
+took for "reroll is neutral in reality". It is a collider control and shows
+nothing. The table is still printed, with a warning, and is not evidence.
+
+The design that works is the one the reference programme was built for: run the
+**engine** through the identical classifier and statistic, so a bias present in
+both arms cancels in the difference between them.
+
+### 111.2 The measurement
+
+| | reroll − other | t | n |
+|---|---|---|---|
+| real TFT (challenger + diamond) | **-0.410** | -9.58 | 16 000 |
+| engine, `DEFAULT_FIELD`, 1000 games | **-0.031** | -0.47 | 8 000 |
+| **engine − real** | **+0.379** | **+4.82** | |
+
+Reroll seats place **4.171** against **4.582** in real TFT: the premise is
+correct, the lines are genuinely good. In the engine the same seats place 4.475
+against 4.506 — neutral. The engine under-rewards the line by **0.379 ± 0.079**
+relative to reality, which is the reroll mispricing stated as a number for the
+first time in this project.
+
+At 250 games the engine arm read -0.121; at 1000 it reads -0.031. The 250-game
+figure was noise, and quoting it would have overstated the engine's fidelity.
+
+**An unlooked-for fidelity success.** Cost-2 3-star holders are **18.9%** of
+engine seats against **19.9%** of real ones. The engine 3-stars at very nearly
+the real rate.
+
+### 111.3 The payoff hypothesis dies a third time, and differently
+
+97.7 and 102.4 both proposed that the engine under-values a 3-star, and both
+were withdrawn. 111.2 kills the idea in a cleaner way than either: *holding* a
+cost-2 3-star in the engine is **neutral** (-0.031), not punished. Whatever
+costs `slowroll6` its 0.553, it is not that the payoff is weak once obtained.
+
+### 111.4 Where the deficit actually is
+
+`scripts/reroll_cost_probe.py`, 400 games, mixed field, splitting each archetype
+by whether it ever held the payoff (sticky, so a seat that hit and was later
+dismantled still counts as a hit):
+
+| archetype | hit rate | place \| hit | place \| miss | cost of miss | t | overall |
+|---|---|---|---|---|---|---|
+| standard | 0.2% | 4.000 | 4.252 | +0.252 | +0.25 | 4.252 |
+| fast8 | 0.0% | — | 3.962 | — | — | 3.962 |
+| hyperroll | 0.0% | — | 5.210 | — | — | 5.210 |
+| **slowroll6** | **76.4%** | **4.516** | **6.799** | **+2.283** | **+16.22** | **5.055** |
+
+Two separable effects, and neither is the 3-star's strength:
+
+- **The miss branch is catastrophic.** 23.6% of `slowroll6` seats never hit, and
+  they place 6.799. That is ~0.54 of the deficit on its own.
+- **Hitting is not enough.** A `slowroll6` seat that *does* 3-star still places
+  4.516, worse than `standard`'s 4.252 average. ~0.26 more.
+
+### 111.5 The new hypothesis, after two withdrawn ones
+
+> **REFUTED by entry 112.3.** Implemented at the round the hit distribution
+> actually supports (5-2), the pivot improves the miss branch by 0.584 and
+> moves the archetype **+0.006 (t=+0.05)**. The miss branch is real and is not
+> where the deficit lives. 112.4 has what replaces this.
+
+`slowroll6` **cannot pivot**. Its `roll_floors={'3-2': 50}` and level targets
+hold it at level 6 until 5-1 whether or not it is hitting, so a seat that bricks
+keeps rolling a shop that has already failed it, on a six-unit board, into stage
+5. A real player who has not hit by 4-2 abandons and levels.
+
+If that is the cause, then `slowroll6`'s deficit is a **scripted-policy defect,
+not an engine mispricing** — and entries 96–103 were investigating an artefact
+of the field rather than the simulator. That would not void 111.2's +0.379,
+which is measured on 3-star *holders* across the whole field and is independent
+of any one archetype's plan.
+
+This is the same shape as 99 (interest floor with no endgame clause) and the
+`desperation_hp` work, both of which fixed cleanly and bought nothing in
+placement. The honest prior is therefore that the pivot closes the *miss branch*
+and does not move the agent. It is still worth doing, because the claim under
+test here is **fidelity**, not agent strength, and a field that plays a line no
+real player would play is a bad comparator regardless of what it costs.
+
+### 111.6 Still open
+
+- Implement the pivot and re-measure both the archetype table and 111.2's
+  difference of differences. Named outcomes first, and note that a pivot changes
+  `slowroll6` into something that is no longer a slow roll if set too eagerly —
+  lesson 25's residue, an intervention is only evidence once it is a *good*
+  implementation.
+- The residual +0.264 on the hit branch, which the pivot cannot touch: a
+  six-unit board of 3-stars losing to an eight-unit board of 2-stars is the
+  "board size dominates" finding (67, 68, 72) meeting the reroll line head-on.
+  That, not 3-star strength in isolation, is where a real payoff mispricing
+  would live.
+- Whether real *missed* reroll attempts can be identified at all. They are
+  invisible in end-of-game state, which bounds what this reference can settle.
+- Everything from 110.5.
+
+---
+
+## 112. The pivot works, and is worth nothing; 111.5 refuted (08-10)
+
+111.5 proposed that `slowroll6`'s deficit is a scripted-policy defect — the plan
+has no clause for not hitting, so a bricked seat keeps rolling a failed shop
+into stage 5. `pivot_at` implements the clause: once the round arrives and the
+seat holds **zero** 3-stars at its target cost, targeting is dropped, the roll
+floor becomes `pivot_floor`, and the level curve falls back to `STANDARD`'s.
+Inert by default (`pivot_at=""`), so every pre-112 number reproduces.
+
+Wired into **all three** consumers on **both** sides — `reroll_targets`, the
+roll floor and the level curve, in `GreedyPolicy` and the teacher — per entry
+86's rule.
+
+### 112.1 The first arm deleted the archetype, and that is my error
+
+Pivot at 4-2, the round a real player abandons:
+
+| arm | slowroll6 | hit rate | place \| hit | place \| miss | standard | deficit |
+|---|---|---|---|---|---|---|
+| no pivot | 5.055 | **76.4%** | 4.516 | 6.799 | 4.252 | +0.803 |
+| pivot 4-2 | 4.470 | **6.1%** | 4.143 | 4.491 | 4.446 | **+0.024** |
+
+The deficit all but vanished, and it means nothing: the archetype stopped being
+a reroll line. **Outcome 3 of the four named before the run** — lesson 25's
+residue, an intervention is only evidence once it is a good implementation.
+
+I took the real-player heuristic "no hit by 4-2, abandon" and assumed the timing
+transfers, without measuring when this engine's `slowroll6` actually hits.
+
+### 112.2 When it actually hits
+
+600 `slowroll6` seats, 300 games, round of **first** cost-2 3-star:
+
+| round | 4-2 | 4-3 | 4-4 | 4-5 | 4-6 | 4-7 | 5-1 | 5-2 | 5-3 | 5-4 | 5-5 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| first hits | 18 | 39 | 51 | **95** | 83 | 72 | 49 | 7 | 12 | 15 | 14 |
+| cumulative | 4.0% | 10.5% | 19.0% | 34.8% | 48.7% | 60.7% | 68.8% | 70.0% | 72.0% | 74.5% | 76.8% |
+
+**4.0% have hit by 4-2**, which is the 6.1% above. The marginal rate collapses
+after 5-1 (49 → 7), so 5-2 is where abandoning costs almost nothing — a rule
+read off the distribution rather than a round chosen and then justified.
+
+### 112.3 At the right round it is a clean null
+
+| arm | slowroll6 | hit rate | place \| hit | place \| miss | standard | deficit |
+|---|---|---|---|---|---|---|
+| no pivot | 5.055 | 76.4% | 4.516 | 6.799 | 4.252 | +0.803 |
+| pivot 5-2 | 5.061 | 71.5% | 4.601 | **6.215** | 4.252 | +0.810 |
+
+**+0.006, t=+0.05, n=800 seats.** The pivot does what it was built to do — the
+miss branch improves by 0.584 — and the gain is spent exactly: hit rate falls
+4.9 points and the hitters lose 0.085. Net zero.
+
+`standard` read **+0.000 (t=+0.00)** here against **+0.194 (t=+2.10)** in the
+4-2 arm, which is the sanity arm working. That movement is not a confound to be
+removed but arithmetic: placements in a lobby sum to a constant, so an archetype
+cannot gain without the other seats losing. It is why the deficit against
+`standard`, not raw archetype placement, is the statistic.
+
+### 112.4 What this settles
+
+**111.5 is refuted, and it was mine.** The miss branch is real, is worth 0.584
+to the seats in it, and is *not* where the deficit lives — closing it changes
+nothing. The third time in this log a policy defect has been found, fixed
+cleanly, and bought nothing (99, 103, here), which is now less a run of bad luck
+than a property of this field.
+
+Read together with 112.1, something stronger follows. Abandoning at 4-2 gives a
+deficit of +0.024 and abandoning at 5-2 gives +0.810: **the earlier the line is
+abandoned the better it does, and the best available version of `slowroll6` is
+to not slow roll at all.** In this engine the reroll line is dominated at every
+pivot point tested.
+
+That returns the mispricing to the simulator, where 111.2 measured it at
+**+0.379 (t=+4.82)** against real data — and no policy patch to the field
+touches it. 111.3 already killed "a 3-star is worth too little" in isolation.
+The surviving candidate is 111.6's: a six-unit board of 3-stars losing to an
+eight-unit board of 2-stars, which is "board size dominates" (67, 68, 72)
+meeting the reroll line head on.
+
+### 112.5 Still open
+
+- The board-size interaction, now the only surviving explanation for the +0.379.
+  It is a *combat* question and testable without any policy: field a fixed
+  six-unit 3-star board against an eight-unit 2-star board and measure, rather
+  than inferring from placements.
+- `pivot_at` stays in the tree, inert, tested and measured. It is the right
+  behaviour for a field meant to resemble real play even though it costs
+  nothing, but it should not be switched on silently — that would move every
+  field number for no gain.
+- Everything from 111.6 and 110.5.
+
+---
+
+## 113. It is the board slot, not the 3-star: real boards lose at 36.2% carrying more value (08-10)
+
+112.4 left one candidate for the +0.379 mispricing: a six-unit board of 3-stars
+losing to an eight-unit board of 2-stars. Every number in that chain came from
+placements. This asks it in combat, where there is no economy, no shop and no
+elimination order.
+
+### 113.1 Two harness errors, both caught by controls
+
+**The positioning was mirrored twice.** `place_team`'s contract is "row 0 is the
+front line" for *both* teams -- `Board.to_combat` mirrors team 1 onto the far
+half. The first version passed rows 3/2 for team 0 and 0/1 for team 1, putting
+team 0's melee in its **back** row. A same-archetype control, which must be 50%
+by symmetry, read **35.6% with a -2.38 survivor margin**: nearly the whole
+cross-archetype effect was the handicap. Fixed, the controls read 52.6% (+0.44)
+and 50.2% (-0.05).
+
+Without the control this would have been reported as a decisive finding. It cost
+one line to include.
+
+**The idealised probe was not value-matched.** Six cost-2 3-stars is 108 board
+value; eight cost-3 2-stars is 72. The 100% win rate in that row measures a 50%
+value advantage, not a slot trade, and it does not refute anything. Kept below
+for what it does show, labelled.
+
+### 113.2 What the isolated fights do show
+
+40 trials per row, champions redrawn per trial and identical across the row:
+
+| left | right | win | margin |
+|---|---|---|---|
+| 1x cost-1 3-star | 1x cost-3 2-star | 90.0% | +0.80 |
+| 1x cost-2 3-star | 1x cost-4 2-star | 62.5% | +0.25 |
+| 1x cost-3 3-star | 1x cost-5 2-star | 61.3% | +0.23 |
+
+**The design heuristic holds.** A 3-star of cost N beats a 2-star of cost N+2,
+mildly, which is what "roughly equivalent" should look like. Star stats come
+from per-champion arrays in the Riot payload rather than a computed multiplier,
+so there was no scaling constant to be wrong -- and this confirms none is.
+
+### 113.3 The real boards, with no idealisation at all
+
+Final boards captured from 400 games of `DEFAULT_FIELD`, then replayed head to
+head, 1200 fights per row, **items included**:
+
+| matchup | win | margin | value L | value R | units L | units R |
+|---|---|---|---|---|---|---|
+| **slowroll6 vs standard** | **36.4%** | **-2.42** | **66.3** | 65.2 | **7.61** | 9.05 |
+| fast8 vs standard | 55.0% | +0.80 | 64.2 | 65.5 | 9.16 | 8.97 |
+| *standard vs standard* | *50.2%* | *-0.06* | | | | |
+| *slowroll6 vs slowroll6* | *52.6%* | *+0.28* | | | | |
+
+**Precision, because it bit.** The headline is stable across captures --
+36.2%/-2.23 at 150 games, 36.4%/-2.42 at 400 -- but at **40** games it read
+**52.0%/-0.27**, drawn from only 80 `slowroll6` boards whose mean value happened
+to be 70.2 rather than 66. The varying quantity is *which boards are captured*,
+not the fights, so fight count does not buy precision and the capture size must
+be reported. `fast8 vs standard` has **not** settled (48.2%, 49.0%, 55.0% across
+three captures) and should not be quoted beyond its sign.
+
+And the compositions those archetypes actually reach, 200 games:
+
+| archetype | place | level | units | 3-stars | 2-stars | value |
+|---|---|---|---|---|---|---|
+| standard | 4.25 | 8.63 | 8.97 | 0.01 | 8.40 | 65.50 |
+| fast8 | 4.03 | 8.70 | 9.12 | 0.00 | 7.63 | 61.80 |
+| **slowroll6** | 4.97 | **7.29** | **7.67** | **1.34** | 6.13 | **66.50** |
+| hyperroll | 5.24 | 8.03 | 8.46 | 0.15 | 7.24 | 44.47 |
+
+`slowroll6` reaches **1.34** 3-stars, not six -- which is why 113.1's idealised
+matchup was the wrong question as well as the wrong measurement.
+
+### 113.4 The finding
+
+Read the two tables together:
+
+- `slowroll6` carries **more** board value than `standard` (66.3 against 65.2 in
+  the matched fights, and the highest end-of-game value of any archetype at
+  66.50) on **1.44 fewer units**, and loses by 2.42 survivors at a 36.4% win
+  rate.
+- `fast8` carries slightly **less** value on slightly **more** units and is at
+  worst even and at best ahead (48.2-55.0% across captures).
+
+> **A board slot is worth more than the value in it.** Concentrating the same
+> gold into fewer, higher-star units is a losing trade in this engine, and
+> spreading less gold over more units is free.
+
+That is the mispricing, and it is neither the 3-star's stats (113.2, and 111.3)
+nor any policy (112). It is the marginal value of a slot -- which is "board size
+dominates" (67, 68, 72) restated as a fidelity defect rather than an
+observation about the agent, and it explains why every archetype that trades
+slots for quality has underperformed since entry 73.
+
+### 113.5 Still open
+
+- **The mechanism.** The most likely candidate is trait breakpoints: more units
+  activate more traits, and the probe's own trait columns move with unit count
+  (2.3 for the six-unit side against 3.0 for the nine-unit side). If a slot's
+  worth is mostly its trait contribution, then the engine's trait tiers are
+  doing work Riot's do not. Directly testable by re-running 113.3 with traits
+  disabled on both sides.
+- Whether real TFT shows the same slot dominance. `data/reference/` carries unit
+  counts per participant and can be conditioned the same way, which would put a
+  number on the marginal slot in reality for comparison.
+- `scripts/star_value_probe.py` keeps its idealised row. It should be made
+  value-matched before it is quoted for anything.
+- Everything from 112.5 and 110.5.
 
 ---
