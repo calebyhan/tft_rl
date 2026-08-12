@@ -11672,3 +11672,208 @@ slots for quality has underperformed since entry 73.
 - Everything from 112.5 and 110.5.
 
 ---
+
+## 114. A board slot is worth 2.9 star-ups, and that closes the arithmetic (08-11)
+
+113.4 claimed a slot is worth more than the value in it, inferred from two
+archetypes differing in several ways at once. `scripts/slot_value_probe.py`
+prices both sides directly: take one captured `standard` board, perturb exactly
+one thing, and fight it against an unperturbed board from the same pool.
+
+### 114.1 Traits are not the mechanism
+
+113.5's first candidate, tested by stripping every champion's trait tuple so no
+breakpoint can activate, with boards still *captured* from normal games:
+
+| | slowroll6 vs standard | control (std v std) |
+|---|---|---|
+| traits on | 36.4%, **-2.42** | 50.2%, -0.06 |
+| traits off | 39.7%, **-1.81** | 50.7%, -0.01 |
+
+Breakpoints account for **0.61 of 2.42** — about a quarter. Three quarters
+survives with every trait in the game disabled. **Outcome 2 of the three named
+before the run**: it is bodies, not tiers.
+
+### 114.2 The two prices
+
+300 games -> 900 `standard` boards, 900 fights per row. Units are dropped or
+upgraded **weakest first** (by star, then cost), which is the order a real plan
+sheds or stars them:
+
+| perturbation | margin | win | per unit |
+|---|---|---|---|
+| none (control) | +0.37 | 52.8% | — |
+| drop 1 weakest | -1.86 | 38.0% | **-2.23** |
+| drop 2 weakest | -4.08 | 24.8% | **-2.23** |
+| drop 3 weakest | -5.60 | 15.6% | -1.99 |
+| upgrade 1 to 3-star | +1.14 | 56.9% | **+0.77** |
+| upgrade 2 to 3-star | +1.91 | 62.7% | **+0.77** |
+| upgrade 3 to 3-star | +2.84 | 69.6% | +0.82 |
+
+> **A board slot is worth ~2.2 survivors. A star-up is worth ~0.78. The slot is
+> worth 2.9x the star-up.**
+
+Both prices are linear in k, which is itself worth noting: there is no
+diminishing return on slots over the range that separates these archetypes, and
+none on star-ups either.
+
+### 114.3 It closes 113's arithmetic
+
+`slowroll6` trades **1.44 slots for 1.33 star-ups** (113.3):
+
+| | |
+|---|---|
+| cost of the slots | 1.44 x 2.23 = **-3.21** |
+| gain from the star-ups | 1.33 x 0.78 = **+1.04** |
+| predicted margin | **-2.17** |
+| measured margin (113.3) | **-2.42** |
+
+Two independently measured prices predict ~90% of a deficit measured a
+different way. That is the strongest quantitative account this project has of
+why any archetype under-performs, and it is a statement about the **simulator**,
+not about a policy or an observation.
+
+It also explains the shape of everything since 73 without needing 3-stars to be
+weak: `hyperroll` (8.46 units) and `slowroll6` (7.67) are the two archetypes
+that end with the fewest slots and the two that place worst; `fast8` ends with
+the most (9.12) on the *least* value and places best.
+
+### 114.4 What this does and does not establish
+
+> **Answered by entry 115.2, and the answer is no.** Measured in placement in
+> both arms, real TFT prices a slot at **2.62** star-ups against the engine's
+> **1.97** — the engine values a 3-star *more* relative to a slot than reality
+> does, which is the wrong direction to explain the reroll deficit. The prices
+> below stand as facts about the engine; the defect is not in their ratio.
+
+It does **not** yet establish that 2.9x is wrong. It is the engine's exchange
+rate; whether real TFT's differs is a separate measurement, and the +0.379 of
+111.2 says only that *something* differs.
+
+Two cautions on the numbers themselves:
+
+- The k=0 control reads **+0.37**, not 0.00. Every `per unit` figure is a
+  difference from that control rather than from zero, which is why the row
+  exists — but a residual that size means the two-decimal precision above is
+  not real, and the honest claim is "about 2.2 against about 0.8".
+- The drop rows remove the **weakest** units, so -2.23 is the price of a
+  *marginal* slot. A slot holding a carry is worth more, and this says nothing
+  about that.
+
+### 114.5 Still open
+
+- **The reference comparison, which is now the decisive one.** Real matches
+  carry unit counts and star levels per participant, so the marginal placement
+  per unit and per 3-star can be measured in `data/reference/` and in the engine
+  by the same method. Neither figure is clean alone — the survival confound of
+  111.1 applies to both — but the *ratio* compared across arms is the same
+  difference-of-differences design that worked in 111.2. If real TFT prices a
+  slot at well under 2.9 star-ups, the engine's exchange rate is the defect and
+  it is a single, findable thing.
+- Why a slot is worth 2.2 survivors when traits are off. Candidates are the
+  focus-fire and target-selection rules (more bodies absorb more attacks) and
+  the survivor-margin measure itself rewarding bodies mechanically — the latter
+  would make the *metric* partly responsible and is worth checking before the
+  exchange rate is called a defect.
+- Everything from 113.5, 112.5 and 110.5.
+
+---
+
+## 115. The exchange rate is not the defect; the field's archetype coverage is (08-11)
+
+114.5 set the decisive test: price a slot against a star-up in *both* arms, in
+the same units, and compare the ratios. Survivor margin does not exist in Riot's
+data, so the common currency is placement — fit
+`placement ~ b0 + b_units * units + b_stars * three_stars` per arm and read
+`b_units / b_stars`. Neither coefficient is causal, but the confound sits in
+both arms, so comparing ratios is 111.2's design.
+
+### 115.1 The metric was not inflating the slot
+
+114.5 worried that survivor margin rewards bodies mechanically. It does not
+inflate the result — read off 114.2's own win-rate column, which has no
+body-count term:
+
+| measure | slot | star-up | ratio |
+|---|---|---|---|
+| survivor margin | -2.23 | +0.77 | 2.9x |
+| win rate | -14.8pp | +4.1pp | **3.6x** |
+
+The body-independent measure gives a *larger* ratio, so if anything margin
+understates the slot.
+
+### 115.2 Real TFT prices the slot higher, not lower
+
+| arm | b_units | b_stars | **slots per star-up** | n |
+|---|---|---|---|---|
+| real | -1.062 | -0.406 | **2.62** | 15 995 |
+| engine | -1.452 | -0.739 | **1.97** | 3 200 |
+
+Every coefficient is negative in both arms, so the fits are interpretable
+(the failure mode named before the run was a positive coefficient, meaning the
+survival confound had swamped the quantity).
+
+**Outcome 2 of the three named, and opposite in direction to 114's hypothesis.**
+The engine values a 3-star *more* relative to a board slot than reality does. If
+the exchange rate were the reroll defect, `slowroll6` would be over-performing
+here. 114.4 declined to claim 2.9x was wrong; that caution was right.
+
+### 115.3 The gap that is real: the engine only 3-stars what a policy targets
+
+3-stars per seat, by champion cost, both arms conditioned identically:
+
+| cost | real | engine | ratio |
+|---|---|---|---|
+| 1 | 0.271 | 0.025 | **0.09** |
+| 2 | 0.326 | 0.335 | **1.03** |
+| 3 | 0.179 | 0.003 | **0.01** |
+| 4 | 0.011 | 0.000 | 0.00 |
+| 5 | 0.003 | 0.000 | 0.00 |
+| **total** | **0.790** | **0.363** | **0.46** |
+
+Cost-2 matches reality to within 3%. Costs 1 and 3 are at **9%** and **1%** of
+it. The cause needs no measurement: `DEFAULT_FIELD` is 3 standard, 2 fast8, 2
+`slowroll6` (`target_cost=2`) and 1 `hyperroll` (`target_cost=1`). **No seat
+targets cost 3**, and one of eight targets cost 1. The engine 3-stars precisely
+what some plan aims at and essentially nothing else, because `reroll_targets`
+returns empty without `target_cost` and an untargeted seat spreads its buys
+(entry 73, entry 86).
+
+This is a **field coverage** gap, not a simulator one, and it is the largest
+single fidelity discrepancy now measured. It also retro-justifies 111.2: that
+difference-of-differences was computed on cost-2 3-star holders, the one cost
+where the two arms agree.
+
+### 115.4 Two measurements now disagree, and that is the honest state
+
+- 111.2, on pooled placement of cost-2 3-star holders: the engine
+  **under**-rewards the line by +0.379 (t=+4.82).
+- 115.2, on the slot/star-up ratio: the engine **over**-values a 3-star relative
+  to a slot, 1.97 against 2.62.
+
+Both are confounded, differently — 111.2 by survival, 115.2 by whatever units
+and 3-star counts jointly proxy — and they point opposite ways. So neither is a
+clean causal estimate of what a 3-star is worth, and **the reroll question is
+not settled**. What is settled is narrower and firmer: 114's prices are real
+within the engine and predict 90% of the combat deficit; 113.2 shows the star
+stats themselves are right; 115.3 shows the field does not attempt most of the
+reroll lines real players run.
+
+Recorded as an open disagreement rather than resolved in favour of whichever
+number is more convenient.
+
+### 115.5 Still open
+
+- **Add a cost-3 reroll archetype to `DEFAULT_FIELD`** and re-measure 115.3.
+  Real players 3-star cost-3 units at 0.179 per seat; this field does it at
+  0.003. That is a concrete, bounded change with a stated target, and it is the
+  first fidelity item in this whole arc that is not a hypothesis about the
+  simulator.
+- Whether the field's *composition* (3/2/2/1) matches real archetype shares at
+  all. It was chosen in entry 70 without reference data; `data/reference/` can
+  now estimate the real mix from 3-star costs and final levels.
+- Reconciling 115.4's two measurements, which probably needs an estimator that
+  is not cross-sectional.
+- Everything from 114.5, 113.5 and 110.5.
+
+---
