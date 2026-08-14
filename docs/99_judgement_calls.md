@@ -13040,3 +13040,281 @@ itself parked.
 - Nothing shipped in 119-127.
 
 ---
+
+## 128. Closing the fidelity arc (08-12)
+
+Entries **111-127: seventeen entries, zero behaviour changes shipped.** Closing
+it deliberately rather than drifting out of it, and recording why, so the next
+person does not reopen it by reflex.
+
+### 128.1 What it was for and what it returned
+
+The arc asked whether this engine reproduces real TFT's 3-star economy, on the
+premise that a simulator that does not cannot train an agent that transfers. It
+answered that question, negatively and thoroughly:
+
+- Real 1-cost hitters sit at level 8.34 placing 4.42; 3-cost hitters place 4.01
+  (124.1). Real seats hit **and** play well.
+- This engine cannot do both on **any** tier. Fidelity costs 0.26-0.52
+  placement at cost 1, 0.774 at cost 2, 0.96 at cost 3 (127.2).
+- The cause is not the roll floor (121.2), not the competing buy phase (122.2),
+  not targeting, coverage, odds, pools or contention (116-118), and not the
+  strategy specification (126.1). It is that a seat rolling to zero earns ~9
+  gold a round, because interest is computed on gold it no longer holds
+  (123.2).
+- The economy constants that would explain it are `community_documented` and
+  **unverifiable from the match sample**, which carries `gold_left` and no
+  per-round ledger (124.4). Real dedicated-seat hit rates are likewise
+  unmeasurable — hits are observable, attempts are not (126.5).
+
+So the arc ends on a structural negative with no remaining measurable
+hypothesis. That is a legitimate result and it is also a stopping condition.
+
+### 128.2 Why nothing shipped, restated in one place
+
+Each candidate was declined for a stated reason, not left undecided:
+
+| change | measured | why not shipped |
+|---|---|---|
+| `desperation_hp`, `keep_pairs` | 99, 104 | inert defaults, opt-in |
+| `commit_level` | 119 | −0.524 placement for fidelity on one metric |
+| surplus roll floors | 121 | best arm t = −1.19, one of five |
+| `roll_buys="targets"` | 122 | +0.256 placement cost, t = +2.45 |
+| `SLOWROLL7` re-spec | 126 | archetype not fielded; fidelity and placement pick different arms |
+| `SLOWROLL6` levelling | 127 | +0.774 placement but destroys the only fidelity match, and invalidates every baseline |
+
+The one unambiguous finding — **parking at a low level costs 0.774-0.96
+placement** — applies only to reroll archetypes, and the teacher runs
+`standard`, which does not park. It therefore does not reach the agent.
+
+### 128.3 The state of the actual goal
+
+All nine milestones in doc 03 sec 4 are built. The agent is at **parity with its
+scripted teacher** (4.567 vs 4.620, n=300) and no RL configuration has passed
+it. That is the project's real open problem and the fidelity arc was never going
+to move it: imitation is bounded by the teacher, and seventeen entries of
+simulator validation do not raise a teacher.
+
+**Two directions remain, and they are genuinely different work:**
+
+1. **Beat the teacher.** The core unsolved problem. Economy improvements
+   transmit to the clone at 89% (entry 75); positional and search improvements
+   do not (79, 106-110), and the search-transmission programme is closed
+   (lesson 26). Scripted-economy tuning is now also exhausted (88, 126, 127).
+   What has never been tried is a teacher that is not a scripted policy.
+2. **Build the bridge to real TFT.** The stated end goal, and entirely unbuilt:
+   nothing in the repo reads a real game or emits real inputs. It would surface
+   a different class of problem — observation extraction, latency, action
+   legality against a live client — none of which any simulator work addresses.
+
+Recording both rather than picking one, because the choice is a project
+direction rather than a measurement, and this log is not the place to make it
+silently.
+
+### 128.4 Do not reopen without
+
+- a data source with a **per-round gold ledger**, which would make 123.2's
+  income ceiling testable against reality; or
+- evidence that a specific **mechanic is missing** from the engine, rather than
+  a constant being wrong — the constants have been eliminated as far as this
+  sample allows.
+
+Absent either, more strategy-parameter A/Bs will keep landing on the same
+frontier, which nine entries have now traced from three independent directions.
+
+---
+
+## 129. Shortening the causal chain changes nothing: the reward is not the problem (08-12)
+
+First entry of the RL-directed work that follows 128.3. Entry 91 found that a
+single action does not measurably move **final placement** (1098 deviations,
+largest |t| = 1.82) and concluded that PPO's advantages fit noise. The obvious
+reading -- and the one most RL debugging instinct reaches for -- is that the
+reward is too sparse: ~400 actions credited against one terminal number twenty
+rounds away.
+
+`scripts/round_credit.py` tests that directly. Same counterfactual as 91, same
+replay-from-seed, same "draw an alternative from the policy's own support"; only
+the **outcome variable** moves, from final placement to the HP lost in the *very
+next fight*. Causal chain: twenty rounds → one.
+
+1072 deviations at `bc-econ-s0`:
+
+| kind | n | hp cost | t |
+|---|---|---|---|
+| END_PLANNING | 68 | +0.250 | 0.58 |
+| SELL | 323 | +0.245 | **1.82** |
+| BUY_XP | 74 | +0.122 | 0.44 |
+| SELECT | 99 | +0.071 | 0.36 |
+| BUY | 311 | +0.029 | 0.19 |
+| PLACE | 133 | −0.113 | −0.84 |
+| REROLL | 21 | −0.429 | −0.40 |
+| EQUIP | 26 | −0.731 | −1.19 |
+| **ALL** | **1072** | **+0.073** | **0.95** |
+
+### 129.1 Outcome B, and C did not appear
+
+Largest per-kind |t| is **1.82** — the same figure entry 91 got against final
+placement, from a chain twenty times longer. Overall mean 0.073 HP at t = 0.95,
+against fights that typically cost 2-11 HP.
+
+The predicted outcome was **C**: board actions (BUY, SELECT, PLACE) should move
+the next fight because they change the board that fights it, while economy
+actions pay off rounds later. **It did not appear.** BUY sits at t = 0.19,
+SELECT 0.36, PLACE −0.84 — indistinguishable from `BUY_XP` and `END_PLANNING`.
+Naming C in advance is what makes that readable as a result rather than as a
+disappointing table.
+
+### 129.2 What this eliminates
+
+**Reward sparsity is not the cause, and no denser reward fixes this.** Per-round
+combat outcome is the densest well-founded signal this domain offers — it is
+observable, immediate, and directly caused by the board that fights — and a
+single action does not move it either. Anything less immediate is strictly
+worse.
+
+That retires the whole reward-engineering class: per-round rewards, potential
+shaping (92-93 already refuted its credit distribution), reward scaling,
+discount tuning. None of them address what is actually wrong.
+
+### 129.3 What is actually wrong, restated
+
+91.2 had it and its importance was under-read: substituting the **teacher's**
+action cost −0.194 at t = −2.28 (entry 82), while substituting an action from
+**the clone's own distribution** measures nothing. The problem is not the signal
+that follows the action; it is that the actions being compared are
+near-equivalent. The clone's top-two choices are interchangeable, so no outcome
+variable — however immediate — can separate them.
+
+**RL from a reward signal requires that the policy's own alternatives differ in
+value. Here they do not, at this action granularity.** That is a property of the
+action space, not of the reward, the critic, the entropy schedule, or the data
+volume (96 already refuted 33× the data).
+
+### 129.4 The one lever this leaves, and why it is plausible
+
+If actions are individually null but collectively decisive, the fix is to make
+each decision bigger: **one decision per round rather than ~400 per episode.**
+The action space is currently micro (`BUY slot`, `SELECT`, `PLACE hex`), and
+`rl/search.py` already operates at the coarser granularity — `best_board`
+chooses a whole board for a round.
+
+There is direct evidence that granularity carries signal where the micro one
+does not: entry 106 measured search worth **0.527 placement** to the teacher.
+Round-level board choices move outcomes measurably; the micro-actions composing
+them do not.
+
+The caution against it is equally direct, and has to be stated before any work
+starts: entries 106-110 measured that search-derived improvements **do not
+transmit to the clone**, and lesson 26 explains why — a teacher whose rule is a
+*simulation* cannot be cloned from scoutable features. Temporal abstraction for
+*RL* is a different claim from cloning a search teacher, but it inherits the
+risk that the coarse action's value is only computable by simulating it.
+
+### 129.5 Still open
+
+- Whether a coarse (per-round) action space makes the counterfactual signal
+  measurable. **That is the same probe run against a coarse policy**, and it is
+  the cheapest possible test of the idea before any training run — measure the
+  signal first, exactly as 129 did, rather than training and reading the curve.
+- Nothing shipped.
+
+---
+
+## 130. Not granularity either: the value of a decision is genuinely diffuse (08-18)
+
+129.5 asked for the cheapest test of 129.4's one remaining lever -- coarsen the
+action space -- before building anything. `scripts/round_decision_credit.py`
+runs 129's counterfactual with the **decision** coarsened instead of the
+outcome: suppress one round's whole-board decision from
+`search_policy(mode="board")`, fall back to the base policy's board (a
+legitimate policy output, not a random one), and measure the HP lost in that
+round's fight. Both branches replay from one seed; placement actions draw
+nothing from the match RNG, so the combat seed is identical and the pairing is
+exact.
+
+80 episodes, **1151 round-level deviations**; the search changed the board in
+44.9% of rounds.
+
+| quantity | n | hp cost | t |
+|---|---|---|---|
+| one round's board decision | 1151 | +0.050 | **0.74** |
+| rounds 0-11 | 388 | +0.082 | 1.37 |
+| rounds 12+ | 763 | +0.033 | 0.34 |
+
+**Outcome B.** Coarsening the decision by roughly thirty times changes nothing:
+t = 0.74, against t = 0.95 for a single micro-action (129) and max |t| = 1.82
+for a micro-action against final placement (91). Three probes, three
+granularities, three nulls.
+
+### 130.1 The tension that resolves it
+
+> **CORRECTED, same day.** This section first quoted entry 106's **0.527**
+> placement for the search. 108.2 says in terms that the n=150 figure "should
+> not be quoted": it replicated at **−0.243 (t = −2.00) at n=300**, less than
+> half, with the no-search baselines differing too. I cited the withdrawn
+> number from the index line rather than re-deriving it — the exact failure
+> lesson "re-derive before citing" names, on an entry already carrying a ⚠️.
+> Figures below use 0.243. The correction **strengthens** the conclusion, which
+> is why it was worth catching rather than quietly keeping.
+
+The search is worth **0.243 placement (t = −2.00, n=300)** over a whole game
+(108.2). That is modest and barely significant, but it is not zero. So the
+search has some real value and no single application of it is detectable.
+
+The arithmetic reconciles them. The search fires 14.4 times a game, so 0.243
+placement is **0.017 placement per application** -- a genuinely tiny
+per-decision effect. On the HP measure, the per-decision standard deviation is
+**2.29 HP** against a mean effect of 0.050, so the effect is **~46× smaller
+than its own standard deviation**, the 95% CI is [−0.082, +0.182], and detecting
+the mean at t = 2 would need **~8,400 deviations** — 584 episodes of this probe,
+about seven hours.
+
+(A second correction: this section first characterised the effect as swamped by
+variance "roughly 2,000× its size". That conflated the required *sample count*
+with a variance ratio. The ratio of standard deviation to effect is **46×**;
+the ~8,400 figure is what that ratio implies for n, being roughly
+`(2 · sd / mean)²`.)
+
+**The value of a decision here is real, tiny, and 46× smaller than the noise on
+a single measurement of it.** That is the whole account, and it is not a defect
+of the reward, the critic, the horizon, the entropy schedule, the data volume
+(96), or the action granularity (130).
+
+### 130.2 What this closes
+
+PPO's advantage estimate is `Q(s,a) − V(s)` from sampled returns. If separating
+one decision from its alternative needs ~8,400 samples of *that decision in that
+kind of state*, and a training run sees a few hundred thousand transitions
+spread across an enormous state space, the estimator cannot resolve the signal.
+**It fits noise because the signal is below its resolution, and no
+reward-side or action-side reshaping raises it.** 89-96 each refuted a proposed
+mechanism; this is why every one of them was refuted.
+
+It also explains cleanly why imitation works here and RL does not: **cloning
+never needs per-decision credit.** It copies a policy whose *aggregate* is good,
+which is exactly the quantity that is measurable in this domain.
+
+### 130.3 The one method whose requirements match
+
+Optimising aggregate return without per-decision credit is what
+evolutionary/population methods do, and entry 94 already priced it here: a flat
+fitness landscape then a cliff, **viable only at 3-6 days of compute**. That
+figure was measured before this entry existed and should be re-derived before
+acting on it (lesson: re-derive before citing), but the *shape* now has an
+explanation it lacked in 94 -- ES is insensitive to exactly the quantity this
+domain hides.
+
+So the honest position on 128.3's direction 1: **PPO-shaped RL is closed by
+measurement, not by lack of effort.** What remains is either ES at a known and
+large compute price, or raising the teacher by non-learned means, which is
+direction 2's territory.
+
+### 130.4 Still open
+
+- Whether ES's 3-6 day estimate survives re-derivation post-98 (every baseline
+  before 98 is void).
+- Nothing shipped. Three probes added: `round_credit.py`,
+  `round_decision_credit.py`, and 129's reference table.
+
+---
