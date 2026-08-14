@@ -218,6 +218,20 @@ deficit. **Before widening an observation, check that the teacher's rule is a
 function of something, and not a procedure.** If it is a procedure, the student
 cannot be given its answer without being given its policy. (§110.3, §109.2)
 
+**27. When a total is off, read the rows before theorising about the total.**
+Four entries (115–117) chased a uniform 3-star shortfall that the per-cost
+table had already localised to one archetype. Then three more (120–122)
+theorised about why a seat rolls 29 times instead of 91 — the floor, the
+competing buys — and both answers were wrong. The per-*round* table settled it
+in one run: the seat holds 26g at 5-1 and 9g every round after, because rolling
+to zero forfeits the interest that was most of its income. A total is a sum
+over a mechanism that may not be uniform, and averaging is exactly the
+operation that hides which row is doing the work. **The corollary for tests:
+when a mutation survives, suspect the measurement aggregates two mechanisms
+before adding another case** — `test_roll_buys` passed against a mutation
+that broke board-building until the buy counts were split by phase. (§123.2,
+§118.3, §122.4)
+
 ---
 
 ## Index
@@ -12328,6 +12342,13 @@ analytic base of 146g for 32 rounds. The income model is validated, so outcome
 
 ### 120.2 The budget fits, with room
 
+> **CORRECTED by entry 123.3.** The table below is arithmetic for a seat that
+> buys **no units at all**. That seat holds 135g entering stage 5; a real one
+> holds 19.5g, because it has been buying a board all game. The gold totals are
+> right and the roll counts are not: 91 rolls was never available to a seat that
+> also fields units. `P = 0.577` is an upper bound on a strategy nobody can
+> play, not a reachable target.
+
 `ledger()` walks the rounds rather than summing endpoint totals, because a
 total lets the same gold be spent twice: interest is only earned on gold that
 has *not* been rolled, so banking and rolling compete for the same coin. The
@@ -12411,5 +12432,611 @@ that already exists* after the curve is paid for.
   now supplies a candidate that fits: check the spend ledger of a 3-cost seat
   before theorising further.
 - The lesson candidate from 118.3 remains unpromoted.
+
+---
+
+## 121. Rolling the surplus is the right lever, but the floor is not the gate (08-12)
+
+120.5's first item, run. `scripts/surplus_rolldown_ab.py`, 250 games per arm,
+paired seeds, only the hyperroll seat's `roll_floors` changed. Baseline is
+today's `{"2-3": 0, "3-2": 50}`.
+
+| arm | c1 3★/hyper | c1/seat | rolls | end lvl | placement | t vs base |
+|---|---|---|---|---|---|---|
+| baseline | 0.176 | 0.022 | 17.5 | 8.16 | 5.228 | — |
+| surplus 4-5 | 0.276 | 0.035 | 29.9 | 7.85 | 5.268 | +0.81 |
+| **surplus 5-1** | **0.292** | 0.036 | 29.0 | 7.94 | **5.180** | −1.19 |
+| surplus 5-5 | 0.212 | 0.026 | 21.6 | 8.14 | 5.212 | −0.82 |
+| surplus 5-1 @20 | 0.236 | 0.029 | 21.7 | 8.07 | 5.156 | −2.00 |
+| *real TFT* | — | *0.271* | — | *8.26* | *4.43* | — |
+
+### 121.1 The direction transferred; the magnitude did not
+
+`surplus 5-1` raises 1-cost 3-stars per hyper seat by **66%** (0.176 → 0.292)
+while holding end level at 7.94 against 8.16, and placement does not degrade.
+
+Set against entry 119, that is the whole point of the lever. 119's best-fidelity
+arm reached 1.776 three-stars but at level 6.44 and placement 5.752 — it paid
+0.524 placement. This arm gives up no board slots and pays nothing measurable.
+**Rolling the surplus dominates capping the level**, which is what 120.2
+predicted and 120.4 argued.
+
+But 120.2's *numbers* did not transfer, and that was outcome A's actual claim:
+29.0 rolls against a predicted 91, and 0.292 against a predicted P = 0.577. The
+prediction failed on magnitude. Recording it as failed.
+
+### 121.2 Why, measured rather than argued
+
+Two assumptions in `ledger()`, both wrong in the same direction:
+
+- **The bank is not there.** The model starts the roll-down holding the 50g
+  floor. The seat actually holds **26.1g** at 5-1 (n=120, 101/120 hyper seats
+  alive to reach it). A floor of 50 is a level the plan rarely attains, not a
+  balance it sits on.
+- **Rolling is not what the gold buys.** From 5-1 onward the seat spends, per
+  game: **52.8g on units, 36.7g on rolls, 12.4g on XP.** The total (101.9g)
+  matches what the income model says is available, so no gold is missing — but
+  more than half of it goes to buying, not rolling.
+
+The mechanism is in `_econ_plan`: the roll loop calls
+`self._buy_phase(player, context, budget="all")` after *every single roll*, so
+rolling competes with its own buying for the same gold. `MAX_ROLLS_PER_ROUND`
+is 80 and never binds; the floor from 5-1 is 0 and still only ~1.7 rolls a
+round happen.
+
+**So the roll floor is not the binding gate, and 120.3's diagnosis was right
+about the totals but incomplete about the mechanism.** Raising the tap does
+help — 66% more 3-stars — but the buy phase drinks most of what comes out.
+
+### 121.3 Not shipping this
+
+Five arms, best t = −2.00, and that arm (`5-1 @20`) has *fewer* 3-stars than
+`5-1` while placing better — which is what multiple comparisons look like under
+the null. No arm's placement effect survives being one of five. The fidelity
+gain is real and the placement claim is "not worse", not "better".
+
+`HYPERROLL` keeps `{"2-3": 0, "3-2": 50}`. Changing a shipped default on a
+t = −1.19 would repeat exactly the mistake the measurement discipline exists to
+prevent.
+
+### 121.4 Still open
+
+- **The buy/roll competition is the next lever, and it is untested.** The
+  question is whether `_buy_phase` inside the roll loop should run on a
+  targets-only budget while a plan is rolling, rather than `budget="all"`.
+  Predict first: this should raise rolls sharply; whether 3-stars follow depends
+  on whether those 52.8g of buys are target copies (in which case they are the
+  3-stars and nothing improves) or generic units (in which case they are the
+  leak). **Measure which, before changing anything** — 118.3's unpromoted lesson
+  applies exactly.
+- Field average is 0.036 against a real 0.271. That is field composition — one
+  hyperroll seat in eight — and 116.2 already showed a dedicated seat does not
+  close it.
+- Cost-3 at 0.003 against 0.179 is still unexplained (116.2, 118.5, 120.5).
+- The lesson candidate from 118.3 remains unpromoted.
+
+---
+
+## 122. The non-target buys are board strength, not a leak (08-12)
+
+121.4 named the next lever and the order to test it in: measure whether the
+52.8g a rolling seat spends on units is target copies or generic units, *then*
+decide. Both done.
+
+### 122.1 The split, measured first
+
+Hyperroll seats rolling from 5-1, 120 games, gold spent on units from 5-1
+onward, split by whether the champion bought is in `reroll_targets` at that
+moment:
+
+| | gold | units |
+|---|---|---|
+| target copies | 2.8 | 2.8 |
+| everything else | 50.0 | 18.0 |
+
+and the non-targets by champion cost: c1 2.9g, c2 8.6g, **c3 15.4g, c4 20.4g**,
+c5 2.6g. So 94.7% of the gold goes to champions the plan is not collecting, and
+the bulk of it to the expensive ones.
+
+That is the leak reading, and it is what I expected to confirm.
+
+### 122.2 It is not a leak. Prediction failed
+
+`GreedyPolicy(roll_buys="targets")` narrows the buy phase *inside the roll loop*
+to the reroll line. 250 games per arm, paired seeds:
+
+| arm | c1 3★/hyper | rolls | end lvl | placement | t vs base |
+|---|---|---|---|---|---|
+| baseline | 0.176 | 17.5 | 8.16 | 5.228 | — |
+| surplus 5-1 | 0.292 | 29.0 | 7.94 | 5.180 | −1.19 |
+| targets-only buys | 0.228 | 18.8 | 8.10 | 5.388 | +1.49 |
+| **surplus 5-1 + targets** | **0.316** | 29.6 | 7.90 | **5.484** | **+2.45** |
+
+Outcome **E**, not the predicted D. Blocking those buys produces the best
+fidelity in the whole arc — 0.316 1-cost 3-stars per hyper seat, 1.8× baseline —
+and costs **0.256 placement at t = +2.45**. The 18 units a game were board
+strength, which is entry 114's slot price arriving by a new route.
+
+A second prediction failed with it, and it is the more informative one.
+121.2 argued the roll loop "outbids itself", so removing the competing buys
+should raise rolls sharply. **Rolls went 29.0 → 29.6.** Freed gold did not
+become rolls. The competition story explains where the gold goes but not what
+limits rolling, and the 3-star gain here comes from copies concentrating on the
+line rather than from more searching.
+
+### 122.3 What is now closed
+
+Every lever tried against the 1-cost 3-star shortfall — 119's level cap, 121's
+surplus floor, 122's targets-only buys — lands on the same trade: material
+fidelity gains cost placement, and the arms that leave placement alone move
+fidelity little. `surplus 5-1` remains the exception at −1.19, which is not a
+result. **119.4's frontier was wrong about the cause (120.2) and right about the
+shape.**
+
+Nothing ships. `HYPERROLL` keeps `{"2-3": 0, "3-2": 50}` and `roll_buys`
+defaults to `"all"`, so every pre-121 number reproduces.
+
+### 122.4 A mutation that survived, and what it was telling me
+
+`tests/test_roll_buys.py` passed all four cases against a mutation that flips
+`_buy_phase`'s `targets_only` default to True — which silently filters the
+*board-building* buy phases, leaving a seat unable to build a board. It survived
+because the roll loop passes the argument explicitly and so is unaffected, and
+the test counted every buy in one bucket, where the roll loop's volume drowned
+the regression.
+
+The fix was not another case. It was **splitting the measurement**: `_econ_plan`
+runs buy, level, buy, then the roll loop, so a buy before that round's first
+reroll is board-building and one after it is the roll loop. Counting the two
+separately kills both mutations, on the two different assertions they should
+hit.
+
+Lesson candidate, unpromoted: **when a mutation survives, suspect the
+measurement aggregates two mechanisms before adding another case.** Adding
+cases to a metric that cannot see the defect is how a test file grows while its
+coverage does not.
+
+### 122.5 Still open
+
+- The rolling constraint is *not* the floor (121.2) and *not* the competing buys
+  (122.2). Both were measured and both were wrong. What limits a seat to ~29
+  rolls when the arithmetic says ~91 is unexplained, and the next thing worth
+  measuring is the per-round roll count against per-round gold — the totals have
+  now been misleading twice.
+- Cost-3 at 0.003 against 0.179 is still unexplained (116.2, 118.5, 120.5).
+- Two unpromoted lesson candidates: 118.3's and 122.4's.
+
+---
+
+## 123. The rows: income collapses the moment the seat rolls to zero (08-12)
+
+122.5 asked for the per-round view, on the grounds that the totals had misled
+twice. They had. One run settles what three entries theorised about.
+
+### 123.1 The table
+
+120 games, hyperroll seats on the `surplus 5-1` floors, means over seat-rounds.
+"gold in" is gold entering the planning phase; "gold at 1st roll" is gold when
+that round's first reroll happens; "never rolled" is the share of seat-rounds
+with no reroll at all.
+
+| round | n | gold in | gold at 1st roll | rolls | gold out | never rolled |
+|---|---|---|---|---|---|---|
+| 4-1 | 120 | 43.8 | — | 0.00 | 16.0 | 100% |
+| 4-4 | 119 | 40.9 | 61.9 | 1.80 | 35.9 | 68% |
+| 4-5 | 119 | 49.1 | — | 0.00 | 4.6 | 100% |
+| 4-7 | 101 | 19.5 | — | 0.00 | 13.5 | 100% |
+| **5-1** | 101 | **26.1** | 26.0 | **8.83** | 0.5 | 20% |
+| 5-2 | 88 | **9.3** | 6.0 | 2.93 | 0.4 | 22% |
+| 5-3 | 74 | 9.1 | 6.4 | 2.96 | 0.4 | 23% |
+| 5-5 | 61 | 8.6 | 2.5 | 1.21 | 0.5 | 49% |
+| 6-1 | 41 | 9.4 | 2.8 | 1.37 | 0.5 | 49% |
+| 6-5 | 20 | 8.7 | 4.4 | 1.80 | 0.5 | 40% |
+
+### 123.2 What it says
+
+**The seat rolls to zero at 5-1 and never has money again.** It enters 5-1 with
+26.1g, rolls it away, and enters every subsequent round with **~9 gold** — 5
+base plus streak and win bonus, and *no interest*, because interest is computed
+on gold held and it holds none. Gold out is 0.5 in every row from 5-1 on: the
+seat is not saving, it is broke.
+
+Nine gold a round is 4.5 rolls a round at `reroll_cost` 2, against a further ~7
+rounds of life. That is the ~29 rolls observed, and it is a **hard ceiling** set
+by the interest rule, not by the roll floor (121.2) and not by the competing buy
+phase (122.2). Both earlier answers were wrong; this one is arithmetic on the
+rows.
+
+Note also 4-1 through 4-7: **zero rolls in seven consecutive rounds**, holding
+20–49 gold, because the floor there is 50 and gold never reaches it. And 4-5
+turns 49.1g into 4.6g with no rolls at all — that is the level-8 XP purchase on
+the standard curve. The stage-4 window is not a rolling window in any arm.
+
+### 123.3 The 91 was never available
+
+120.2 predicted 91 rolls from 5-1 and the engine delivers 29. The model is
+wrong, and specifically: **`ledger()` buys no units.** It banks, buys XP, and
+rolls; nothing else. Such a seat holds **135g** entering stage 5. The engine's
+seat holds **19.5g**, because it has been buying a board all game.
+
+So `P = 0.577` describes a strategy that fields no units and loses every fight.
+The gold totals in 120.1–120.2 are right — the engine's income matches the
+model — and the roll counts derived from them are an upper bound on a game
+nobody can play. 120.2 is corrected rather than withdrawn: the budget does
+permit level 8 alongside rolling; it does not permit level 8, rolling, *and* a
+board, which is the actual constraint and the one entry 114 priced.
+
+**Three entries theorised about a total; the rows answered it in one run.** That
+is lesson 27, now promoted from the 118.3 candidate, with 122.4's mutation
+corollary attached.
+
+### 123.4 What this closes, and what it opens
+
+The 1-cost 3-star shortfall is now explained end to end. A seat cannot roll more
+than ~29 times in this economy while also fielding a board, because rolling to
+zero destroys the interest that is most of its income. Every lever tried moves
+the seat along that constraint rather than off it: 119's level cap, 121's floor,
+122's targets-only buys. **The frontier 119.4 drew is real; 120.2's claim that
+it was an artefact was itself the artefact.**
+
+What this does *not* explain is real TFT, where seats reach 0.271 1-cost
+3-stars at level 8.26. Under this engine's interest rule that combination
+requires roughly triple the rolls the income permits. The open question is
+therefore back on the constants after all, and it is a specific one:
+`interest_per_gold` = 10 with `interest_cap` = 5 means a rolling seat forfeits
+5g/round, a third of its income. That table is `community_documented` and has
+never been checked against a real match ledger.
+
+### 123.5 Still open
+
+- **Check `interest_per_gold` and `interest_cap` against real match gold.**
+  `data/reference/` has the match sample; a per-round gold trace from real seats
+  would settle whether real players also drop to ~9g/round after a roll-down. If
+  they do not, the interest table is where this arc ends.
+- Cost-3 at 0.003 against 0.179 is still unexplained (116.2, 118.5, 120.5).
+- Nothing shipped in 119–123. `HYPERROLL` keeps `{"2-3": 0, "3-2": 50}`,
+  `commit_level` and `roll_buys` stay at their inert defaults.
+
+---
+
+## 124. The real corner is real: hitters sit at level 8.34 and place 4.42 (08-12)
+
+123.5 asked for a real per-round gold trace to check `interest_per_gold`.
+**That check cannot be run:** Riot's match payload carries `gold_left` — gold at
+elimination — and nothing else per seat. There is no per-round series in
+`data/reference/`, and no other field stands in for one. Recording that as
+closed-by-impossibility rather than leaving it on the worklist.
+
+So this asks the question the data *can* answer, and it is one that should have
+been asked at the top of the arc. Entries 119-123 chased "0.271 1-cost 3-stars
+at level 8.26, placing 4.43". **Both numbers are field averages over every
+seat**, and I treated them throughout as a joint property of one seat. Lesson 27
+applies to the reference side exactly as it does to the engine side: if the
+3-stars come from level-7 seats and the 8.26 from seats with none, there is no
+corner and the engine's frontier was never anomalous.
+
+### 124.1 The split
+
+`scripts/reroll_seat_profile.py`, grouping every seat by what it actually holds.
+8000 seats per band.
+
+**Challenger:**
+
+| group | seats | share | level | placement | gold left | last round |
+|---|---|---|---|---|---|---|
+| all | 8000 | 100% | 8.60 | 4.50 | 8.5 | 31.1 |
+| **holds a 1-cost 3★** | 1311 | **16.4%** | **8.34** | **4.42** | 8.6 | 31.5 |
+| no 1-cost 3★ | 6689 | 83.6% | 8.65 | 4.51 | 8.4 | 31.0 |
+| holds a 3-cost 3★ | 810 | 10.1% | 7.99 | **4.01** | 8.8 | 32.2 |
+| no 3★ at all | 5237 | 65.5% | 8.76 | 4.66 | 8.4 | 30.7 |
+
+Diamond is the same shape: hitters at level 8.19, placing 4.43; 3-cost hitters
+at 7.91, placing 3.99.
+
+Level distribution of challenger seats holding a 1-cost 3★: **82.7% are level 8
+or above** (8: 37.1%, 9: 36.8%, 10: 8.8%). Only 17.3% sit below.
+
+### 124.2 Outcome B. The hypothesis I was testing is refuted
+
+There is no averaging artefact. A real seat that 3-stars a 1-cost is **0.31
+levels** below one that does not, and places slightly *better*. The corner is a
+property of individual seats, not of a mean over dissimilar ones.
+
+For contrast, the engine's arms that hit at any rate sat 1-2 levels below their
+field: 119's best-fidelity arm at 6.44, 121-122's at 7.90. **Real players give
+up a third of a level; this engine gives up one to two.** 123.4's conclusion
+stands and is now measured on the reference side rather than inferred.
+
+### 124.3 The finding I was not looking for
+
+**3-cost reroll is the best-placing group in real TFT** — 4.01 challenger, 3.99
+diamond, against a field mean of 4.50 — and 10.1% of challenger seats play it.
+The engine produces **0.003** (116.2, 118.5). That is the largest single
+fidelity gap left, it sits on the archetype real players place best with, and
+every previous attempt to explain it assumed it was a smaller version of the
+1-cost problem. 124.1 says it is not: 3-cost hitters end *lower* than 1-cost
+hitters (7.99 vs 8.34) and place *better*, which is a different shape entirely.
+
+Also worth recording against 97.4: real seats hold **8.5 gold** at elimination,
+and hitters hold 8.6 — no different. The engine's rolling seat ends every round
+from 5-1 on with 0.5 (123.1). Real players hit *without* being broke, which is
+the same structural statement from a third direction.
+
+### 124.4 Still open
+
+- The economy constants remain unverified and now unverifiable from this
+  sample. If the arc continues on economy, it needs a data source with a
+  per-round ledger; none is known.
+- **Cost-3 reroll is the highest-value open question in the project**, on these
+  numbers: best real placement, 10.1% incidence, ~0 engine production, and a
+  profile that 124.1 shows is *not* the 1-cost story rescaled.
+- Nothing shipped in 119-124.
+
+---
+
+## 125. The real 3-cost archetype is nothing like `SLOWROLL7` (08-12)
+
+124.3 made 3-cost reroll the highest-value open question. Before guessing
+another parameter at it -- 116.2 already guessed once and made the profile worse
+-- describe it from the sample. Lesson 27 applied *before* the fact.
+`scripts/cost3_archetype.py`, 810 challenger seats holding a 3-cost 3-star.
+
+### 125.1 How many, and at what level
+
+| 3-cost 3★ held | seats | share | level | placement |
+|---|---|---|---|---|
+| **1** | 480 | **59.3%** | 7.98 | 4.38 |
+| 2 | 250 | 30.9% | 8.07 | **3.47** |
+| 3 | 62 | 7.7% | 7.79 | 3.52 |
+| 4 | 13 | 1.6% | 7.92 | 3.85 |
+| 5 | 5 | 0.6% | 7.60 | 2.20 |
+
+Level distribution of hitters: 6 → 0.9%, **7 → 35.2%, 8 → 36.4%**, 9 → 19.1%,
+10 → 8.4%.
+
+Two assumptions in `SLOWROLL7` are contradicted outright:
+
+- **`target_count=3` is wrong.** The modal hitting seat holds **one**. Three or
+  more is 9.9% of them. More is better where it happens — placement improves
+  from 4.38 at one to 3.47 at two — but a plan that only counts itself finished
+  at three is describing the top decile, not the archetype.
+- **Holding level 7 is wrong.** 64% of hitters are at level 8 or above. This is
+  not a seat that parks at 7; it is a seat that hits *and* levels, which is the
+  same shape 124.2 found for 1-costs.
+
+### 125.2 The board is not a 3-cost board
+
+Mean units per hitting seat, by cost and star:
+
+| cost | 1★ | 2★ | 3★ |
+|---|---|---|---|
+| 1 | 0.14 | 0.79 | 0.23 |
+| 2 | 0.10 | 0.94 | **0.73** |
+| 3 | 0.14 | 1.13 | **1.53** |
+| 4 | **0.54** | **0.83** | 0.01 |
+| 5 | 0.52 | 0.37 | 0.00 |
+
+Board size 7.99 units. So a real 3-cost reroll seat fields ~2.7 cost-3 units,
+**~1.4 cost-4 and ~0.9 cost-5 units**, and carries 0.73 cost-2 3-stars besides.
+It is a rerolled *core* with expensive additions on top, and it 3-stars across
+tiers rather than within one.
+
+`SLOWROLL7` encodes the opposite: three cost-3 carries, level held at 7, and
+`reroll_targets` steering every purchase to one tier. That is a caricature of
+the archetype, and it explains 116.2's result — the dedicated seat reached 27%
+of the real rate and made the *profile* worse — without needing the field-
+coverage story that 115.3 offered and 116.2 withdrew.
+
+Note also 122.2 in this light: blocking non-target buys cost 0.256 placement.
+Real reroll seats buy off-plan constantly — a third of their board is 4- and
+5-cost. The two findings agree.
+
+### 125.3 Thirteen champions, not one
+
+13 distinct cost-3s were 3-starred; the most common (`TFT17_Ornn`) appears in
+28.3% of hitting seats, then Viktor/Lulu 17.4%, Miss Fortune 16.9%, Samira and
+Illaoi 15.8%. The line is not one champion the field converges on, which is
+consistent with the pool arithmetic: 18 copies per 3-cost against 30 per 1-cost
+means a contested 3-cost line cannot support many seats at once.
+
+### 125.4 What to test, and what not to conclude
+
+The obvious move is to set `target_count=1` and let the level curve run to 8.
+That is a *hypothesis*, not a finding, and it is exactly the shape of change
+119.3 got wrong by reasoning ahead of the numbers. Outcomes named before the
+run:
+
+* **A** — incidence rises toward 10.1% and placement holds or improves. The
+  archetype was mis-specified and 116.2's failure was the specification.
+* **B** — incidence rises and placement worsens, as 122.2's arm did. Then this
+  is the same fidelity/placement trade under a third name.
+* **C** — incidence stays near 0.003. Then the specification was never the
+  binding problem and 118.5's observation stands: level 7 is where 3-costs are
+  cheapest (58.5 rolls) and the seat still cannot afford them, which points back
+  at 123.2's income ceiling.
+
+**C is the outcome the rest of this arc predicts**, and it should be said before
+the run rather than after: 123.2 established that a seat rolling to zero earns
+~9g/round, and a 3-cost 3-star needs 58.5 rolls of a *named* champion at level
+7. Nothing in 125.1-125.3 changes that arithmetic. What the rows change is the
+*target*: one 3-star, not three.
+
+### 125.5 Still open
+
+- The A/B above, unrun.
+- Economy constants unverified and unverifiable from this sample (124.4).
+- Nothing shipped in 119-125.
+
+---
+
+## 126. Levelling to 8 is worth 0.96 placement, and costs two thirds of the hits (08-12)
+
+125.4's A/B, 250 games, seat 0 running the 3-cost line against `DEFAULT_FIELD`.
+
+| arm | c3 3★/seat | hit rate | rolls | end lvl | placement | t vs base |
+|---|---|---|---|---|---|---|
+| `slowroll7` (shipped) | 0.396 | **30.8%** | 37.7 | 7.64 | 5.368 | — |
+| count=1 | 0.300 | 30.0% | 39.8 | 7.73 | 5.180 | −2.21 |
+| count=2 | 0.408 | 35.2% | 38.7 | 7.68 | 5.272 | −1.47 |
+| count=1, level to 8 | 0.052 | 5.2% | 20.8 | 8.58 | **4.408** | **−9.52** |
+| **count=2, level to 8** | 0.112 | 10.0% | 21.7 | 8.59 | **4.408** | **−9.70** |
+| *real TFT* | — | *10.1%* | — | *7.99* | *4.01* | — |
+
+**Outcome A on placement, and its opposite on fidelity.** None of the three
+named outcomes covers this.
+
+### 126.1 The level curve dominates; `target_count` barely registers
+
+Levelling to 8 instead of parking at 7 is worth **0.96 placement** (5.368 →
+4.408, t = −9.70) — the largest effect in this entire arc, and in the direction
+124 and 125 pointed. `target_count` moves placement by 0.1-0.2 at |t| ≤ 2.21
+across five arms, which is not a result. The parameter I expected to matter is
+the one that does not.
+
+That also closes 125.4's prediction: **C was wrong.** I argued from 123.2's
+income ceiling that nothing would move, and something moved a great deal. The
+ceiling is real but it constrains *hits*, not placement, and I conflated them.
+
+### 126.2 The 10.0% is not a match, and nearly became one
+
+`count=2, level to 8` hits 10.0% against real TFT's 10.1%, and that number is a
+**coincidence of denominators**, not agreement. Real 10.1% is the share of *all*
+seats holding a 3-cost 3-star. The engine 10.0% is the hit rate of **one
+dedicated seat** out of eight. Converted to the same basis the engine field
+produces 10.0% ÷ 8 = **1.25%** against 10.1% — still 8× short.
+
+Turned around, the arithmetic is unflattering: if the real archetype is played
+by roughly one seat per lobby, a real dedicated 3-cost seat must hit **~80%** of
+the time to produce 10.1% across all seats. At two seats per lobby it is ~40%.
+The best-placing engine arm hits 10%.
+
+Writing that down because the row was one sentence away from entering the log as
+"engine matches real incidence", which is exactly how a 90.7% ceiling became a
+fact twice before.
+
+### 126.3 The tension worth keeping
+
+The specification that plays *well* (level to 8, placing 4.408) produces **a
+third** of the 3-stars of the one that plays badly (parked at 7, placing 5.368).
+Fidelity and placement point opposite ways again, and for the fourth time in
+this arc — 119's cap, 121's floor, 122's targets-only buys, and now the level
+curve.
+
+But the sign has flipped relative to all three. Previously more fidelity cost
+placement; here more placement costs fidelity, and the *real* seats sit at the
+high-placement end (4.01) **while also hitting**. Real TFT is at a corner this
+engine still has no arm anywhere near, which is 124.2's conclusion arriving from
+the 3-cost side.
+
+### 126.4 What this does and does not license
+
+`SLOWROLL7` remains out of `DEFAULT_FIELD` and unchanged. Adding it would shift
+every baseline in the project — the ninth such invalidation — and the case for
+it is a fidelity case, while the arm that would justify it on placement is the
+one that produces fewest 3-stars.
+
+What is now well-supported is narrower and worth stating on its own: **for a
+3-cost reroll plan in this engine, parking at level 7 is simply bad, worth
+almost a full placement.** If `SLOWROLL7` is ever fielded, it should level to 8.
+That is a conditional decision recorded now so it is not re-litigated.
+
+### 126.5 Still open
+
+- The dedicated-seat hit rate a real 3-cost player achieves is **unmeasurable
+  from this sample** — hits are observable, attempts are not. Without it, engine
+  hit rates cannot be compared to reality on the right denominator at all, and
+  126.2's ~80% is an inference from an assumed archetype frequency, not a
+  measurement.
+- Economy constants unverified and unverifiable from this sample (124.4).
+- Nothing shipped in 119-126.
+
+---
+
+## 127. The one fidelity match this project has is produced by bad play (08-12)
+
+126.1 found a 3-cost reroll plan parked at level 7 places 0.96 worse than one
+that levels to 8, on an archetype that is not shipped. `SLOWROLL6` **is**
+shipped, holds two of eight seats in `DEFAULT_FIELD`, and parks harder: level 6
+at 3-2, and no level 7 until **5-1**. `HYPERROLL` already runs the standard
+curve and is not a candidate, so `slowroll6` is the only shipped plan 126 could
+apply to.
+
+`scripts/slowroll6_level_ab.py`, 250 games, only the `slowroll6` seats change.
+
+| arm | c2 3★/seat | hit rate | rolls | end lvl | placement | t |
+|---|---|---|---|---|---|---|
+| `slowroll6` (shipped) | 1.376 | 78.0% | 47.3 | 7.51 | 4.898 | — |
+| 7 at 4-1 only | 0.908 | 55.8% | 43.0 | 7.84 | 4.604 | −4.43 |
+| **standard curve** | 0.312 | 23.6% | 22.8 | 8.58 | **4.124** | **−10.80** |
+
+**Outcome A.** Parking generalises as a defect: **0.774 placement** for the
+shipped archetype at t = −10.80, and monotone in how much the plan levels. The
+intermediate arm separates the two effects — getting off level 6 is worth 0.294,
+reaching 8 early is worth the other 0.480.
+
+### 127.1 And it destroys the fidelity match, measured on the right basis
+
+118.4's cost-2 figures are field-wide per seat, not per `slowroll6` seat, so the
+two are not comparable as they stand. Re-derived on 118.4's basis, 150 games:
+
+| | c2 3★/seat, field-wide | seats holding one |
+|---|---|---|
+| shipped | **0.339** | 19.7% |
+| standard curve | **0.069** | 5.5% |
+| real TFT | *0.326* | — |
+
+The shipped arm reproduces 118.4's 0.344 within noise, which validates the
+comparison. Levelling drops field-wide cost-2 production to **0.069 against a
+real 0.326** — a 4.7× shortfall where there was a match.
+
+Two things worth recording about getting here. The per-seat figure (1.376) times
+the seat share looked irreconcilable with 0.339 until I checked the seat count:
+I had written "three of eight seats" from memory and `DEFAULT_FIELD` has
+**two**. 1.376 × 2/8 = 0.344. The discrepancy was my arithmetic, not the
+engine's — and it was only visible because the two measurements were put on one
+basis rather than compared as quoted.
+
+### 127.2 The finding, which is larger than the archetype
+
+**This project's only tier-level fidelity match is a product of bad play.**
+`slowroll6` matches real cost-2 3-star rates because it parks at level 6 and
+rerolls 47 times a game, and that costs it 0.774 placement.
+
+Stated across all three tiers now measured:
+
+| tier | fidelity comes from | placement cost |
+|---|---|---|
+| 1-cost (119, 121, 122) | capping level / blocking buys | 0.26-0.52 |
+| 2-cost (127) | parking at level 6 | 0.774 |
+| 3-cost (126) | parking at level 7 | 0.96 |
+
+Every arm that produces 3-stars at a real rate plays worse than one that does
+not, on every tier, and the effect grows with cost tier. Real seats sit at the
+*good* end while hitting (124.1: 1-cost hitters at level 8.34 placing 4.42;
+3-cost hitters placing 4.01). **124.2's conclusion is now confirmed on all three
+tiers independently: the engine has no arm near the real corner, and this is not
+a strategy-parameter problem.**
+
+### 127.3 Not changing it
+
+`SLOWROLL6` keeps its curve. Changing it would invalidate every baseline in the
+project — the ninth such invalidation — *and* trade the only fidelity match for
+placement on two of eight opponent seats. Neither half of that is worth doing on
+its own and together they are clearly not.
+
+Recorded as a standing fact instead: **the scripted field is ~0.77 placement
+weaker on its `slowroll6` seats than a levelling variant would be.** That is a
+handicap on two opponents, not on the teacher (which runs `standard`), so it
+does not bias the clone's training signal in the way it would if the teacher
+itself parked.
+
+### 127.4 Still open
+
+- The engine cannot hit and play well simultaneously on any tier. Every
+  remaining explanation is structural: 123.2's income ceiling, or a mechanic the
+  engine lacks. No strategy parameter has closed it in nine entries.
+- Real dedicated-seat hit rates unmeasurable from the sample (126.5); economy
+  constants unverifiable from it (124.4).
+- Nothing shipped in 119-127.
 
 ---
