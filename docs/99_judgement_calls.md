@@ -13318,3 +13318,81 @@ direction 2's territory.
   `round_decision_credit.py`, and 129's reference table.
 
 ---
+
+## 131. The bridge: milestone 1, and two bugs the round-trip caught (08-18)
+
+128.3 left two directions. The choice was made for direction 2 — build the
+bridge to real TFT — on the grounds that every simulator-internal avenue is now
+closed *by measurement* (128, 129, 130) while the stated goal has no code and
+therefore no measurements. Scope is `docs/04_real_game_bridge.md`.
+
+### 131.1 The boundary, stated once
+
+**Injecting input into a live TFT client violates Riot's ToS, permanently bans
+accounts, and affects seven real people per lobby.** `bridge/` is read-only and
+advisory by construction; doc 04 sec 0 records that actuation is a product
+decision and not a refactor. Nothing here synthesises input.
+
+### 131.2 Why this is weeks and not months
+
+`ObservationEncoder.encode` takes `(player, round_id, opponents, board_hexes)`
+— **not** a `Match`. The observation layer was already decoupled from the
+simulator's game loop, so a real game does not need a simulated one behind it.
+`PlayerState` is a plain dataclass and `UnitInstance` takes
+`(champion, star, items, position, registry)`. An adapter is therefore the only
+missing piece, not a rewrite.
+
+### 131.3 Milestone 1, and its test design
+
+`bridge/state.py` defines `ObservedState` — a source-agnostic JSON description
+of what an observer can see, carrying champion ids rather than engine objects so
+a fixture, a human, an API or a vision pipeline can produce one without
+importing the engine. `bridge/adapter.py` converts both ways.
+
+The test is a **round-trip through the observation vector**, not field-by-field:
+engine state → `ObservedState` → JSON → engine state → encode, asserting the two
+vectors are identical. A field-by-field comparison passes while silently
+dropping whatever the encoder reads and the comparison forgot to check — which
+is exactly what would have happened here, twice.
+
+### 131.4 The two bugs, both found on the first run
+
+- **Bench gaps.** `seat_from_player` collapsed empty bench slots. The encoder
+  reads the bench **positionally** (`player.bench[index]`) while reading the
+  board order-independently (`sorted(board_hexes)`), so collapsing gaps shifted
+  every later slot. My own docstring claimed "bench gaps are preserved
+  positionally" while the code did not preserve them — the comment was written
+  from intent, not from the code. `ObservedSeat.bench` is now positional with
+  `None` holes.
+- **Augments.** The schema had no augments field at all. Augments occupy their
+  own observation section (indices 297-352 of 381), so every reconstructed seat
+  silently lost them. Found by locating the mismatched index through
+  `spec.describe()` rather than by guessing at offsets — a first attempt at the
+  arithmetic put the index in the opponents block and was wrong.
+
+Both are the class of defect that would have made every later bridge
+measurement meaningless while looking like it worked, which is what milestone 1
+exists to prevent.
+
+### 131.5 Mutation-tested
+
+Four mutations, all caught, each by the assertion that should catch it:
+collapsing bench holes, dropping augments, dropping items, and serialising an
+unobserved `None` position as `[0, 0]`. The last matters for milestone 2: real
+match data carries **no hex positions and no items** (doc 04 sec 3), so the
+adapter fabricates geometry, and a caller measuring positional features must be
+able to tell invented coordinates from observed ones.
+
+### 131.6 Next, and the one open question
+
+Milestone 2 is coverage: build `ObservedState` from `data/reference/` seats and
+report which observation features real data cannot fill. That sizes the vision
+problem **before** any vision work is commissioned.
+
+The single highest-value unknown remains untested and is cheap: **does Riot's
+Live Client Data API (`localhost:2999`) expose TFT state at all?** League's
+payload is rich; TFT's coverage is unverified. Do not assume either way — the
+answer decides whether input is an API read or a vision pipeline, which is the
+difference between days and months.
+
+---
