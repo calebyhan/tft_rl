@@ -13396,3 +13396,88 @@ answer decides whether input is an API read or a vision pipeline, which is the
 difference between days and months.
 
 ---
+
+## 132. Riot exposes no live TFT state; sizing the vision problem instead (08-18)
+
+131.6 named the highest-value unknown: does Riot's Live Client Data API expose
+TFT state? Answered, and it decides the shape of the whole bridge.
+
+### 132.1 It does not, and has not for six years
+
+The Live Client Data API (`https://127.0.0.1:2999/liveclientdata/...`) responds
+during a TFT match but returns **"basically the same recycled JSON as for
+LoL"** — no shop, bench, board, synergies or carousel. The request for exactly
+those fields is
+[RiotGames/developer-relations#373](https://github.com/RiotGames/developer-relations/issues/373),
+**filed 2020-09-24 and still open**, unassigned, with no linked work. Riot's
+supported TFT surface is `summoner-v1`, `league-v1` and `match-v1` — all
+post-game.
+
+No local probe was possible here (no client running), so this rests on the
+issue tracker and the developer portal rather than on a measurement. Recorded
+as sourced-not-measured.
+
+**Consequence: live input is a vision pipeline, not an API read.** That is the
+months-not-days branch, and it is now decided by evidence rather than by
+assumption.
+
+### 132.2 So: what would vision actually have to extract?
+
+`scripts/bridge_coverage.py`, 400 real challenger seats against a 670-state
+engine control. "engine fills" = observation indices ever non-zero under full
+observation; "real fills" = the same from Riot's match payload.
+
+| section | width | engine fills | real fills | coverage |
+|---|---|---|---|---|
+| self | 13 | 12 | 6 | 50% |
+| selection | 7 | 0 | 0 | n/a |
+| board | 168 | 88 | 55 | 62% |
+| **bench** | 54 | 54 | 0 | **0%** |
+| **shop** | 20 | 20 | 0 | **0%** |
+| traits | 35 | 34 | 35 | control! |
+| **augments** | 56 | 32 | 0 | **0%** |
+| opponents | 28 | 28 | 7 | 25% |
+| **TOTAL** | **381** | **268** | **103** | **38%** |
+
+Post-game data fills **38%** of what the policy reads. The three all-zero
+sections — bench, shop, augments — are precisely the live-only state, which is
+the expected shape and is now quantified: a vision pipeline's minimum viable
+scope is **bench + shop + augments + hero scalars**, and board composition is
+the part that post-game data already covers.
+
+### 132.3 Two measurement traps, both caught by an impossible number
+
+- **An undersaturated control inflates everything.** The first run used 15
+  engine states from one game and reported traits at **250%** — impossible, and
+  the tell. 15 states touch 14 of 35 traits; 400 real seats touch all 35. The
+  control is the *denominator*: an index it never touches is scored unfillable,
+  so undersampling it inflates every coverage figure. Now 60 games / 670
+  states, and ratios above 100% print `control!` instead of a number, because a
+  ratio that cannot exceed 1 and does is not a coverage figure.
+- The totals moved a long way while fixing it: board 98% → 62%, TOTAL 60% →
+  38%. **The first table's numbers were all wrong in the flattering
+  direction**, which is lesson 27 arriving in a new form — this time the
+  aggregate was fine and the *denominator* was the unread row.
+
+### 132.4 Real TFT has 4-star units and this engine cannot represent them
+
+`UnitInstance` caps at `STAR_LEVELS = 3` and the real payload contains
+`tier: 4`. Incidence: **0.46% of challenger seats** (37/8000) and 0.51% of
+diamond (41/8000), spread across many champions — Veigar, Leona, Ezreal, Poppy,
+Gnar, Cho'Gath, Briar — so it is a general mechanic, not one champion's ability.
+
+The adapter clamps to 3 **and counts it**, reporting the count on every run, so
+a fidelity gap cannot become a silent fact. Not implementing it: 0.5% incidence
+does not justify touching the star system, and the clamp is now visible.
+
+This is the bridge doing what 128.3 predicted — surfacing a class of problem no
+simulator-internal work reaches.
+
+### 132.5 Still open
+
+- Milestone 3 (decision service) and 4 (advisory output) are unstarted.
+- A vision pipeline is the only live-input path. Its minimum scope is 132.2's
+  three zero sections.
+- 4-star units unmodelled, deliberately, with the clamp counted.
+
+---
