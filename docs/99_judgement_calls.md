@@ -13481,3 +13481,247 @@ simulator-internal work reaches.
 - 4-star units unmodelled, deliberately, with the clamp counted.
 
 ---
+
+## 133. Bridge milestone 3: the decision service works (08-18)
+
+`bridge/decide.py`. An `ObservedState` in, ranked legal advice out, with no
+simulation behind it. Read-only and advisory (doc 04 sec 0).
+
+Working output on a state captured from a real engine game, using the
+`bc-econ-s0` clone:
+
+```
+round 3-1  level 5  gold 18  hp 83  board 5
+kind          detail                                p
+BUY           TFT17_Gragas from shop slot 4     80.7%
+BUY           TFT17_Veigar from shop slot 1     19.2%
+SELECT        TFT17_Milio** @ board -1,4         0.0%
+```
+
+### 133.1 Two seams, both load-bearing
+
+131.2 named one; this needed a second, and both held:
+
+* `ObservationEncoder.encode(player, round_id, opponents, board_hexes)` — no
+  `Match`.
+* `ActionExecutor.legal_mask(player)` — no `Match`.
+
+So **advice is legal by construction**: it comes from the engine's own mask
+rather than a re-implementation of the rules, which is doc 03 sec 2.10's
+discipline applied to a new consumer. The first draft borrowed a `Match` purely
+for board geometry; that was replaced with `Board()` directly, because
+borrowing a simulation for its coordinates would have quietly falsified the
+module's whole claim.
+
+### 133.2 The encoder must match the weights, and now cannot silently not
+
+`load_advisor` reads the run's sidecar through `teacher_config` for
+`champion_encoding` / `scouting` / `copy_counts` / `unit_range`, then asserts
+`encoder.size == model.observation_space.shape[0]`. Defaulting those options
+would build a differently-shaped or differently-*meaning* observation and the
+model's output would be nonsense that still looked like advice — the same
+failure `teacher_config` exists to prevent for the teacher (entry 74).
+
+Without a model the advisor returns a **uniform** distribution over legal
+actions, and a test pins that it is uniform. A silent fallback that resembled a
+policy would be worse than no advice at all.
+
+### 133.3 Three defects the tests found
+
+- **Executor statefulness.** `ActionExecutor` remembers the selected unit, and
+  that leaked across `recommend` calls, so PLACE was advised when nothing was
+  selected. `recommend` now resets first. The consequence is deliberate and
+  documented: advice is for a *clean* interaction state, so SELECT-then-PLACE
+  is recommended one step at a time. `ObservedState` has no selection field
+  because a live observer cannot reliably see one, and inventing it would put
+  the mask out of step with reality.
+- **An observed state has no pool history.** Executing a recommended SELL
+  against a fresh `SharedPool` raises `ShopError`: the pool never issued the
+  copy being returned. Added `bridge.adapter.pool_for`, which deducts every
+  *visible* unit — `3 ** (star - 1)` copies — clamped at what remains.
+  **Pool state is an inference, not an observation**, and the clamp is
+  necessary because real data is partial and 4-star units (132.4) imply more
+  copies than the engine models.
+- Legality alone is not enough, so the test also **executes** every
+  recommendation through `ActionExecutor.apply`. A mask that says yes while the
+  executor raises is exactly the divergence doc 03 sec 2.10 forbids, and only
+  running it catches that.
+
+### 133.4 Mutation-tested
+
+Four mutations, all caught, each by the assertion meant to catch it: dropping
+the executor reset, ignoring the mask when scoring, describing actions by slot
+number instead of champion name, and letting `pool_for` return a fresh pool.
+
+### 133.5 Still open
+
+- Milestone 4 (advisory output for a human) is a thin presentation layer on
+  this and is unstarted.
+- A vision pipeline remains the only live-input path (132.1), scoped by 132.2.
+- The advice is only as good as the policy: the clone is at **teacher parity**
+  (4.567 vs 4.620) and 130 closed the RL routes to improving it. This ships a
+  working pipeline around a mediocre player, which is the honest description.
+
+---
+
+## 134. Bridge milestone 4: usable end to end, and one weak test (08-18)
+
+`scripts/advise.py`. Milestones 1-4 of doc 04 are now built; the bridge does
+something a person can use today.
+
+```
+round 3-1   level 5   gold 18   hp 83
+board: TFT17_RekSai**, TFT17_Aatrox**, TFT17_Milio**, TFT17_Poppy**, TFT17_Ornn*
+shop:  TFT17_Nasus, TFT17_Veigar, TFT17_Viktor, TFT17_Rhaast, TFT17_Gragas
+
+#  action        detail                                 confidence
+1  BUY           TFT17_Gragas from shop slot 4              80.7%
+2  BUY           TFT17_Veigar from shop slot 1              19.2%
+```
+
+`--template` writes a skeleton with two real champion ids in it (an empty
+template teaches nothing about what an id looks like), `--capture` produces one
+from an engine game, and a plain file argument advises on a hand-written state.
+Without `--run` the output states that it is uniform and *not advice*.
+
+### 134.1 Actionable errors, because a person types these files
+
+Riot exposes no live TFT state (132.1), so until vision exists an
+`ObservedState` is hand-written, and the likeliest failure is a misspelled
+`champion_id` — which previously surfaced as a bare `KeyError` from inside the
+adapter. `bridge.adapter.validate` now returns messages naming the offending
+value and the nearest real ids:
+
+```
+this state file cannot be read:
+  - hero bench[0]: unknown champion 'TFT17_Akalii'. Did you mean TFT17_Akali, ...
+  - shop[1]: unknown champion 'TFT17_Akalii'. Did you mean TFT17_Akali, ...
+```
+
+A 4-star is rejected with a pointer to 132.4 rather than a range error, because
+"star_level 4 is outside 1-3" is true and unhelpful: real TFT has them and this
+engine does not.
+
+### 134.2 A mutation survived, and the test was the problem
+
+Three mutations were run against the validator. Two were caught. **Dropping the
+"Did you mean" suggestions entirely survived**, and the cause was the test, not
+the code:
+
+The misspelling under test was `real + "x"` — so the real id was a **substring
+of its own typo**, and `assert real in problems[0]` was satisfied by the quoted
+bad value alone. The assertion looked like it checked the suggestion and checked
+nothing. Fixed by transposing the final character instead, asserting the typo
+does not contain the real id, and asserting `"Did you mean"` explicitly. The
+mutation is now caught.
+
+This is 122.4's lesson in a second form: a surviving mutation is a statement
+about the *measurement*. There it was an aggregate hiding a mechanism; here it
+was an assertion satisfied by the wrong half of the string.
+
+### 134.3 What the bridge is, honestly
+
+A working, tested, read-only advisory pipeline around a policy at **teacher
+parity** (4.567 vs 4.620). It does not make the agent stronger — 130 closed
+those routes — it makes the existing agent *usable*, and it surfaced two engine
+gaps no simulator work reached (4-star units, 132.4; pool state as an
+inference, 133.3).
+
+### 134.4 Still open
+
+- ~~**The vision pipeline is the only remaining path to live play**~~, and
+  132.2 scoped it: bench, shop and augments (0% fillable from post-game data)
+  plus hero scalars. Everything before it is done.
+  **CORRECTED by 136.4: this is false as stated.** A human typing an
+  `ObservedState` is *also* live play, and works today with no new code. Vision
+  removes the typing; it does not enable the capability.
+- Actuation stays unbuilt and out of scope (131.1).
+- The advice is only as good as the policy, which is the project's standing
+  open problem.
+
+---
+
+## 135. The engine as a combat surrogate at inference (08-18)
+
+The vision pipeline is the next milestone by doc 04's plan, and it is **not
+buildable here**: there is no TFT client on this machine and no screenshots, so
+anything written would be unverifiable by construction. Recording that as the
+reason for taking a different step rather than skipping it silently.
+
+So instead: `bridge/decide.py` gains `board_advice`, which answers the question
+a person actually has — *"should I field this unit or that one?"* — by
+**simulating the fight**, not by asking the clone.
+
+### 135.1 Why this is available and cloning was not
+
+Entries 106-110 closed search *transmission*: a teacher whose rule is a
+simulation cannot be cloned from scoutable features (lesson 26). None of that
+applies here, because the search is **run at inference rather than learned**.
+The engine is used as a combat surrogate, which is what 105 noted Riot itself
+does, and it needs no training run to deliver.
+
+`clone_board` needs a `Match`, but only as a holder: `Match._clone_board` reads
+the match's `registry` and board geometry and takes the player explicitly, and
+`opponent_panel` reads `match.players`. So `battle_shim` builds a `Match` whose
+players are the observed seats and whose eight policies raise if anything ever
+tries to step them.
+
+Working, on a hand-built state with two 1-cost 1-stars fielded and two 5-cost
+3-stars benched:
+
+```
+advice: [('TFT17_Bard***', 'board -2,4'), ('TFT17_Blitzcrank***', 'board -2,5')]
+```
+
+`scripts/advise.py --search` prints it alongside the policy ranking, labelled
+as a different method answering a different question.
+
+### 135.2 A shipped template that produces a broken state
+
+The first empty-result run looked like a legitimate "your board is fine". It
+was not tested against a case where the answer *had* to be non-empty, and when
+one was built it raised:
+
+```
+ValueError: slot (row=-4, col=0) is outside the 7x4 half-board
+```
+
+`position: (0, 0)` is an axial coordinate that **is not one of the 28 own-half
+hexes** — and milestone 4's `--template` shipped exactly that. It encodes
+without complaint (the encoder never checks) and crashes deep inside combat
+geometry the first time the search runs. So the example a person was told to
+copy was the one that breaks.
+
+Two fixes: `validate` now checks positions against the real own-hex set and
+names three valid examples, and the template emits a real hex. A test asserts
+the **shipped template itself** validates, rather than a reconstruction of it.
+
+**An empty result and a broken one are indistinguishable without a case that
+must return something.** That is the same discipline as measuring an achievable
+maximum before quoting a rate, applied to a feature instead of a metric.
+
+### 135.3 A test whose premise was wrong
+
+The companion test — that the search *declines* when the board is good — failed:
+it fielded a 1-cost alongside two 5-cost 3-stars. The search was right and the
+test was wrong. `max_board_units` follows level, so a two-unit board at level 8
+has **six free slots**, and adding any body is a real improvement. "No change"
+is only reachable on a *full* board; the test now uses level 2.
+
+Worth keeping because the asymmetry is real and easy to forget: the board search
+almost never declines while slots are open, so its advice early in a game is
+"field more units" and only later becomes "swap these two".
+
+### 135.4 Still open
+
+- ~~The vision pipeline, unchanged and unbuildable here (132.1, 132.2).~~
+  **Closed by 136.4**, for two independent reasons: it was never the *only*
+  path to live play (the typed path already works), and screen capture under
+  Vanguard is anti-cheat territory this project does not enter (131.1).
+- `board_advice` uses `best_board`'s defaults. Its budget was tuned for a
+  teacher inside training loops (106), not for a person waiting on a
+  recommendation, and has not been re-derived for this use.
+- The search's own value is **0.243 placement at t = −2.00** (108.2, corrected
+  in 130.1). Modest, and it should not be oversold as advice.
+
+---
