@@ -13725,3 +13725,129 @@ almost never declines while slots are open, so its advice early in a game is
   in 130.1). Modest, and it should not be oversold as advice.
 
 ---
+
+## 136. The advisor's search budget, and a table that measured one state (08-19)
+
+135.4 left `board_advice` running on `best_board`'s shipped defaults —
+`trials=3, panel_size=2, max_candidates=6, max_swaps=3` — chosen in 106 for a
+teacher inside a training loop, where the search fires tens of thousands of
+times and every extra combat is multiplied by that. **An advisor has the
+opposite budget:** it fires once, for a person already waiting, and a second of
+compute is free. That default had never been re-derived for the regime it is
+now used in, which is exactly the "measured once in one regime, became a
+default, then a fact" pattern.
+
+`scripts/search_budget.py` runs every arm on the **same** state and grades the
+proposals with an independent **referee** — 7 opponents × 12 fights on seeds no
+arm ever draws. A search graded on its own fights grades its own noise.
+
+### 136.1 The first table was void: collected states were live references
+
+The first run said every arm was net *negative* and the largest arm never fired
+at all — a tidy story about a noise-triggered threshold, and completely wrong.
+
+`collect_states` stored `SimpleNamespace(player=player, match=match)`, which
+holds **live references**. The engine keeps mutating those objects as the game
+plays on, so every state sampled from one game silently aliased that game's
+*final* state. "80 states" were ~12 distinct ones, measured after the fact and
+paired against duplicates of themselves — and final states have full boards and
+nothing to do, which is precisely why nothing ever fired.
+
+The tell was the control reporting **n=19 of 80**: most aliased players were
+dead or boardless by the end. The fix is structural — `sweep` streams, calling
+a visitor at the moment each state exists, which is both correct and cheaper
+than deep-copying a `Match`.
+
+Corroboration after the fix: the control's t fell from **−264.94 to −17.52** on
+the same measurement. The old figure's precision was re-measuring duplicates.
+
+**A snapshot of a mutable object is not a snapshot.** Nothing in the run
+errored, the table was fully populated, and every number in it described a
+single moment of each game.
+
+### 136.2 The corrected curve, and what the advisor should use
+
+80 states, referee 7 × 12 on unseen seeds. `dv` is survivors per fight against
+the seat's current board; `% of ref` is against the large-budget arm.
+
+| arm | fires | referee dv | % of ref | t vs shipped | agrees | sec/call |
+|---|---|---|---|---|---|---|
+| shipped (t3 p2 c6 s3) | 62% | +0.619 | 81% | — | 50% | 1.06 |
+| trials 6 | 56% | +0.713 | 93% | +1.28 | 61% | 2.14 |
+| **panel 4** | 51% | **+0.745** | **97%** | **+1.72** | 68% | **2.03** |
+| candidates 10 | 68% | +0.572 | 75% | −0.99 | 50% | 1.07 |
+| swaps 5 | 64% | +0.660 | 86% | +1.37 | 52% | 1.59 |
+| t6 p4 | 49% | +0.741 | 97% | +1.77 | 68% | 3.99 |
+| t6 p4 c10 s5 | 49% | +0.800 | 105% | +2.32 | 80% | 6.04 |
+| large-budget ref | 46% | +0.765 | 100% | +1.95 | 100% | 20.83 |
+
+Outcome **B** of the three named before the run: there is headroom and it is
+cheap. `ADVISOR_SEARCH = {"panel_size": 4, "margin": 1.0}` — 81% → 97% of the
+reference for about one extra second. The largest arm's 105% is not
+distinguishable from it and costs three times as much.
+
+Two honest limits:
+
+- **t = +1.72 at n=80 is not a significant result.** This is evidence good
+  enough to set a default in a regime that had no measurement at all, not a
+  claim that panel 4 beats panel 2.
+- **An arm scoring 105% proves the reference is not a ceiling.** It searches
+  the same candidate generator with more compute, so it can be exceeded. The
+  column was renamed from "% of ceiling" to "% of ref" rather than the number
+  being explained away — a real achievable maximum is still unmeasured.
+
+Widening the panel *narrows* firing (62% → 51%) while raising value. The extra
+opponents mostly reveal that a proposal which beat the two strongest seats does
+not beat the field.
+
+### 136.3 `margin` is not panel-invariant, in all three search functions
+
+`score()` divides by `trials` but **not** by `panel_size`
+(`rl/search.py:168`, `:254`, `:521` — `best_swap`, `best_board`, `best_move`).
+So `margin` is a threshold on the margin *summed over the panel*. Raising the
+panel silently loosens the firing rule, and a wider-panel arm would have looked
+better partly by firing more rather than searching better.
+
+The probe holds the per-fight threshold fixed so budget is the only variable,
+and `ADVISOR_SEARCH` carries `margin` explicitly alongside `panel_size`. A test
+pins the coupling and was mutation-tested (panel 5 with margin 1.0 fails).
+
+Not fixed in `rl/search.py` itself: normalising there would change teacher
+behaviour and invalidate every search baseline. 106's `margin=0.5` should be
+read as "0.25 per fight at a panel of 2".
+
+### 136.4 Correcting "the only remaining path to live play"
+
+134.4 and 135.4 both assert the vision pipeline is **the only remaining path to
+live play**. That is false, and it was written three times without examination.
+A human typing an `ObservedState` is also live play, and `scripts/advise.py`
+does it today with no new code. Vision removes typing; it does not enable the
+capability. Both entries now carry banners.
+
+The distinction matters because vision is separately closed. 132.1 established
+there is no live API. Screen capture under Vanguard then raises the question of
+whether a tool would be *flagged* — and designing for non-detection is not
+something this project does, on the same footing as 131.1's line against input
+injection. A camera pointed at the monitor does not change that; it changes
+only observability.
+
+The question that actually decides the branch is whether Riot permits this
+class of advisory tool at all — TFT has a tolerated overlay ecosystem, so the
+answer is not obviously no. That is a policy question, answerable from Riot's
+third-party tool terms rather than by experiment, and it is **not answered
+here**.
+
+### 136.5 Still open
+
+- Riot's third-party tool policy for TFT, which decides whether any automated
+  reader is permissible. Unread; no work should start on one before it is.
+- A real achievable maximum for the board search. The large-budget arm is a
+  reference, not a ceiling (136.2).
+- The search's placement value remains **0.243 at t = −2.00** (108.2, corrected
+  in 130.1). This entry improved the *board* it proposes; it did not re-measure
+  what that is worth in placement, and the two must not be conflated.
+- The advisor's per-round data entry cost is unmeasured. Whether the typed path
+  is pleasant enough to use is now the question that gates everything, and it
+  needs a human trying it, not a probe.
+
+---
