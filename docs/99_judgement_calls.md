@@ -13851,3 +13851,243 @@ here**.
   needs a human trying it, not a probe.
 
 ---
+
+## 137. Does board advice need to know the opponents? (08-19)
+
+This gates the typed path, which 136.4 established is the only live-play route
+this project will take. `board_advice` picks a board by simulating fights
+against a panel of opponents, so as written a person must enter **eight boards
+a round** — which nobody will do. If advice survives a panel built from no
+opponent information, they enter **one**: their own.
+
+136.2 made this a live question rather than a formality: widening the panel
+from 2 to 4 moved both firing rate and value, so *who* is simulated against
+demonstrably matters.
+
+Arms differ only in the panel the **search** sees. Every proposal is graded by
+the same referee against the **true** field, because that is what the player
+actually fights; grading a surrogate against itself would let a consistently
+wrong panel score well.
+
+### 137.1 Breadth is what pays, and identity is not
+
+80 states. `dv` is survivors per fight; `agrees` is proposing the same units as
+the true-field arm.
+
+| search panel | fires | referee dv | % of true | t vs true | agrees | sec/call |
+|---|---|---|---|---|---|---|
+| true field (shipped) | 51% | +0.745 | 100% | — | 100% | 2.06 |
+| **mirror (no opp info)** | 65% | **+0.525** | **70%** | −3.11 | 55% | 0.56 |
+| one opponent | 61% | +0.505 | 68% | −2.95 | 49% | 0.61 |
+| mirror, fights matched | 65% | +0.461 | 62% | −3.09 | 57% | 2.24 |
+| one opp, fights matched | 59% | +0.575 | 77% | −2.04 | 56% | 2.42 |
+
+**Fight count was a confound and is controlled.** `best_board` runs
+`panel_size × trials` combats, so a one-member panel at the default `trials=3`
+simulates 3 fights against the true field's 12. The first run of this probe did
+exactly that. Matching the fight count does **not** close the gap — mirror goes
+*down* (70% → 62%), one opponent up only to 77%. So the missing value is
+opponent **diversity**, not simulation volume.
+
+Two findings, neither of which was among the outcomes named before the run
+(A "mirror is enough", B "one opponent is enough, mirror is not", C "the field
+is required"):
+
+- **Partial opponent knowledge is worth nothing.** Scouting one real board
+  (68%) is not better than fighting your own shadow (70%). Whatever the true
+  field contributes, it is a property of *averaging over several* opponents and
+  not of knowing any particular one. B is refuted specifically.
+  > **The "averaging over several" reading is CORRECTED by 138.1.** Averaging
+  > over several *synthetic* boards recovers nothing, so breadth per se was not
+  > the mechanism. The observation stands; the explanation was wrong.
+- **More compute against the wrong objective made it worse.** The mirror arm
+  lost value when given 4× the fights, because the extra precision sharpens an
+  answer to the wrong question. Budget is only worth buying once the objective
+  is right — which qualifies 136.2's curve.
+
+Agreement is the other half of the story: the surrogates propose the same units
+only ~55% of the time. This is not a small perturbation of the same advice, it
+is different advice that happens to be worth somewhat less.
+
+### 137.2 Shipping the mirror fallback
+
+`best_board` gains an optional `panel_fn`, defaulting to `opponent_panel` so
+the teacher is unchanged. `board_advice` uses it when a state carries no
+opponent boards, fighting a mirror of the player's own board instead of
+returning nothing — which is what it did before, since an empty panel makes
+`best_board` bail immediately.
+
+So the typed path now costs **one board per round** and delivers 70% of the
+board-search value. Mutation-tested by removing the branch.
+
+The honest framing: 70% of a search whose own placement value is 0.243 at
+t = −2.00 (108.2, corrected in 130.1). This makes the typed path *possible*, and
+it should not be sold as making it *strong*.
+
+### 137.3 Still open
+
+- Whether a **synthetic panel of several diverse boards** recovers the missing
+  30%. 137.1 says breadth is the active ingredient and breadth does not require
+  real opponents — a library of stage-typical boards is the obvious test and
+  was not run.
+- Riot's third-party tool policy (136.5), still unread, still gating any
+  automated reader.
+- The per-round data entry cost of the typed path, still unmeasured and still
+  needing a person rather than a probe.
+- A real achievable maximum for the board search (136.5).
+
+---
+
+## 138. A prior cannot stand in for the real field (08-19)
+
+137.3 left the obvious follow-up: if breadth is what the true field supplies,
+breadth is *prior knowledge* and needs no scouting. A library of stage-typical
+boards, harvested offline from games seeded far from the evaluation games,
+should then recover the missing 30%.
+
+It does not.
+
+### 138.1 Four opponent-free panels, one number
+
+80 states, every arm graded by the referee against the **true** field.
+
+| search panel | fires | referee dv | % of true | t vs true | agrees |
+|---|---|---|---|---|---|
+| true field (shipped) | 51% | +0.745 | 100% | — | 100% |
+| mirror (no opp info) | 65% | +0.525 | 70% | −3.11 | 55% |
+| library, stage-matched | 39% | +0.501 | 67% | −2.91 | 66% |
+| library, size-matched | 41% | +0.531 | 71% | −2.63 | 65% |
+| library, any stage | 28% | +0.330 | 44% | −3.24 | 55% |
+
+Outcome **C** of the three named before the run. **The flatness is the result:**
+a self-mirror, a stage-matched library and a size-matched library are four
+quite different objects and all land in 67–71%. Only the stage-agnostic library
+is worse (44%), which says a panel must be roughly the right *power level* —
+and that once it is, nothing further about it helps.
+
+So **137.1's explanation was wrong and is corrected there.** Averaging over
+several synthetic boards buys nothing over fighting one copy of yourself.
+Breadth was not the mechanism. The observation that one real opponent ≈ mirror
+still stands; the inference drawn from it did not.
+
+A first library run was worse still (39% firing against the true field's 51%),
+which I read as a calibration defect rather than a fact about priors: `harvest`
+freezes a seat the moment its game ticks into the target stage, so the library
+held *early*-stage boards. Matching on the player's own board size instead —
+which also costs the player nothing to know — moved it to 71% and 41% firing.
+That is a real improvement over the stage index and still not a recovery. The
+axis was changed to the one that discriminates, and the answer did not move.
+
+### 138.2 The 100% baseline is in-sample, and that flatters it
+
+The true-field arm searches against the same opponents the referee grades it
+against — different fight seeds, but the same seats. Every surrogate is
+out-of-sample by construction. So the true field is being scored partly on
+information it was handed.
+
+That makes **70% a lower bound** on what opponent-free advice is worth
+relative to a fair baseline, not a point estimate. A player in a real lobby
+fights *one* opponent per round, not a panel average, so the true-field arm's
+advantage here is larger than the one available in play.
+
+Recorded rather than corrected: fixing it means grading against a held-out
+opponent the search never saw, which is a different probe. It does not change
+the decision below, because it can only move the surrogates *up*.
+
+> **The "can only move the surrogates up" prediction FAILED — see 139.1.** The
+> probe was run. Fair held-out grading leaves the ratio at 68% against 70%,
+> i.e. unchanged and marginally *down*. The in-sample advantage is real but
+> small (+18%, not significant) and does not explain the deficit.
+
+### 138.3 What this settles
+
+**Do not build the library.** The mirror fallback already shipped in 137.2 is
+as good as any prior tested, costs nothing to maintain, and needs no harvest
+step. `scripts/synthetic_panel.py` is kept as the evidence that the more
+elaborate thing was tried and did not pay.
+
+The typed path's value is therefore what 137.2 shipped: one board a round, ~70%
+of true-field board-search value, on a search worth 0.243 placement at
+t = −2.00 (108.2, corrected in 130.1).
+
+### 138.4 Still open
+
+- Why real contemporary opponents beat every substitute is **unexplained**.
+  Power level is necessary (the 44% arm) and not sufficient (the 71% arm).
+  Something about the actual field is carrying the remaining 30% and this
+  entry does not identify it.
+- A fair baseline for the true field, graded against held-out opponents
+  (138.2).
+- Riot's third-party tool policy (136.5), unread, still gating any automated
+  reader.
+- The per-round data entry cost of the typed path (137.3), still needing a
+  person rather than a probe.
+
+---
+
+## 139. The in-sample caveat was right and did not matter (08-19)
+
+138.2 flagged that the true-field arm searched against the same seats the
+referee graded it on, and predicted this made 70% a floor — that fair grading
+"can only move the surrogates up". This grades every arm against a **held-out
+half of the lobby**: living opponents split alternately by strength, the search
+sees half A, the referee scores half B.
+
+### 139.1 The prediction failed; the ratio did not move
+
+70 states with at least four living opponents.
+
+| search panel | fires | referee dv | % of true | t vs true | agrees |
+|---|---|---|---|---|---|
+| true half (held out) | 49% | +0.441 | 100% | — | 100% |
+| mirror (no opp info) | 63% | +0.302 | **68%** | −1.75 | 49% |
+| true field (in-sample) | 40% | +0.521 | 118% | +1.25 | 54% |
+
+Outcome **C** of the three named beforehand. Searching against your graders is
+worth **+18%** — real, in the predicted direction, and **not significant at
+n=70** (t = +1.25). Removing it leaves opponent-free advice at 68% against
+138.1's 70%: unchanged, and if anything marginally worse.
+
+So 138.2's caveat was correct as a description of the design and wrong as a
+prediction about the result. Recorded as a failed prediction.
+
+**One thing must not be spun.** The mirror's t-statistic fell from −3.11 to
+−1.75, which would ordinarily read as "the deficit is no longer significant".
+It is not evidence the surrogates improved. The *ratio* is identical; what
+changed is that held-out grading is noisier and smaller in absolute terms
+(+0.441 against +0.745), so the same relative gap is resolved less sharply. A
+weaker t against an unchanged point estimate is a weaker measurement, not a
+better result.
+
+### 139.2 What is now known about the 30%
+
+Three explanations have been tested and none accounts for it:
+
+| explanation | tested in | verdict |
+|---|---|---|
+| simulation volume (more fights) | 137.1 | no — matching fight count did not close it |
+| breadth (several boards, any source) | 138.1 | no — four surrogates all land at 67–71% |
+| in-sample advantage over the graders | 139.1 | no — worth +18%, n.s., ratio unchanged |
+
+What survives: a panel must be roughly the right **power level** (138.1's
+stage-agnostic arm at 44% establishes the floor), and beyond that every
+substitute for the actual contemporary field is worth the same 68–71%. The
+mechanism carrying the remainder is still unidentified, and it is now the
+narrowest it has been — three candidates eliminated rather than one.
+
+The untested one worth naming: real lobby opponents draw from the **same shared
+champion pool** as the player, so their boards are anti-correlated with the
+player's own in a way no foreign board can be. That is a testable difference
+and this entry does not test it.
+
+### 139.3 Still open
+
+- The pool-correlation hypothesis above, untested.
+- Riot's third-party tool policy (136.5), unread, still gating any automated
+  reader.
+- The per-round data entry cost of the typed path (137.3), still needing a
+  person rather than a probe.
+- The decision is unchanged: ship the mirror (137.2), do not build a library
+  (138.3). Two entries of adversarial testing have not moved it.
+
+---
