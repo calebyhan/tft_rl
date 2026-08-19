@@ -14284,3 +14284,93 @@ correlates 0.88 -- but not as a substitute for placement.
   (137.3), both still needing a person rather than a probe.
 
 ---
+
+## 142. The joint econ search finds nothing, and the held-out stage is why we know (08-21)
+
+Entry 72 compared four hand-written archetypes and picked the best. The
+parameters themselves have never been searched, and they interact: when to roll
+depends on when to level, which depends on what is being rolled for. Every
+existing A/B varies one at a time, which is the method that misses the optimum
+in a coupled space.
+
+Run at the user's direction after I advised against it on 141's pricing. The
+advice was to skip it; recording that the measurement was worth having anyway,
+because a bound is more useful than a prior.
+
+### 142.1 Design, priced before running
+
+The genome covers the family containing `fast8` and `standard`: a monotone
+five-point level curve, one roll-down window with a floor, an optional restore
+round, `save_floor`, and `desperation_hp`. Both shapes the `EconStrategy`
+docstring warns about are reachable -- "roll down once then rebuild" and "roll
+the surplus forever" -- since collapsing them is the documented way to get this
+wrong.
+
+Two stages, because selecting the best of many noisy estimates is winner's
+curse. 60 candidates screened at n=200 (which 141.2 prices at ~0.42
+resolution), then the leaders confirmed on **800 disjoint seeds**. Re-running
+the screen seeds would re-confirm the luck that won the screen.
+
+### 142.2 Nothing beats the hand-written archetypes
+
+Screen, 62 arms at n=200. Best candidate reached t = −1.28 against `fast8` --
+**nothing was significant even on the screen**, and the hand-written archetypes
+ranked 3rd and 6th of 62.
+
+Held out, n=800 fresh seeds:
+
+| arm | screen | held-out | regression | vs fast8 | t |
+|---|---|---|---|---|---|
+| c33 | 4.145 | 4.200 | +0.055 | **+0.217** | **2.60** |
+| c06 | 4.225 | 4.131 | −0.094 | +0.149 | 1.87 |
+| standard | 4.245 | 4.004 | −0.241 | +0.021 | 0.28 |
+| fast8 | 4.360 | 3.982 | −0.378 | — | — |
+
+Both screen winners are **worse** than `fast8` on held-out seeds, `c33`
+significantly (t = 2.60, and the sign says worse). Outcome **B**.
+
+An arithmetic check made this predictable mid-run and is worth keeping: the
+best of 47 screened candidates led `fast8` by 0.215, while the *expected*
+best-of-47 lead under pure noise at n=200 (SE ≈ 0.21) is ~2.3 SE ≈ 0.48. The
+leader was doing worse than chance alone would produce if every candidate were
+truly equal -- i.e. the candidates were genuinely worse on average, and the
+hand-written strategies sit near a local optimum.
+
+### 142.3 Two traps the design caught
+
+- **A pattern in the screen's top five was an artifact.** All five picked
+  `save_floor` 60, above the documented interest cap of 50 -- exactly the kind
+  of cross-parameter signal a joint search exists to find, and it was flagged
+  as provisional at the time. Both finalists carried it and both are worse.
+  Five correlated picks out of 60 is not evidence.
+- **Both baselines moved 0.24-0.38 between the two seed blocks.** `fast8` reads
+  4.360 on the screen block and 3.982 on the held-out block. Any comparison
+  across blocks would have been meaningless; only the within-block paired
+  contrasts above are readable. This is lesson 12 in a new form.
+
+### 142.4 What it bounds, and what it does not
+
+**Bounds:** 60 random samples of the curve-plus-rolldown family contain no
+improvement over `fast8`/`standard` large enough to survive n=800. Combined
+with 141's native archetype difference of +0.033 at t=0.19, the economy
+parameters look flat near the incumbents.
+
+**Does not bound:** 60 samples is sparse coverage of a ~9-dimensional discrete
+space, and this is a statement about what *random search* finds, not about what
+exists. The reroll family (`target_cost`, `target_count`, `commit_level`,
+`pivot_at`) was excluded to keep the dimension manageable and is untouched
+here.
+
+**Cost:** ~20,000 games, 3h40m on 8 workers. My estimate beforehand was ~1
+hour, so the pricing was off by 3.5x -- worth knowing before budgeting another.
+
+### 142.5 Still open
+
+- The reroll-family parameters, unsearched.
+- Whether a *local* search around `fast8` (rather than uniform random) finds
+  what random sampling missed. Cheaper per candidate to justify only if there
+  is reason to expect a nearby optimum, and 142.2 argues the incumbents are
+  already at one.
+- The typed path's data entry cost (137.3), still needing a person.
+
+---
