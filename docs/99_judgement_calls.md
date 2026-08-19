@@ -14091,3 +14091,196 @@ and this entry does not test it.
   (138.3). Two entries of adversarial testing have not moved it.
 
 ---
+
+## 140. Two more explanations refuted, and a plateau (08-20)
+
+139.3 named the shared champion pool as the untested explanation for the ~30%
+that opponent-free board advice gives up: real lobby opponents draw from the
+same pool, so their boards are *anti*-correlated with the player's in a way no
+foreign board is.
+
+A prior was stated against it before testing. The mirror is *maximally*
+correlated with the hero and a library panel is essentially *un*correlated, and
+138.1 measured both at 70-71%; if pool structure drove the gap those two should
+already have differed.
+
+### 140.1 Pool overlap is not the mechanism
+
+Power is held fixed first (board size within ±1 of the hero's) and overlap
+ranks only within that band, so the arms differ in champion overlap rather than
+in strength. The real field shares **10.3%** of the player's champions on
+average, so there was ample anti-correlation for the mechanism to exploit.
+
+| search panel | fires | referee dv | % of true | t vs true |
+|---|---|---|---|---|
+| true field (shipped) | 51% | +0.745 | 100% | — |
+| mirror (no opp info) | 65% | +0.525 | 70% | −3.11 |
+| library, low overlap | 48% | +0.580 | 78% | −2.08 |
+| library, high overlap | 49% | +0.535 | 72% | −1.87 |
+
+**low − high = +0.046 survivors/fight, t = +0.83, n = 80.** Outcome **C**: in
+the hypothesised direction and indistinguishable from zero.
+
+The first version of this run reported only each arm's distance from the true
+field, which cannot settle whether the two differ from *each other* — B and C
+differ on exactly that. The direct paired comparison was added and rerun.
+**Quoting two arms' distances from a third is not a comparison between them.**
+
+### 140.2 A real confound in my own design, which explained nothing
+
+A power diagnostic (no combat, 80 states) checked whether library panels were
+matched in strength or merely in unit count:
+
+| panel | units | mean star | mean cost | items/unit |
+|---|---|---|---|---|
+| true field | 6.26 | 1.60 | 2.17 | 0.62 |
+| library (size-matched) | 6.52 | 1.78 | 2.02 | 0.58 |
+| hero | 6.44 | 1.65 | 2.06 | 0.58 |
+
+Well matched — but it exposed something else. `opponent_panel` takes the
+**strongest** living seats, which 106 chose deliberately. Every surrogate built
+across 137-140 is matched to the **hero's** strength instead: the mirror *is*
+the hero, size-matching targets the hero's board. So all of them fight average
+boards while the true field fights the top of the lobby. That is a genuine
+confound in four entries of arms, and it needs no scouting to fix — "what a
+strong board looks like at this stage" is prior knowledge.
+
+Fixing it made things **worse**: a strongest-board library panel scores **60%**
+(t = −2.58), below both size-matched (71%) and the mirror (70%). The confound
+was real and is not the explanation. Recorded as a refuted prediction, not
+quietly dropped.
+
+### 140.3 The plateau, and five eliminated explanations
+
+| explanation | tested in | verdict |
+|---|---|---|
+| simulation volume | 137.1 | no — matching fight count did not close it |
+| breadth from any source | 138.1 | no — four surrogates at 67–71% |
+| in-sample advantage | 139.1 | no — +18%, n.s., ratio unchanged |
+| shared-pool anti-correlation | 140.1 | no — +0.046, t = +0.83 |
+| panel strength selection | 140.2 | no — worse, 60% |
+
+Opponent-free board advice sits at **60–78% of true-field value however the
+panel is built**, across six differently-constructed surrogates. Only gross
+power mismatch moves it (the 44% stage-agnostic arm). This is now a
+well-tested plateau rather than a single measurement, and **the cause is
+unidentified after five hypotheses**.
+
+Stating that plainly instead of reaching for a sixth. The useful summary is
+negative and stable: *no construction of fake opponents tested here recovers
+what the actual contemporary field provides, and none of the obvious reasons
+why is correct.*
+
+### 140.4 Still open
+
+- The mechanism, still unidentified. Five candidates eliminated is a narrower
+  question than 138.4 posed, not an answer.
+- Riot's third-party tool policy (136.5), unread, still gating any automated
+  reader.
+- The per-round data entry cost of the typed path (137.3), still needing a
+  person rather than a probe.
+- The decision is **unchanged for the fourth entry running**: ship the mirror
+  (137.2), do not build a library (138.3). It has now survived attacks from
+  five directions, which is the strongest thing that can be said for it.
+
+---
+
+## 141. What a comparison costs here, and why everything looks like a null (08-20)
+
+Asked after a session in which **three separate results reversed on more data**:
+the board-search budget pilot (n=6 said 103% of reference, n=80 said 67%), the
+teacher econ table (n=60 said `slowroll6` best, n=120 said `fast8`), and an
+apparent 0.45 action-space tax (n=120 said +0.450 at t=+1.57, n=400 said
+−0.150 at t=−1.01, i.e. the sign flipped).
+
+Three reversals in a day is not bad luck. It is a statement about the
+instrument, and this entry prices it.
+
+### 141.1 There is no action-space tax
+
+`scripted_policy` reimplements `GreedyPolicy` through the RL action space, and
+its own docstring names the diagnostic: if a sensible heuristic cannot reach
+~4.5 against the same heuristic bots, the action space is handicapping the
+agent. `TFTEnv.reset` uses `match_seed = seed` and `default_opponent(i)` for
+seats 1-7, so the same seed builds an identical `Match` with identical
+opponents in either harness and the two are pairable seed for seed.
+
+**The n=120 result was noise and its sign did not survive.** Recorded because a
+recommendation was nearly built on it: an 0.45 handicap in the cloning target
+would have meant every result in this log was measured against an artificially
+depressed teacher. It is not there.
+
+### 141.2 The price list
+
+From the n=400 paired run, the standard deviation of seed-paired placement
+differences is **≈ 2.97**. That fixes the cost of every comparison:
+
+| effect | games per arm for t = 2 |
+|---|---|
+| 0.50 placement | ~140 |
+| 0.30 placement | ~390 |
+| 0.15 placement | **~1,570** |
+
+Set against what is actually on offer: the board search is worth 0.243 (108.2,
+corrected in 130.1); native `fast8` vs `standard` is **+0.033 at t = +0.19**;
+the whole named-archetype choice barely registers without the teacher's
+handicap to recover from. Most candidate improvements sit at or below the noise
+floor of the metric used to detect them.
+
+This is the same wall as 130 (per-decision value 46× below its noise) and 94
+(ES at 3-6 days), reached from a third direction. **Methods have not been
+failing; the instrument cannot resolve them.**
+
+### 141.3 A denser instrument buys 1.4x, not 10x
+
+`RoundReport` already carries `won`, `damage_taken` and `hp_after` per player
+per round -- signals a policy moves every round rather than once a game. One
+comparison with a large real effect (fast8 vs no econ, n=200), scored five
+ways. `games needed` is relative to placement, since n scales as 1/t².
+
+| metric | diff | t | \|r\| vs placement | games needed |
+|---|---|---|---|---|
+| placement | −1.695 | −9.33 | 1.00 | 200 |
+| **pvp win rate** | +0.146 | **+11.07** | 0.88 | **142** |
+| rounds | +3.315 | +9.88 | 0.90 | 178 |
+| damage taken | −8.025 | −4.60 | 0.53 | 824 |
+| mean hp | +2.647 | +3.96 | 0.43 | 1109 |
+
+Outcome **B**, and barely: pvp win rate is the sharpest at ~1.4× and does not
+change what is affordable. Damage taken and mean HP are **worse** than
+placement despite accumulating every round -- they correlate 0.53 and 0.43,
+which is the failure this probe was built to catch: precise measurement of
+something other than winning.
+
+**The noise is the game's, not the metric's.** Re-instrumenting does not
+rescue the budget.
+
+### 141.4 What follows
+
+The useful reading is not "everything is too expensive" but a rule about which
+questions are worth asking:
+
+- **An effect of 0.5 costs ~140 games**, which is minutes. Large levers are
+  cheap to test and always were. `fast8` against no econ is −1.695 natively --
+  effects that size exist.
+- **An effect of 0.15 costs ~1,570 games** and should not be attempted casually.
+  Most of the last thirty entries have been in this regime.
+- A screen at n=200 resolves anything ≥0.45 at t≈2. That is the natural
+  default, and anything it cannot see is not worth chasing without a budget
+  decision made deliberately.
+
+Adopt pvp win rate as a secondary readout where it is free -- it is 1.4× and
+correlates 0.88 -- but not as a substitute for placement.
+
+### 141.5 Still open
+
+- Whether the 1.4× efficiency measured on a **large** effect holds for the
+  small ones that matter. It was measured where measurement is easy, which is
+  exactly the objection this project raises against other people's numbers.
+- The joint `EconStrategy` parameter search, still untried, now priced: only
+  worth running if its effects are ≥0.3, and native archetype choice at +0.033
+  argues they are not.
+- Riot's third-party tool policy (136.5) and the typed path's data entry cost
+  (137.3), both still needing a person rather than a probe.
+
+---
