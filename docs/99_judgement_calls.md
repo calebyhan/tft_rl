@@ -14374,3 +14374,542 @@ hour, so the pricing was off by 3.5x -- worth knowing before budgeting another.
 - The typed path's data entry cost (137.3), still needing a person.
 
 ---
+
+## 143. The buy decision gets the combat surrogate too (08-21)
+
+The advisor answered *"which bench units should I field?"* by simulating fights
+(135) but answered *"which of these five should I buy?"* only from the clone --
+a policy measured at roughly field average, and 142 has just finished
+establishing that the strategy space around it is flat. Buying is the most
+consequential recurring decision in a round, and it is exactly what a combat
+surrogate can evaluate directly.
+
+`shop_advice` scores each affordable, recognised shop unit by the survivor
+margin per fight it would add to the best board it can reach, and ranks them.
+Same argument as 135.1: the search is **run, not learned**, so 106-110's
+transmission problem does not apply. `scripts/advise.py --shop` prints it.
+
+### 143.1 A purchase is worth what it becomes, not what it is
+
+A third copy is a 2-star. Modelling every buy as a 1-star would rank the
+pair-completing purchase alongside a filler, which is the single most common
+real decision the tool would get wrong. So the candidate is built at the star
+level it would actually reach, and the two held copies are **consumed** -- a
+board copy leaves the board when the pair completes there, which is a loss the
+naive model would miss.
+
+Mutation-tested: forcing `star = 1` fails the test, as does disabling the
+affordability check.
+
+### 143.2 The test premise was wrong in exactly 135.3's way
+
+The first version of the pair test put the player at level 6 with two units
+fielded, and the *filler* won. That is correct play, not a bug: with a free
+slot, buying any body makes the board bigger while completing a pair keeps it
+the same size, and board size dominates (67, 68, 72).
+
+So the test proved nothing about star levels — the mechanism it was written to
+check was not the one deciding the outcome. At level 2 with two units fielded
+the choice becomes upgrade-in-place against swap-one-for-one, and the 2-star
+wins as it should.
+
+**This is the second time this exact premise has been wrong** (135.3 was the
+first). The pattern is worth stating as a rule: *in this engine, any test that
+compares unit quality must first make the board full, or it is measuring board
+size instead.*
+
+### 143.3 What it does not do
+
+- It scores the purchase's effect on **this round's fight only**. A buy that
+  is bad now and completes a 3-star next round is scored badly, and the tool
+  cannot see that. Economy, tempo and pool depletion are all outside it.
+- It inherits the mirror-panel caveat: with no opponents entered, the panel is
+  a self-mirror, worth ~70% of true-field value (137.1).
+- Its value is **unvalidated against placement**. `board_advice`'s underlying
+  search has a placement number (0.243 at t=−2.00, 108.2 corrected in 130.1);
+  this has none, and 141.2 prices the measurement that would produce one at
+  ~1,570 games for a 0.15 effect. Not run. It should be described to a user as
+  "what the engine thinks wins the next fight", which is exactly what it
+  computes, and not as a placement improvement.
+
+### 143.4 Still open
+
+- Validating shop advice against placement, priced but unrun (143.3).
+- The reroll-family econ parameters, unsearched (142.5).
+- The typed path's data entry cost (137.3), still needing a person.
+
+---
+
+## 144. A teacher that searches its buy (08-21)
+
+The chain that makes this the only live learning path:
+
+* Imitation transmits a teacher improvement at **89%** (75) -- the machinery
+  works, there has been nothing better to learn from.
+* Nothing else improves the agent: PPO closed on per-action credit that 91
+  showed does not exist (max |t| = 1.82 over 1,098 counterfactuals), ES on
+  economics (94), econ parameters are flat across 60 candidates (142).
+* The one rule that beats the teacher is **search**, and it had only ever been
+  applied to the *board* decision (0.243, 108.2 corrected in 130.1).
+
+143 built the other half. This tests a teacher that searches **both**.
+
+### 144.1 The result, replicated on disjoint seeds
+
+`SearchBuyPolicy` is `GreedyPolicy` with one change: the first buy each round
+is chosen by simulating each affordable shop unit onto the best board it can
+reach, rather than by the "most expensive that helps traits" heuristic.
+Everything else -- levelling, rolling, later buys, board filling -- is the
+parent's, so any difference is attributable to that one decision. Cost forced
+the placement: `_buy_phase` runs on every roll iteration, so searching there
+would be 10-50x entry 106's board search.
+
+| teacher | seeds 0-199 | seeds 50000-50199 |
+|---|---|---|
+| greedy buy (incumbent) | 4.360 | 4.000 |
+| random buy, once per round | 4.710 | 4.430 |
+| **search buy, once per round** | **3.005** | **3.080** |
+| search − greedy | −1.355 (t = −7.73) | −0.920 (t = −4.78) |
+| **search − random** | **−1.705 (t = −8.81)** | **−1.350 (t = −6.70)** |
+
+**This is the largest teacher improvement in the log** -- roughly 2.2x entry
+75's economy fix, which was the only other thing that ever moved this agent.
+The search arm is notably *stable* across blocks (3.005, 3.080) while the
+incumbent swings 0.36, which is what a stronger policy looks like.
+
+### 144.2 The control that makes it readable
+
+`_search_buy` makes one purchase per round that greedy might decline, and
+**board size dominates in this engine** (67, 68, 72), so the obvious
+alternative explanation is that the gain is volume rather than judgement.
+
+`RandomBuyPolicy` buys a *random* affordable slot in the same place. It is
+**worse than the incumbent in both blocks** (+0.350, +0.430). So buying more is
+not the mechanism; choosing well is. Without this arm the headline number would
+have been unreadable, and the volume reading would have been the natural one
+given 67/68/72.
+
+### 144.3 The catch: this teacher scouts
+
+`opponent_panel` hands the search the opponents' **actual boards**. That is
+legitimate for play strength -- a real player scouts -- but it is exactly
+entries 106-110's transmission problem, and `opponent_panel`'s own comment
+predicted it: *a teacher that cheats is a teacher that cannot be cloned*.
+
+The student's observation carries **28 floats of opponent data** (HP, level,
+streak) and **no board composition at all**. So there is no reason to expect
+this teacher to clone as it stands, and 75's 89% transmission should not be
+assumed to carry over. That is now the binding question rather than a
+formality, and this entry does **not** answer it.
+
+If the observation is widened for it, the features must be **relational** --
+board-size gap, star gap, trait overlap against the player's own board -- not a
+description of opponent boards. Descriptive entity encodings have been rejected
+three times; comparisons have worked every time.
+
+**A fallback exists that needs no cloning at all:** the advisor already runs
+search at inference (135, 143), so a 3.0 teacher is directly usable there even
+if it never transmits to a policy network.
+
+### 144.4 Still open
+
+- Whether this teacher clones, and what observation it needs (144.3). The
+  binding question.
+- The search fires **once per round on the opening shop** for cost reasons, so
+  this is a lower bound on what buy-search is worth, not the value of searching
+  every buy.
+- `SearchBuyPolicy` lives in `scripts/` and is not yet a shipped policy.
+
+---
+
+## 145. A learning problem that actually has signal (08-21)
+
+Asked directly: why does RL not work here, and is something overcomplicated?
+
+The first half has a measured answer and it is not "RL is hard". Rewards were
+never the missing piece -- `rl/env.py` carries `reward_shaping` with board and
+survival weights, and 93 tested **three** modes. `per_action` verifiably fixed
+credit concentration (64.6x -> 12.0x on `END_PLANNING`, `PLACE` credit up
+7.7x) and the policy collapsed anyway. It collapsed because 91 had already
+shown there is no per-action signal to find: 1,098 counterfactuals, max
+|t| = 1.82. A policy gradient estimates a per-action advantage; here that
+quantity sits ~46x below its own standard deviation (130).
+
+The second half is fair. Every attempt has been a variation **inside one
+framing**: full-game policy, huge action space, sparse terminal reward. The
+alternative was scoped in 105.5 as step 2, gated behind search paying off,
+refused at 106 -- and never revisited after 108.2 measured search at 0.243.
+
+### 145.1 Combat is near-deterministic given the boards
+
+Before scoring any model, the achievable maximum. A single fight is one draw
+from a matchup's distribution, so label variance splits into between-matchup
+(learnable) and within-matchup (combat randomness, learnable by nothing).
+
+| sample | between-matchup var | within-matchup var | ceiling R² |
+|---|---|---|---|
+| 20 matchups x 8 fights | 11.24 | 0.29 | 0.99 |
+| 60 matchups x 8 fights (replication) | 11.98 | 0.30 | 1.00 |
+
+**~97% of a fight's outcome is a deterministic function of the two boards.**
+That is the opposite of every other quantity measured in this project, and it
+is why this is the one place a model can learn.
+
+### 145.2 It learns
+
+8,092 labelled fights from real mid-game boards, 30 features, test set labelled
+by the mean of 5 fights per matchup so the score is not against label noise.
+
+| dataset | predictor | test mse | R² | sign acc |
+|---|---|---|---|---|
+| 8k | predict the mean | 10.660 | 0.00 | — |
+| 8k | unit-count only (linear) | 9.815 | 0.08 | — |
+| 8k | relational MLP | 5.657 | 0.47 | 74.7% |
+| 32k | predict the mean | 11.317 | 0.00 | — |
+| 32k | unit-count only (linear) | 10.124 | 0.11 | — |
+| **32k** | **relational MLP** | **5.361** | **0.53** | **77.6%** |
+
+53% of the achievable ceiling, against a unit-count baseline of 11%. **The first
+learning problem in this project where a model demonstrably extracts signal.**
+
+4x the data moved R² 0.47 -> 0.53 and sign accuracy 74.7% -> 77.6%: real, and
+clearly diminishing. Early stopping still fires at **epoch 9**, so the binding
+constraint is no longer obviously sample count -- see 145.5.
+
+Features are **relational by construction** -- aggregate differentials and
+ratios between the two boards, never a description of either. The champion
+encoding this project rejected three times is exactly what not to build here.
+
+### 145.3 A first version reported an overfit model
+
+Trained for a fixed 200 epochs and reported the last one. Test MSE bottomed at
+epoch 100 (5.988) and rose to 6.760 by epoch 200 -- the reported number was a
+model past its best. Selecting the best *test* epoch is the other way to get
+this wrong, since it leaks the test set.
+
+Fixed with a validation split carved from the training data and early stopping
+on it. The honest number (0.47) is **better** than the overfit one (0.37).
+Best validation loss landed at **epoch 7**, which read as data starvation --
+and labels cost 37ms, so more data was the cheapest lever to try. It was worth
+0.06 R² and the stopping epoch barely moved (7 -> 9), so the reading was
+partly wrong: data was *a* constraint, not *the* constraint.
+
+### 145.4 Why it compounds, and what is not yet shown
+
+Measured: **27 fights/sec single-core**, 37ms each, which is why one board
+search call costs ~2s. A surrogate answering in microseconds makes search
+~1000x cheaper, and deeper search is a better teacher -- and 144 has just shown
+a searching teacher is worth −1.4 placement.
+
+Not shown, and the honest limits:
+
+- **A surrogate is not a policy.** The route is surrogate -> cheaper search ->
+  better teacher -> cloned agent, and each arrow has failed for someone in this
+  log before.
+- **Decision agreement is unmeasured.** R² on absolute fight value is not the
+  same as ranking near-identical candidate boards correctly, which is what
+  search needs. A model can have decent R² and still rank badly. **Until that
+  is measured the surrogate cannot replace simulation anywhere.**
+- The ceiling is measured on `DEFAULT_FIELD` boards at rounds <= 22. Boards
+  from a stronger or stranger distribution may be less predictable.
+
+### 145.5 Still open
+
+- Decision agreement against real simulation (145.4). The gate on everything.
+- **The remaining 47% is probably features, not data.** 4x the data bought
+  0.06 R² and the early-stop epoch stayed at ~9. Absent from the feature set:
+  unit **positions**, **abilities**, and trait **identity** -- only trait
+  counts are present, so "three of a strong trait" and "three of a weak one"
+  are currently the same input. Differenced per-trait counts stay relational
+  and are the obvious next test.
+- Whether the ceiling itself holds outside `DEFAULT_FIELD` boards (145.4).
+
+---
+
+## 146. The surrogate as a chooser, not a predictor (08-21)
+
+145.4 named this the gate. R² 0.53 on absolute fight value says nothing about
+whether the model **ranks near-identical candidate boards** correctly, and
+ranking is the only thing a search consumes. The candidates a search compares
+differ by one unit; the fights the model trained on differ by whole boards.
+A model can score respectably on the first and be useless at the second.
+
+At 100 real mid-game states, every candidate `best_board` would consider is
+scored by **real simulation at 4 opponents x 8 fights** (the ground truth) and
+by the surrogate. The metric is **regret** -- the true value of the pick made,
+against the true value of the best candidate -- because that is what a search
+actually pays.
+
+### 146.1 It chooses well, and not oracle-well
+
+| chooser | mean regret | share of random's regret eliminated |
+|---|---|---|
+| oracle | 0.000 | 100% |
+| **surrogate** | **0.415** | **56%** |
+| greedy (star, cost) | 0.813 | 13% |
+| random | 0.938 | 0% |
+
+top-1 agreement with truth **48.0%**, mean Spearman **+0.50**.
+
+Two readings, both load-bearing:
+
+- **Against the teacher's own rule, the surrogate is 4.3x better.** The
+  lexicographic `(star, cost)` heuristic eliminates only **13%** of random's
+  regret -- it is barely better than picking a bench unit at random. That is an
+  independent explanation for 144's result: a searching teacher gained −1.4
+  placement because the rule it replaced was close to worthless at this
+  decision.
+- **Against simulation, it loses.** 0.415 regret is not oracle-grade, so
+  substituting the surrogate for simulation inside `best_board` would give up
+  real decision quality. **The surrogate is not a drop-in replacement**, which
+  is what 145.4 worried about and the reason that entry refused to claim it.
+
+### 146.2 So it shortlists rather than replaces
+
+The useful shape is a hybrid: score all candidates with the surrogate in
+microseconds, keep the top few, and spend real fights only on those. Quality
+stays near the oracle because simulation still makes the final call, while cost
+falls with the number of candidates simulated. This is the standard
+policy-network-plus-rollout arrangement and it is what 105.5's step 2 was for.
+
+Not built or measured here. The number that would justify it is whether the
+true best candidate survives into the surrogate's top-k, which this entry has
+the data shape for but did not compute -- top-1 is 48%, and top-3 recall is the
+quantity a shortlist actually needs.
+
+### 146.3 Still open
+
+- **Top-k recall**, the number the hybrid depends on (146.2). Cheap; not run.
+- Feature gaps unchanged from 145.5: trait **identity** (only counts are
+  encoded, so a strong trait and a weak one are the same input), unit
+  positions, abilities. These are the likely path from 53% of ceiling upward.
+- Whether a hybrid search actually beats plain search on placement, which is
+  the only question that finally matters and is priced at ~140 games for a 0.5
+  effect (141.2).
+
+---
+
+## 147. What real games say, with no engine in the loop (08-21)
+
+Every number in this log until now is placement against seven scripted
+`GreedyPolicy` bots, inside an engine whose fidelity to real TFT was measured
+across 17 entries and found wanting -- 3-cost reroll is **10.1%** of real
+challenger seats and **0.003** of engine seats (124, 125). Advice validated
+there is advice about the engine. The stated goal is playing real TFT.
+
+`data/reference/` holds **16,000 real seats** (8,000 challenger, 8,000 diamond)
+with final units, star levels, level, gold left and placement. This asks what
+they say directly.
+
+### 147.1 The control that inverted the result
+
+A final board is an **outcome**, not a decision: seats that place well survive
+longer and have more rounds to build. So composition must be scored against a
+control, and the first control chosen was `level, last_round,
+players_eliminated, gold_left`.
+
+That control scores **R² 0.844 on its own**, and composition added **−0.001**.
+Reported as-is it would have said *what you build does not matter* -- from real
+data, about the actual game.
+
+It is wrong because **`last_round` and `players_eliminated` are the label in
+disguise**: a seat eliminated 8th played the fewest rounds. Nothing can add to
+a baseline that already is the answer. The legitimate control is what a player
+knows *while deciding*: level and gold.
+
+| features | test R² |
+|---|---|
+| last_round + elims (near-tautological) | 0.844 |
+| knowable only (level, gold) | 0.339 |
+| composition only (star-weighted) | 0.486 |
+| **knowable + composition** | **0.537** |
+
+**Composition is worth +0.198 R² over what a player already knows.**
+
+The rule this earns: *a control containing an outcome proxy is not a control.*
+This project has repeatedly checked whether a denominator is saturated (132.3)
+and whether a rate has a ceiling; this is the same failure on the other side --
+a baseline so strong it is the label.
+
+### 147.2 What this is, and what it is not
+
+**Is:** the first result in this log validated on real games rather than on the
+engine's own bots. It requires no simulator fidelity, which is the constraint
+that closed the entire 111-128 arc.
+
+**Is not causal.** Strong players pick strong compositions *and* play well, so a
+champion's weight conflates the unit with the skill of the people who field it.
+It is a tier list, which is what real players use, and it should be described as
+association rather than as effect.
+
+**Is destinations, not paths.** Match-V1 carries only the final board, so this
+can say "boards like this place well" and can say nothing about when to roll,
+when to level, or how to get there. The decision *sequence* is absent from
+every real data source available: Riot exposes no live API (132.1), and the
+alternatives are closed (136.4).
+
+### 147.3 Why the project has been engine-bound, stated plainly
+
+The bind is structural rather than a series of poor choices:
+
+- **Real data has outcomes and no decisions.** 16,000 seats, each one final
+  board plus a placement.
+- **The engine has decisions and imperfect fidelity.** It is the only source of
+  decision-level data, and 111-128 measured how far it sits from real play.
+
+So decision quality can only be *learned* in simulation, and composition
+targets can only be *validated* on real games. Any real-TFT advice worth having
+has to come from both, and this entry is the first half.
+
+### 147.4 Still open
+
+- A composition advisor built on 147.1's weights: given a player's level and
+  current units, which real-data-supported boards are reachable. Nothing in it
+  needs the engine.
+- The diamond band, unmeasured here; comparing the two would show whether the
+  associations are rank-specific.
+- Causality is out of reach with this data and should not be claimed.
+
+---
+
+## 148. A composition advisor that never touches the engine (08-21)
+
+147 established that real challenger boards carry **+0.198 R²** of placement
+signal beyond level and gold. `bridge/composition.py` turns that into advice,
+and it is the first thing in this repo that answers a real-TFT question without
+a simulator in the loop.
+
+Two views, kept separate because they fail differently:
+
+- **`champion_weights`** -- per-champion placement association, controlling for
+  level and gold. Linear, so it scores *champions* and cannot see synergy.
+- **`what_winners_added`** -- real seats sharing units with yours, and what the
+  ones that top-foured also held. Never decomposes the board, so synergy
+  survives, but it needs enough matching seats to mean anything.
+
+Live, on a two-unit board:
+
+```
+of 2059 boards sharing 2+ of your units, 1080 top-foured. They also held:
+    TFT17_Maokai                   75% of them   (805)
+    TFT17_Shen                     73% of them   (786)
+    TFT17_Kindred                  71% of them   (772)
+```
+
+`scripts/advise.py --comps`.
+
+### 148.1 Counts travel with every line
+
+Every recommendation prints its support -- how many real boards matched, how
+many of those top-foured, and the count behind each percentage. A suggestion
+drawn from nine seats is noise and the reader cannot distinguish it from one
+drawn from a thousand otherwise. This is 132.3's undersaturated-denominator
+lesson applied at the point of *presentation* rather than of measurement.
+
+### 148.2 What it must be called
+
+**Association, not causation.** Strong players pick strong compositions *and*
+play well, so a champion's weight conflates the unit with the skill of the
+people who field it. It is a tier list, which is what real players use, and the
+CLI says "association, not cause" on the header line rather than burying it.
+
+It is also **destinations, not paths**: match-V1 carries the final board only,
+so nothing here says when to roll or when to level.
+
+### 148.3 Two guards, both mutation-tested
+
+- **The control set is pinned.** 147.1 showed that controlling on `last_round`
+  inverts the entire finding -- composition drops from +0.198 to −0.001,
+  because a seat eliminated 8th played the fewest rounds. A test asserts
+  `KNOWABLE == {level, gold_left}`; adding `last_round` fails it.
+- **Held champions are never suggested.** The output is "what to add", so a
+  unit the player already has appearing in it is a bug that reads as advice.
+  Removing the filter fails the test.
+
+### 148.4 Still open
+
+- The diamond band is unused; comparing the two would show whether these
+  associations are rank-specific or general.
+- Nothing connects this to the engine-side advisors: a player gets a
+  composition target from real data and a fielding decision from simulation,
+  with no reconciliation between them.
+- Causality remains out of reach with post-game data and is not claimed.
+
+---
+
+## 149. Holistic search: what stacks, what does not, and a machine that is 4.5x slower than assumed (08-21)
+
+The goal is a teacher that decides **holistically** -- buy, field, items,
+positioning -- so it can be cloned into an agent that does the same (75:
+imitation transmits 89%). 144 searched the buy alone for −1.4. This adds the
+other fight-evaluable decisions one at a time.
+
+Worth asking rather than assuming, and stated in the script before the run: all
+three decisions move the **same object**, the board that fights. They could be
+substitutes rather than complements, with the first taking the available gain
+and the rest finding nothing left to fix.
+
+### 149.1 Two of three stack
+
+n=200 seed-paired, seat 0, `fast8` econ, parity 4.500.
+
+| teacher | placement | vs greedy | t | vs previous | t |
+|---|---|---|---|---|---|
+| greedy | 4.360 | — | — | — | — |
+| +buy | 3.005 | −1.355 | −7.73 | −1.355 | −7.73 |
+| **+board** | **2.665** | **−1.695** | **−9.72** | **−0.340** | **−2.13** |
+| +items | 2.690 | −1.670 | −10.02 | +0.025 | +0.15 |
+
+**The teacher reaches 2.665 against a 4.500 field** -- by a wide margin the
+strongest in this log. Board search stacks on buy search (−0.340), and its
+increment is *larger* than the 0.243 the board search was worth on its own
+(108.2), which is what complements rather than substitutes look like.
+
+### 149.2 Item search adds nothing, and the cause was predicted
+
++0.025 at t = +0.15. The design weakness was named before the run: **item
+search runs before the parent fills the board**, because `GreedyPolicy.plan`
+ends by calling the module-level `_equip_phase` and TFT items cannot be moved
+once equipped. So the search claims assignments on the board as it stands, and
+the parent may bench those units moments later.
+
+Three readings, undistinguished by this run:
+
+- the ordering defect above, which would be a bug rather than a finding;
+- the `_strength` heuristic is already adequate *for items* even though 146
+  measured it at 13% of random's regret *for fielding* -- concentrating items
+  on the strongest unit may simply be near-optimal;
+- items matter less in this engine than in real TFT.
+
+Not resolved here, and the honest cost of resolving it is 149.3's problem.
+
+### 149.3 Eight workers deliver 1.76x, not 8x
+
+Measured mid-run: total worker CPU **354 minutes** across 201 minutes elapsed,
+with 8 workers on a 12-core machine (**6 performance + 6 efficiency**). Apple
+Silicon schedules background-QoS work onto the E-cores, which are several times
+slower.
+
+This explains every runtime underestimate in this session -- 1h predicted /
+3.7h actual for the econ search, 2h / 3.5h+ here -- because the assumption was
+~8x and the reality is ~1.8x, a ratio of ~4.5x that matches the errors.
+
+**141.2's price list understates wall-clock by ~4.5x.** "140 games resolves a
+0.5 effect" remains correct as a *statistical* claim; the corresponding
+4-arm combat-search job is a 5-hour run on this machine, not a 1-hour one.
+Effective parallelism should have been measured once rather than assumed
+repeatedly -- the same failure as quoting a rate without its ceiling, applied
+to compute instead of to a statistic.
+
+### 149.4 Still open
+
+- **Whether this teacher clones.** 144.3's binding question, untouched: the
+  search reads opponents' actual boards and the student's observation carries
+  28 floats of opponent data with **no board composition**. A 2.665 teacher is
+  worth nothing to an agent that cannot see what it saw.
+- Item search re-ordered to run after the board is filled (149.2). ~4 hours
+  at measured throughput.
+- Positioning (`best_move`) is the remaining fight-evaluable decision and is
+  not in the stack.
+- Economy and augments are **not** fight-evaluable and need a different
+  mechanism; 142 already found the econ parameter space flat.
