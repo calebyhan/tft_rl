@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
 from engine.items import emblem_trait_id
 from engine.schema import GameData, TraitBreakpoint
-from engine.stats import StatBonuses, bonuses_from_params
+from engine.stats import StatBonuses, bonuses_from_params, trait_stat_fallback
 
 if TYPE_CHECKING:  # avoids a runtime import cycle (unit -> items/stats -> ...)
     from engine.unit import UnitInstance
@@ -99,11 +99,33 @@ def _applies_to(
 def trait_bonuses_for(
     unit: "UnitInstance", active: Mapping[str, TraitBreakpoint]
 ) -> StatBonuses:
-    """The stat bonuses ``unit`` receives from the board's active traits."""
+    """The stat bonuses ``unit`` receives from the board's active traits.
+
+    Params are read twice over, by two different name conventions, and only one
+    of them ever fires for a given trait (doc 99 entry 152):
+
+    * ``bonuses_from_params`` matches our schema names, for a trait whose data
+      was written against them.
+    * ``trait_stat_fallback`` matches **Riot's** names (``AS``,
+      ``BonusHealth``), because `normalise_trait` deliberately does not rename
+      -- a trait's magnitudes belong to its behaviour hook, which reads them
+      via ``ctx.number``. This is the doc 02 sec 2 promise that an
+      unimplemented entry still delivers its stat half.
+
+    The fallback is **skipped for implemented traits**, whose hook already
+    spends those params; applying both would grant every Set 17 trait its stats
+    twice. Since all 35 are currently implemented, the fallback is inert today
+    and this changes no existing measurement.
+    """
+    from engine.trait_effects import is_trait_implemented
+
     bonuses = StatBonuses()
     for trait_id, breakpoint_ in active.items():
-        if _applies_to(breakpoint_, trait_id, unit):
-            bonuses = bonuses.merged_with(bonuses_from_params(breakpoint_.params))
+        if not _applies_to(breakpoint_, trait_id, unit):
+            continue
+        bonuses = bonuses.merged_with(bonuses_from_params(breakpoint_.params))
+        if not is_trait_implemented(trait_id):
+            bonuses = bonuses.merged_with(trait_stat_fallback(breakpoint_.params))
     return bonuses
 
 

@@ -67,6 +67,55 @@ class StatBonuses:
         return any(v for v in self.values.values())
 
 
+# Riot's own variable names for trait breakpoint params, with the scale needed
+# to reach our units. `scripts/fetch_cdragon.normalise_trait` deliberately does
+# not rename these on the way in (a trait's magnitudes belong to its behaviour
+# hook, which reads them via `ctx.number`), which meant the doc 02 sec 2
+# fallback -- "an unimplemented entry still delivers its stat half" -- matched
+# nothing at all for traits and silently granted zero (doc 99 entry 152).
+#
+# Kept separate from `fetch_cdragon.ITEM_STAT_MAP` on purpose: widening that
+# table would change item normalisation on the next fetch, and `data/` is
+# committed. `test_trait_and_item_stat_maps_agree_on_shared_keys` pins the two
+# against drift.
+#
+# Conservative by construction. An unlisted key is ignored rather than guessed,
+# because inventing the units of an unknown variable corrupts stats silently --
+# the same rule the fetch script follows.
+TRAIT_STAT_MAP: Mapping[str, tuple[str, float]] = {
+    "Health": ("health", 1.0),
+    "BonusHealth": ("health", 1.0),
+    "Armor": ("armor", 1.0),
+    "MagicResist": ("magic_resist", 1.0),
+    "AP": ("ability_power", 1.0),
+    "AD": ("attack_damage_pct", 1.0),
+    "AS": ("attack_speed_pct", 0.01),
+    "AttackSpeedPercent": ("attack_speed_pct", 0.01),
+    "CritChance": ("crit_chance", 0.01),
+    "DamageAmp": ("damage_amp", 1.0),
+    "Mana": ("mana", 1.0),
+    "ManaRegen": ("mana_regen", 1.0),
+}
+
+
+def trait_stat_fallback(params: Mapping[str, object]) -> StatBonuses:
+    """Stat grants read off a trait's params using **Riot's** naming.
+
+    Only for traits with no behaviour hook -- see `traits.trait_bonuses_for`,
+    which is the sole caller and owns the guard.
+    """
+    out = StatBonuses()
+    for key, value in params.items():
+        mapped = TRAIT_STAT_MAP.get(key)
+        if mapped is None:
+            continue
+        our_key, scale = mapped
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            continue
+        out.add(our_key, float(value) * scale)
+    return out
+
+
 def bonuses_from_params(params: Mapping[str, object]) -> StatBonuses:
     """Extract the flat stat grants from a trait/ability ``params`` block.
 

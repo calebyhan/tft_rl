@@ -199,6 +199,33 @@ def test_a_full_bench_converts_the_champion_to_gold(data, registry):
     assert player.item_bag  # the component still lands
 
 
+def test_full_bench_carousel_pick_returns_the_unowned_copy_to_pool(data, registry):
+    """A gold-converted carousel unit is not a permanently removed copy.
+
+    The production seed-16 smoke failure in entry 156 was exactly this branch:
+    the offering had already been drawn, but a full bench left no UnitInstance
+    for elimination cleanup to return.
+    """
+    match = _match(data, registry, policies=[_Deferring() for _ in range(8)])
+    match._realm_phase()
+    player = match.players[match._realm_queue[0]]
+    offering = player.realm_offer[0]
+    champion = next(iter(data.champions.values()))
+    from engine.unit import UnitInstance
+
+    player.bench = [
+        UnitInstance(champion, 1, registry=registry)
+        for _ in range(data.config.bench_size)
+    ]
+    player.pick_offering(0)
+    drawn_remaining = match.pool.remaining(offering.champion_id)
+    match.resume_realm()
+
+    assert match.pool.remaining(offering.champion_id) == drawn_remaining + 1
+    assert player.taken_offering is None
+    assert not player.realm_pick_was_sold
+
+
 def test_a_bad_policy_choice_falls_back_to_the_first(data, registry, caplog):
     class Broken(NoOpPolicy):
         def choose_offering(self, player, offerings):

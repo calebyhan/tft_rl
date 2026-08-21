@@ -1035,6 +1035,11 @@ board-scouting observations"), so nearly everything here is a judgement call.
 
 ### 17.1 Augments are **not** Riot-sourced, and could not be
 
+> **PARTLY WITHDRAWN by entry 152.4.** "Could not be" is wrong. This
+> surveyed `items` for `TFT17_Augment_*` and found 43. The authoritative
+> list is `setData[TFTSet17].augments`, which carries **274** ids. The
+> reasoning about *bespoke* augments below still stands; the conclusion
+> that the pool is unavailable does not.
 
 This is the significant finding of the milestone, and it breaks the project's
 standing rule that Riot is the source for everything.
@@ -14913,3 +14918,277 @@ to compute instead of to a statistic.
   not in the stack.
 - Economy and augments are **not** fight-evaluable and need a different
   mechanism; 142 already found the econ parameter space flat.
+
+## 150. Porting the search teacher into the action space, and why it leaked 89% (08-22)
+
+149 built a teacher that reaches **2.665** against a 4.500 field by searching
+its buys and its board. That teacher is a `GreedyPolicy` subclass: it acts on
+the `Match` directly. A student can only imitate what is expressible as
+**actions**, so the search has to be reachable through `rl/action.py` before
+cloning it means anything. `best_buy` is that port.
+
+### 150.1 Two bugs, both of which look like "no effect"
+
+Both produced the same reading -- an arm that moves nothing -- and neither was
+a search error.
+
+**`mode="none"` fell through to `best_swap`.** The intended "buy only" arm was
+silently running a board search as well, so the buy-only and buy+board arms
+were not distinct. Fixed with an explicit `mode == "none"` branch that returns
+the base action untouched.
+
+**`bought_this_phase` latched for the whole episode.** Its reset lived inside a
+branch that `mode="none"` returned before reaching. The flag was therefore set
+on the episode's *first* planning phase -- where the board is empty and
+`best_buy` correctly declines -- and never cleared again. The symptom was
+`+0.000, t=0.00`: byte-identical games, which is what a code path that never
+executes looks like, not what a weak effect looks like. Fixed by keying the
+reset off `env.match.round_id`.
+
+Worth naming as a rule: **an effect of exactly zero at t = 0.00 is a wiring
+report, not a measurement.** A real but small effect is never byte-identical.
+
+### 150.2 The port retains 11%, and the cause is dilution
+
+> **WITHDRAWN by entry 151.** The dilution mechanism below is wrong. It
+> measures the search's share of *gross* buys, which `sell_bench` churn
+> inflates ~4.8x. Measured against **net retained units** the shares are
+> 60.8% (match-level) and ~47% (action-space) -- comparable, and nowhere
+> near an 89% leak. The 10.8%/11% agreement was a coincidence. The port
+> gap is **unexplained**; 150.1's two bugs and 150.3 stand.
+
+With both bugs fixed, n=20 seed-paired, seat 0:
+
+| arm | placement | vs base | t |
+|---|---|---|---|
+| action-space teacher | 4.500 | +0.000 | 0.00 |
+| +buy search | 4.353 | −0.147 | −0.91 |
+| +buy +board search | 4.193 | −0.307 | −1.63 |
+
+Against 149's match-level −1.355 for the same decision, the port retains
+**10.8%**.
+
+The action budget was excluded first, since it was the cheap explanation: at
+budget 80 the arm scores 4.380 against 4.353 at the default. Not the cause.
+
+Instrumenting the fire rate in both variants over the same 20 games:
+
+| | match-level | action-space |
+|---|---|---|
+| `best_buy` proposed a buy | 345 (51% of phases) | 315 (51% of calls) |
+| **total buys by seat 0** | **1,206** | **2,832** |
+| search share of all buys | **29%** | **11%** |
+
+**The search fires at an identical rate. The denominator differs.** The
+action-space base policy makes 2.35x as many purchases, so the same ~315 good
+buys fall from 29% of the seat's purchasing to 11% of it. The retained effect
+(10.8%) matches the retained share (11%) to within a tenth of a percent.
+
+The gain is therefore **proportional to the search's share of buys**, and the
+defect is not in `best_buy` at all: `rl/evaluate.scripted_policy` and
+`rl/opponents.GreedyPolicy` are **not the same agent**, despite being the
+intended action-space expression of one another.
+
+Three candidate explanations were named *before* the instrumented run so a
+story could not be fitted afterwards -- (a) the search rarely proposes, (b) it
+proposes but the mask blocks it, (c) it fires equally and something downstream
+dilutes or undoes it. The data selects (c) unambiguously.
+
+### 150.3 What this does and does not explain
+
+It explains the **port** gap completely. It explains nothing about why PPO has
+no gradient: 91 measured 1,098 single-action counterfactuals at max |t| = 1.82,
+and that result is untouched by anything here. Two separate problems; fixing
+this one does not touch that one.
+
+### 150.4 Still open
+
+- **Why the action-space base buys 2.35x more.** Whether that is buy/sell churn
+  or genuinely different economics is not instrumented. Sells need counting
+  before anything is claimed.
+- Whether closing the gap recovers the full −1.355, or whether the two
+  policies differ in ways beyond purchase volume.
+- 149.4's binding question is still binding: a 2.665 teacher is worth nothing
+  to a student whose observation carries no opponent board composition.
+- The n here is 20, not 200. These are wiring-diagnosis numbers, adequate for
+  locating a 89% leak and **not** adequate for asserting the port's final
+  strength once fixed.
+
+## 151. The dilution explanation was wrong, and the two "same" policies are different agents (08-22)
+
+150.2 explained the port's 89% leak as dilution: the action-space base buys
+2.35x more, so the search's share of purchases falls from 29% to 11%, matching
+the 10.8% of the effect retained. The agreement was close enough to be
+convincing. It is a coincidence.
+
+### 151.1 Gross buys are not the denominator
+
+`scripted_policy(sell_bench=True)` buys a unit and sells it again constantly.
+Counting seat 0 over the same 20 games:
+
+| config | buys | sells | net |
+|---|---|---|---|
+| match-level `GreedyPolicy(econ=FAST8)` | 1,126 | 577 | 549 |
+| action-space bare | 595 | 0 | 595 |
+| action-space `+sell_bench=True` | 2,855 | 2,210 | 645 |
+| action-space + all four options | 2,707 | 2,057 | 650 |
+
+**`sell_bench` alone accounts for the entire gap**: 595 -> 2,855 gross buys
+while net acquisitions barely move (595 -> 645). The 2.35x was churn, not
+economics.
+
+Against **net retained units**, which is what competes for board slots:
+
+| | match-level | action-space |
+|---|---|---|
+| search-chosen buys | 345 | 315 |
+| gross buys | 1,206 | ~2,832 |
+| **net units** | **567** | **~650** |
+| share of gross | 28.6% | 11% |
+| **share of net** | **60.8%** | **~47%** |
+
+A ratio of 0.78, not 0.11. **Dilution cannot explain losing 89% of the
+effect**, and the port gap returns to unexplained.
+
+The methodological failure is a familiar one in a new costume: *a rate is
+uninterpretable without its achievable maximum*. "11% of buys" was quoted
+without asking what fraction of those buys survived the round. The lesson had
+been recorded (see the Lessons section) and was still not applied.
+
+### 151.2 They were never the same agent
+
+The port was framed as "the same heuristic in two harnesses". The constructors
+say otherwise:
+
+| | `GreedyPolicy` | `scripted_policy` |
+|---|---|---|
+| shared | `level_at_gold`, `keep_interest`, `econ` | same three |
+| only here | `reroll_at_gold`, `roll_buys` | `buy_synergy`, `match_items`, `corner_carry`, `sell_bench`, `keep_pairs`, `roll_at_level`, `level_cap`, `place_rule` |
+
+Three shared knobs out of eleven. They are two independent heuristics that
+happen to score similarly, not one agent expressed two ways. Worse, the
+fire-rate run gave the match-level teacher **only** `econ=FAST8` while giving
+the action-space base five extra options -- so the two arms were never
+comparable, and no per-decision conclusion should have been drawn from them.
+
+This matters for the cloning plan specifically: the 2.665 teacher (149) is a
+`GreedyPolicy` subclass, and the student imitates through the action space,
+where the nearest thing is `scripted_policy`. **"Clone the teacher" is not
+well-posed** until one is expressed in terms of the other.
+
+### 151.3 Still open
+
+- The port gap (−0.147 vs −1.355) has **no** current explanation. Both named
+  candidates are now excluded: action budget (150.2) and dilution (here).
+- Whether a `GreedyPolicy`-faithful action-space policy even exists. Nothing
+  in the action space obviously blocks `reroll_at_gold`/`roll_buys`, but it
+  has not been attempted.
+- n=20 throughout this entry. Adequate for locating a wiring difference,
+  **not** for any placement claim.
+
+## 152. Two latent bugs found by auditing for a cause that was not there (08-22)
+
+The question was whether the RL failures come from an engine bug or a data gap.
+They do not -- see 152.3. But the audit turned up two real defects, both of the
+same shape: **a guard that silently guarded nothing.**
+
+### 152.1 The trait stat fallback matched zero keys
+
+Doc 02 sec 2 promises that an unimplemented entry "still delivers its stat
+half". For traits that promise was false.
+
+`normalise_item` maps Riot's variable names onto our schema
+(`AS` -> `attack_speed_pct`). `normalise_trait` does not -- it dumps Riot's
+`variables` straight into `params`, deliberately, because a trait's magnitudes
+belong to its behaviour hook which reads them via `ctx.number("AS")`. But
+`bonuses_from_params` matches **our** names. Intersection with Riot's trait
+param names: **empty**. All 86 breakpoints yielded `StatBonuses()`.
+
+```
+trait breakpoints: 86 | carrying a stats block: 0 | yielding stat bonuses: 0
+```
+
+The fix cannot be a blanket name mapping: **all 35 Set 17 traits are
+implemented**, and their hooks already spend those params, so mapping globally
+would grant every trait its stats twice. `trait_bonuses_for` now applies
+`trait_stat_fallback` (Riot naming) **only when the trait has no hook**.
+
+Because coverage is currently 35/35, the fallback is inert and **no existing
+measurement changes**. It matters the moment a new trait ships without a
+behaviour -- which is exactly when a silent zero would be hardest to notice.
+
+Both tests were mutation-tested: removing the guard fails the double-apply
+test, neutering the map fails the fallback test.
+
+### 152.2 The citation guard was blind to bare `entry N`
+
+`check_doc_refs` only matched citations carrying a `doc 99` prefix. **212 bare
+`entry N` citations bypass it entirely.** 208 happened to resolve; the four
+that did not were the `entry 150` refs written hours earlier, and the guard
+reported "all 382 citations resolve" with them dangling.
+
+Now matched separately from `CITATION` -- the prefixed form keeps its range and
+list syntax, the bare form is a plain single-id lookup. The widened guard
+caught this entry's own citations before it existed, which is the intended
+behaviour.
+
+### 152.3 What the audit ruled out
+
+Neither defect explains anything about RL. Recorded so the ground is not
+re-covered:
+
+| checked | result |
+|---|---|
+| champion abilities | 63/63 implemented |
+| traits | 35/35 behaviours implemented |
+| items | 65/65 | 
+| augments | 6/6 registered (of 14 shipped) |
+| smoke test | green -- conservation across 20 whole games |
+| suite | 1,109 tests pass, ruff clean |
+| global RNG leak | none; every `import random` is a seeded instance |
+| observation | no NaN/Inf, bounded [-1, 1] |
+| **action mask vs executor** | **0 false negatives in 2,505 probes** |
+
+The mask audit is the load-bearing one: over 2,505 (state, action) pairs the
+mask never claimed an action legal that the executor rejected. Its six
+disagreements are all the mask being *stricter* -- hiding no-op `SELECT`s of
+empty slots, and refusing `END_PLANNING` at 1-1 where the engine would happily
+let the agent forfeit its offering.
+
+**Three of the audit's own findings were false alarms**, all the same mistake:
+this repo has **four** effect registries (`effects`, `abilities`,
+`trait_effects`, `augments`) and ids were checked against the wrong one, plus
+`engine.abilities` must be imported before its 29 registrations exist. A naive
+coverage audit of this repo reports 29 missing abilities, 86 inert traits and 6
+missing augments, and all three are artefacts.
+
+### 152.4 The one real data gap: augments
+
+`data/augments.json` holds **14** hand-written generic archetypes, 6 with
+behaviours. CDragon's `setData` for `TFTSet17` lists **274**.
+
+Entry 17.1 records that "the CDragon payload does not expose" the real augment
+pool. **That is wrong** -- the payload we already download carries 274 Set 17
+augment ids, 53 of them with `TFT17_` apiNames and effects blocks. The fetch
+script simply never looks: `scripts/fetch_cdragon.py` contains no reference to
+augments at all.
+
+Champions and traits are *not* gaps by comparison: CDragon lists 83 champions
+but the 5 we lack are dummies, golems and fake units, and of 44 traits the 9 we
+lack are six Stargazer constellation variants, Miss Fortune's "Choose Trait"
+and a carousel hex -- all player-choice mechanics already documented as
+unmodelled.
+
+This is the gap that bears directly on holistic play: an agent asked to choose
+augments is choosing among 14 archetypes standing in for 274.
+
+### 152.5 Still open
+
+- Sourcing the 274 augments. Effects blocks exist for some; how many are
+  expressible without per-augment Python is unmeasured.
+- Whether combat is **faithful** rather than merely self-consistent. Every
+  check in 152.3 tests internal consistency; none compares the sim against
+  real outcomes. `data/reference/` exists for exactly that.
+- 151.3's port gap remains unexplained.
+
+---

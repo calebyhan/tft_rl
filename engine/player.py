@@ -77,6 +77,11 @@ class PlayerState:
     free_rerolls: int = 0
     realm_offer: tuple[RealmOffering, ...] = ()
     taken_offering: RealmOffering | None = None
+    # A carousel champion is drawn from the shared pool before the player sees
+    # it.  If the bench is full, TFT converts that champion to gold instead of
+    # retaining a UnitInstance; Match uses this flag to return the unowned copy
+    # when it reconciles the pick (doc 99 entry 156).
+    realm_pick_was_sold: bool = False
     shop: Shop = field(init=False)
     hex_board: Board = field(default_factory=Board)
 
@@ -523,6 +528,7 @@ class PlayerState:
         chosen = self.realm_offer[index]
         self.realm_offer = ()
         self.taken_offering = chosen
+        self.realm_pick_was_sold = False
 
         champion = self.data.champions[chosen.champion_id]
         unit = UnitInstance(champion, 1, registry=self.registry)
@@ -533,6 +539,7 @@ class PlayerState:
             self._trim_bench_overflow()
         else:
             self.gold += unit.sell_value()
+            self.realm_pick_was_sold = True
         if chosen.component_id is not None:
             self.add_item(chosen.component_id)
         return chosen

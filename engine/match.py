@@ -224,8 +224,7 @@ class Match:
 
             # Reconcile a pick already made by an externally-driven seat.
             if player.taken_offering is not None:
-                self._remove_offering(player.taken_offering)
-                player.taken_offering = None
+                self._reconcile_offering_pick(player)
                 self._realm_queue.pop(0)
                 continue
 
@@ -241,8 +240,7 @@ class Match:
             self._realm_queue.pop(0)
             index = self._ask_for_offering(player)
             player.pick_offering(index)
-            self._remove_offering(player.taken_offering)
-            player.taken_offering = None
+            self._reconcile_offering_pick(player)
 
         self._release_undrafted()
         return False
@@ -262,6 +260,24 @@ class Match:
     def _remove_offering(self, offering: "RealmOffering | None") -> None:
         if offering is not None and offering in self._realm_offerings:
             self._realm_offerings.remove(offering)
+
+    def _reconcile_offering_pick(self, player: PlayerState) -> None:
+        """Remove a drafted offering and settle its shared-pool ownership.
+
+        A normally drafted champion remains in ``player.all_units``. A
+        full-bench pick is converted to gold by ``PlayerState`` and therefore
+        owns no champion copy; return that pre-drawn carousel copy exactly
+        once before clearing the hand-off state. Keeping this in Match covers
+        both direct bot picks and the deferred action-space path.
+        """
+        offering = player.taken_offering
+        if offering is None:
+            return
+        self._remove_offering(offering)
+        if player.realm_pick_was_sold:
+            self.pool.return_to_pool(offering.champion_id, 1)
+        player.taken_offering = None
+        player.realm_pick_was_sold = False
 
     def _generate_offerings(self, seats: int, tier: int) -> list["RealmOffering"]:
         """Draw the shared line-up: one champion per offering, each with a component.
@@ -309,10 +325,25 @@ class Match:
 
     # -- phases -----------------------------------------------------------
 
-    def _planning_phase(self, is_pve: bool) -> None:
+    def _planning_phase(
+        self, is_pve: bool, *, pause_after_player_id: int | None = None,
+        start_after_player_id: int | None = None,
+    ) -> bool:
+        """Run planning, optionally pausing after one seat for an external agent.
+
+        The shared pool makes planning order observable.  ``TFTEnv`` pauses
+        after its seat has received shop/augment setup, lets it take an action
+        sub-episode, then resumes later seats; this preserves Match's normal
+        seat-order timing (doc 99 entry 159).
+        """
+        started = start_after_player_id is None
         context = PlanningContext(self, self.round_id, self.pool, self.rng, is_pve)
         tier = self.config.augments.tier_at(self.round_id.stage, self.round_id.round)
         for player in self.living_players:
+            if not started:
+                if player.player_id == start_after_player_id:
+                    started = True
+                continue
             if tier is not None:
                 player.offer_augments(
                     self.augment_offer.offer(tier, self.rng, exclude=player.augments)
@@ -321,6 +352,9 @@ class Match:
             player.reroll_thiefs_gloves(self.rng)
             self.policies[player.player_id].plan(player, context)
             self._resolve_augment_pick(player)
+            if player.player_id == pause_after_player_id:
+                return True
+        return False
 
     def _resolve_augment_pick(self, player: PlayerState) -> None:
         """Ensure a revealed augment is actually taken.

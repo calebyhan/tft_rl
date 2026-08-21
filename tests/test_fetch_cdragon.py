@@ -22,6 +22,8 @@ from scripts.fetch_cdragon import (
     _split_item_effects,
     build_dataset,
     classify_ability,
+    normalise_augment,
+    normalise_augments,
     normalise_champion,
     normalise_trait,
     playable_champion_ids,
@@ -617,3 +619,115 @@ def test_per_second_damage_without_a_duration_stays_single_hit():
     )
     assert effect == "single_target_magic_damage"
     assert "hits" not in params
+
+
+# --------------------------------------------------------------------------
+# Trait stat fallback (doc 99 entry 152)
+# --------------------------------------------------------------------------
+
+
+def test_trait_params_keep_riots_names_not_our_schema_names():
+    """`normalise_trait` deliberately does not rename, unlike `normalise_item`.
+
+    Pinned because the two functions disagree on purpose: a trait's magnitudes
+    belong to its behaviour hook, which reads Riot's names via `ctx.number`.
+    """
+    trait = normalise_trait(
+        {"apiName": "TFT17_ASTrait", "name": "Challenger",
+         "effects": [{"minUnits": 2, "variables": {"AS": 25.0, "BonusHealth": 200}}]}
+    )
+    params = trait["breakpoints"][0]["params"]
+    assert params == {"AS": 25.0, "BonusHealth": 200}
+    assert "attack_speed_pct" not in params
+    assert "health" not in params
+
+
+# --------------------------------------------------------------------------
+# Augments (doc 99 entry 153)
+# --------------------------------------------------------------------------
+
+
+def _aug(api, name, icon, effects=None):
+    return {"apiName": api, "name": name, "icon": icon, "isAugment": True,
+            "effects": effects or {}}
+
+
+def test_augment_tier_comes_from_the_icon_suffix():
+    """Riot ships no rarity field; the icon path carries I/II/III."""
+    silver = normalise_augment(_aug("TFT_Augment_A", "A", "x/Foo_I.tex"))
+    gold = normalise_augment(_aug("TFT_Augment_B", "B", "x/Bar-II.tex"))
+    pris = normalise_augment(_aug("TFT_Augment_C", "C", "x/Baz3.tex"))
+    assert silver["tier"] == "silver"
+    assert gold["tier"] == "gold"
+    assert pris["tier"] == "prismatic"
+
+
+def test_augment_stat_half_is_split_out_like_an_item():
+    aug = normalise_augment(
+        _aug("TFT_Augment_D", "D", "x/D_II.tex", {"Health": 100, "AS": 20.0})
+    )
+    assert aug["params"]["health"] == 100
+    assert aug["params"]["attack_speed_pct"] == pytest.approx(0.2)
+
+
+def test_augment_gold_and_xp_map_onto_the_existing_hooks():
+    """`Gold`/`XP` are the two highest-frequency keys in the real pool."""
+    gold = normalise_augment(_aug("TFT_Augment_E", "E", "x/E_I.tex", {"Gold": 8}))
+    assert gold["effect_id"] == "augment_instant_gold"
+    assert gold["params"]["gold"] == 8
+
+    xp = normalise_augment(_aug("TFT_Augment_F", "F", "x/F_I.tex", {"XP": 10}))
+    assert xp["effect_id"] == "augment_instant_xp"
+    assert xp["params"]["xp"] == 10
+
+
+def test_augment_with_unmodelled_behaviour_gets_a_per_augment_id():
+    """Same convention as abilities: a known-unimplemented id, not None.
+
+    Warn-once-and-no-op then reports it, instead of the augment silently
+    looking like a pure stat grant.
+    """
+    aug = normalise_augment(
+        _aug("TFT17_Augment_Weird", "Weird", "x/W_III.tex", {"NumComponents": 2})
+    )
+    assert aug["effect_id"] == "augment_TFT17_Augment_Weird"
+    assert aug["params"]["NumComponents"] == 2
+
+
+def test_augment_tier_falls_back_to_gold_when_the_icon_says_nothing():
+    aug = normalise_augment(_aug("TFT_Augment_G", "G", "x/ADMIN_Icon.tex"))
+    assert aug["tier"] == "gold"
+
+
+def test_augment_with_no_effects_at_all_still_gets_an_id():
+    """The loader rejects an augment granting neither a stat nor an effect_id.
+
+    25 of the real 274 ship with an empty `effects` block.
+    """
+    aug = normalise_augment(_aug("TFT17_Augment_Empty", "Empty", "x/E_II.tex", {}))
+    assert aug["effect_id"] == "augment_TFT17_Augment_Empty"
+    assert aug["params"] == {}
+
+
+def test_pure_stat_augment_needs_no_effect_id():
+    """It is fully modelled; a fake id would warn about nothing."""
+    aug = normalise_augment(_aug("TFT_Augment_S", "S", "x/S_I.tex", {"Health": 150}))
+    assert aug["effect_id"] is None
+    assert aug["params"] == {"health": 150}
+
+
+def test_normalise_augments_resolves_ids_against_the_item_table():
+    """`setData[...].augments` is a list of apiNames, not entries."""
+    payload = {"items": [
+        _aug("TFT_Augment_X", "X", "x/X_I.tex", {"Health": 50}),
+        _aug("TFT_Augment_Y", "Y", "x/Y_III.tex", {"Gold": 5}),
+    ]}
+    out = normalise_augments(payload, {"augments": ["TFT_Augment_Y", "TFT_Augment_X"]})
+    assert [a["id"] for a in out] == ["TFT_Augment_X", "TFT_Augment_Y"]  # sorted
+    assert out[1]["effect_id"] == "augment_instant_gold"
+
+
+def test_normalise_augments_skips_ids_with_no_item_entry():
+    payload = {"items": [_aug("TFT_Augment_X", "X", "x/X_I.tex", {"Health": 50})]}
+    out = normalise_augments(payload, {"augments": ["TFT_Augment_X", "TFT_Augment_GONE"]})
+    assert [a["id"] for a in out] == ["TFT_Augment_X"]

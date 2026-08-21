@@ -826,6 +826,134 @@ def _backfill_missing_base_stats(champions: list[dict[str, Any]]) -> None:
             champ["stats"][key] = _star_scaled(median, multiplier)
 
 
+# --------------------------------------------------------------------------
+# Augments
+# --------------------------------------------------------------------------
+
+# Riot ships no rarity field on an augment. The tier lives in the icon path,
+# as a I/II/III suffix (`AtWhatCost_III.tex`, `Crash-Test-Dummies-II.tex`) or a
+# bare trailing digit (`CalculatedLoss2.tex`). Doc 99 entry 153.
+_AUGMENT_TIERS = {"1": "silver", "2": "gold", "3": "prismatic"}
+_ROMAN_TIERS = {"I": "silver", "II": "gold", "III": "prismatic"}
+_TIER_ROMAN = re.compile(r"[_-](I{1,3})\.(?:tex|dds)$", re.IGNORECASE)
+_TIER_T = re.compile(r"[_-]T(\d)\.(?:tex|dds)$", re.IGNORECASE)
+_TIER_DIGIT = re.compile(r"(\d)\.(?:tex|dds)$", re.IGNORECASE)
+
+# Riot keys that map onto an augment hook we already implement. `Gold` and
+# `XP` are the two most common keys in the real pool (56 and 17 of 274).
+#
+# Deliberately excluded: `NumComponents`, `NumItems`, `NumGloves` and friends.
+# `augment_instant_items` grants *named* items, and Riot ships only a count --
+# choosing which components to hand out would be inventing data, which is the
+# one thing the fetch script must not do (doc 99 entry 153.2).
+_AUGMENT_EFFECT_KEYS: Mapping[str, tuple[str, str]] = {
+    "Gold": ("augment_instant_gold", "gold"),
+    "XP": ("augment_instant_xp", "xp"),
+}
+
+# Augment stat names Riot uses that `ITEM_STAT_MAP` does not carry. Kept small
+# and conservative for the same reason as everywhere else: an unlisted key
+# falls through to `params` rather than being guessed at.
+AUGMENT_STAT_MAP: Mapping[str, tuple[str, float]] = {
+    "AttackSpeed": ("attack_speed_pct", 0.01),
+    "BonusHealth": ("health", 1.0),
+}
+
+
+def augment_tier(icon: str | None) -> str:
+    """Silver / gold / prismatic, read off the icon path.
+
+    Falls back to ``gold`` -- the middle tier and by far the most common (121
+    of 274) -- when the path carries no suffix, which happens for the God
+    Augment quest chains that share a generic icon.
+    """
+    icon = icon or ""
+    match = _TIER_ROMAN.search(icon)
+    if match:
+        return _ROMAN_TIERS[match.group(1).upper()]
+    match = _TIER_T.search(icon) or _TIER_DIGIT.search(icon)
+    if match:
+        return _AUGMENT_TIERS.get(match.group(1), "gold")
+    return "gold"
+
+
+def normalise_augment(entry: Mapping[str, Any]) -> dict[str, Any]:
+    """One CDragon augment entry in our schema.
+
+    Three halves rather than two, because an augment can carry all of them:
+
+    * stat keys -> ``params`` under our names, applied board-wide with no code;
+    * a recognised econ key (``Gold``, ``XP``) -> one of the existing hooks;
+    * anything else -> a per-augment ``augment_<apiName>`` id that is *known to
+      be unimplemented*, so it warns once and no-ops rather than silently
+      looking like a pure stat grant. Same convention as the champion
+      abilities the fetch script declines to canonicalise.
+    """
+    api = entry["apiName"]
+    effects = {k: v for k, v in (entry.get("effects") or {}).items() if v is not None}
+    stats, leftovers = _split_item_effects(effects)
+
+    for key, value in list(leftovers.items()):
+        mapped = AUGMENT_STAT_MAP.get(key)
+        if mapped is None:
+            continue
+        our_key, scale = mapped
+        try:
+            stats[our_key] = stats.get(our_key, 0.0) + round(float(value) * scale, 4)
+        except (TypeError, ValueError):
+            continue
+        leftovers.pop(key)
+
+    params: dict[str, Any] = dict(stats)
+    effect_id: str | None = None
+    for key, (hook, our_key) in _AUGMENT_EFFECT_KEYS.items():
+        if key in leftovers and isinstance(leftovers[key], (int, float)):
+            effect_id = hook
+            params[our_key] = leftovers.pop(key)
+            break
+
+    # Whatever is left is real behaviour we do not model. Keep it verbatim so
+    # an implementation has its magnitudes, and name the id so it is reported.
+    params.update(leftovers)
+    if effect_id is None and (leftovers or not params):
+        # Either real behaviour we do not model, or an augment Riot ships with
+        # no `effects` at all (25 of 274 -- the God Augment quest chains and
+        # friends, whose behaviour lives entirely in code we cannot see). Both
+        # need a name: the loader rejects an augment that grants neither a stat
+        # nor an effect_id, and silently dropping one would understate the pool.
+        effect_id = f"augment_{api}"
+
+    return {
+        "id": api,
+        "display_name": entry.get("name") or api,
+        "tier": augment_tier(entry.get("icon")),
+        "effect_id": effect_id,
+        "params": params,
+    }
+
+
+def normalise_augments(
+    payload: Mapping[str, Any], set_entry: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """The set's augment pool, resolved from ids against the item table.
+
+    ``setData[...].augments`` is a list of apiNames; the entries themselves
+    live in the flat ``items`` table alongside real items.
+    """
+    by_name = {i.get("apiName"): i for i in payload.get("items") or [] if i.get("apiName")}
+    out, missing = [], []
+    for api in set_entry.get("augments") or []:
+        entry = by_name.get(api)
+        if entry is None:
+            missing.append(api)
+            continue
+        out.append(normalise_augment(entry))
+    if missing:
+        log.warning("%d augment ids did not resolve against items: %s",
+                    len(missing), ", ".join(sorted(missing)[:5]))
+    return sorted(out, key=lambda a: a["id"])
+
+
 def build_dataset(
     payload: Mapping[str, Any],
     teamplanner: Mapping[str, Any],
@@ -881,11 +1009,13 @@ def build_dataset(
 
     items = collect_items(payload, set_entry, trait_ids)
     summons = collect_summons(set_entry, trait_ids, role_mana)
+    augments = normalise_augments(payload, set_entry)
     return {
         "champions": champions,
         "traits": traits,
         "items": items,
         "summons": summons,
+        "augments": augments,
     }
 
 
@@ -932,7 +1062,7 @@ def write_dataset(
     set_number: int,
     patch: str,
 ) -> None:
-    for name in ("champions", "traits", "items", "summons"):
+    for name in ("champions", "traits", "items", "summons", "augments"):
         path = out_dir / f"{name}.json"
         path.write_text(json.dumps(dataset[name], indent=2) + "\n", encoding="utf-8")
         log.info("wrote %s (%d entries)", path, len(dataset[name]))

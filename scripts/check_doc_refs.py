@@ -31,6 +31,15 @@ CITATION = re.compile(
 )
 IDS = re.compile(r"\d+[a-z]?(?:\.\d+)?")
 
+# A bare `entry 150` with no `doc 99` prefix. 212 of these exist and all but
+# four resolved -- the four that did not were freshly written and the guard was
+# blind to them, which is the whole point of having a guard (doc 99 entry 152).
+# Matched separately rather than by loosening CITATION, so the prefixed form
+# keeps its range/list syntax and this stays a plain single-id lookup.
+BARE_CITATION = re.compile(
+    r"\bentry\s+(\d+[a-z]?(?:\.\d+)?)\b", re.IGNORECASE
+)
+
 
 def known_entries(text: str) -> set[str]:
     """Every entry id the document actually defines."""
@@ -58,9 +67,16 @@ def citations() -> list[tuple[Path, int, str]]:
             for number, line in enumerate(
                 path.read_text(errors="ignore").splitlines(), 1
             ):
+                spans = []
                 for match in CITATION.finditer(line):
+                    spans.append(match.span())
                     for entry in IDS.findall(match.group(1)):
                         out.append((path, number, entry))
+                for match in BARE_CITATION.finditer(line):
+                    # Skip one already counted via its `doc 99` prefix.
+                    if any(s <= match.start() < e for s, e in spans):
+                        continue
+                    out.append((path, number, match.group(1)))
     return out
 
 
