@@ -31,7 +31,11 @@ from engine.match import Match, PlanningContext
 from engine.player import IllegalAction, PlayerState
 from engine.schema import GameData
 from rl.action import ActionExecutor, ActionKind, ActionSpace
-from rl.observation import ObservationEncoder
+from rl.observation import (
+    SCOUT_TOKEN_MODE,
+    ObservationEncoder,
+    ScoutedObservationEncoder,
+)
 from rl.opponents import default_opponent
 
 # Doc 99 entry 69: at 12 the agent could not express a roll-down round -- ~25
@@ -63,9 +67,23 @@ class _AgentSeat:
 
     def __init__(self) -> None:
         self.pending_context: PlanningContext | None = None
+        self.external_policy: Any | None = None
 
     def plan(self, player: PlayerState, context: PlanningContext) -> None:
         self.pending_context = context
+
+    def __getattr__(self, name: str):
+        """Expose only an action policy's non-action resolution hook.
+
+        Offers deliberately remain deferred to the action space. Component
+        anvils instead happen during resolution, outside an action episode,
+        and must use the policy's own rule and RNG stream.
+        """
+        if name == "choose_component" and self.external_policy is not None:
+            chooser = getattr(self.external_policy, name, None)
+            if chooser is not None:
+                return chooser
+        raise AttributeError(name)
 
 
 class TFTEnv(gym.Env):
@@ -133,25 +151,43 @@ class TFTEnv(gym.Env):
         self.action_space_helper = ActionSpace(self.config)
         self.action_space_helper.bind_board(self._board_hexes)
         self.executor = ActionExecutor(self.action_space_helper)
-        self.encoder = ObservationEncoder(
-            self.data,
-            len(self._board_hexes),
-            self.n_players - 1,
-            champion_encoding=champion_encoding,
-            scouting=scouting,
-            copy_counts=copy_counts,
-            unit_range=unit_range,
-        )
+        encoder_kwargs = {
+            "champion_encoding": champion_encoding,
+            "copy_counts": copy_counts,
+            "unit_range": unit_range,
+        }
+        if scouting == SCOUT_TOKEN_MODE:
+            self.encoder = ScoutedObservationEncoder(
+                self.data,
+                len(self._board_hexes),
+                self.n_players - 1,
+                **encoder_kwargs,
+            )
+            self.encoder.bind_board_hexes(self._board_hexes)
+        else:
+            self.encoder = ObservationEncoder(
+                self.data,
+                len(self._board_hexes),
+                self.n_players - 1,
+                scouting=scouting,
+                **encoder_kwargs,
+            )
 
         self.action_space = spaces.Discrete(self.action_space_helper.n)
-        self.observation_space = spaces.Box(
-            low=-1.0, high=1.0, shape=(self.encoder.size,), dtype=np.float32
+        self.observation_space = (
+            self.encoder.observation_space
+            if scouting == SCOUT_TOKEN_MODE
+            else spaces.Box(
+                low=-1.0, high=1.0, shape=(self.encoder.size,), dtype=np.float32
+            )
         )
 
         self._seed = seed
         self.match: Match | None = None
+        self._external_policy: Any | None = None
         self.actions_left = 0
         self._pending_realm = False
+        self._realm_agent_planning_started = False
         self._last_hp = 0
         self._episode_reward = 0.0
 
@@ -159,15 +195,17 @@ class TFTEnv(gym.Env):
 
     def reset(
         self, *, seed: int | None = None, options: dict | None = None
-    ) -> tuple[np.ndarray, dict]:
+    ) -> tuple[Any, dict]:
         super().reset(seed=seed)
         match_seed = seed if seed is not None else self._seed
         if match_seed is None:
             match_seed = random.randrange(2**31)
         self._seed = None  # a fixed seed applies to the first reset only
 
+        agent_policy = _AgentSeat()
+        agent_policy.external_policy = self._external_policy
         policies = [
-            _AgentSeat() if i == self.agent_seat else self.opponent_factory(i)
+            agent_policy if i == self.agent_seat else self.opponent_factory(i)
             for i in range(self.n_players)
         ]
         self.match = Match(self.data, policies, seed=match_seed, registry=self.registry)
@@ -180,6 +218,18 @@ class TFTEnv(gym.Env):
         self._last_hp = self.player.hp
         self._last_potential = self._potential()
         return self._observe(), self._info()
+
+    def register_external_policy(self, policy: Any) -> None:
+        """Install an action policy's resolution-time hooks for the agent seat.
+
+        Planning remains exclusively action-driven. The registration is retained
+        across resets because evaluation commonly reuses one policy object.
+        """
+        self._external_policy = policy
+        if self.match is not None:
+            agent_policy = self.match.policies[self.agent_seat]
+            assert isinstance(agent_policy, _AgentSeat)
+            agent_policy.external_policy = policy
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, dict]:
         if self.match is None:
@@ -204,6 +254,12 @@ class TFTEnv(gym.Env):
             finished_planning = False
             reward += self.invalid_action_penalty
         self.actions_left -= 1
+
+        # A real Match settles every carousel pick before rolling anyone's
+        # shop. The agent's offering is an action, so complete that boundary
+        # immediately after PICK_OFFERING rather than in _begin_planning.
+        if self._pending_realm and not self.player.has_pending_offering:
+            self._start_realm_agent_planning()
 
         # Per-action potential (doc 99 entry 93). In `potential` mode the
         # shaping fires only at round transitions, so a round's entire Phi
@@ -257,27 +313,38 @@ class TFTEnv(gym.Env):
     def _begin_planning(self) -> None:
         """Advance the match until the agent's seat is mid-planning-phase.
 
-        ``Match._planning_phase`` calls every seat's policy including the
-        agent's no-op seat, so after it returns the agent's shop is rolled and
-        the opponents have already acted.
+        Non-realm rounds pause immediately after the agent's shop/setup. A
+        realm round pauses first for the offering itself, then starts planning
+        only after that draft has completely settled.
         """
         assert self.match is not None
         while not self.match.finished and self.player.alive:
             match = self.match
             self._pending_realm = match.is_realm_round
             if self._pending_realm:
-                # Seats with less HP than the agent draft *before* it; the
-                # draft then pauses on the agent's turn, and resume_realm()
-                # finishes the rest once the agent has picked.
+                # Rolling now would draw against a pool which still contains
+                # champions the later carousel seats will draft.
                 match._realm_phase()
-            is_pve = match.structure.is_pve(
-                match.round_id.stage, match.round_id.round
-            )
-            match._planning_phase(is_pve)
-            self._pending_pve = is_pve
+                self._realm_agent_planning_started = False
+                self._pending_pve = False
+            else:
+                is_pve = match.structure.is_pve(
+                    match.round_id.stage, match.round_id.round
+                )
+                match._planning_phase(is_pve, pause_after_player_id=self.agent_seat)
+                self._pending_pve = is_pve
             self.executor.reset()
             self.actions_left = self.max_actions_per_round
             return
+
+    def _start_realm_agent_planning(self) -> None:
+        """Finish a deferred carousel, then roll the agent's planning shop."""
+        assert self.match is not None
+        if self._realm_agent_planning_started:
+            return
+        self.match.resume_realm()
+        self.match._planning_phase(False, pause_after_player_id=self.agent_seat)
+        self._realm_agent_planning_started = True
 
     def _advance_round(self) -> float:
         """Resolve combat for the round the agent just finished planning."""
@@ -294,8 +361,12 @@ class TFTEnv(gym.Env):
         if self.player.has_pending_offering:
             self.player.pick_offering(0)
         if self._pending_realm:
-            # Let the seats above the agent in HP order take what is left.
-            match.resume_realm()
+            # An exhausted action budget may force-pick the offering. It still
+            # must settle the remaining draft before any shop can be rolled.
+            self._start_realm_agent_planning()
+            match._planning_phase(
+                False, start_after_player_id=self.agent_seat
+            )
             # A realm round has no fight; income is still paid.
             for player in match.living_players:
                 player.award_income(match.round_id)
@@ -305,9 +376,18 @@ class TFTEnv(gym.Env):
             )
             self._last_hp = self.player.hp
             self._pending_realm = False
+            self._realm_agent_planning_started = False
             if not self.reward_shaping:
                 return 0.0
             return self._shaping_reward(hp_before)
+
+        # The direct Match teacher plans seat 0 before seats 1..7.  Agent
+        # planning paused there in `_begin_planning`; now that the agent has
+        # finished, resume the opponents before combat so shared-pool shop
+        # contention has the same order (doc 99 entry 159).
+        match._planning_phase(
+            self._pending_pve, start_after_player_id=self.agent_seat
+        )
 
         reports = match._combat_phase(self._pending_pve)
         match._resolution_phase(reports)
@@ -403,7 +483,7 @@ class TFTEnv(gym.Env):
         placement = self.player.placement or self.n_players
         return (self.n_players + 1 - placement) / self.n_players
 
-    def _observe(self) -> np.ndarray:
+    def _observe(self) -> Any:
         assert self.match is not None
         opponents = [
             p for p in self.match.players if p.player_id != self.agent_seat

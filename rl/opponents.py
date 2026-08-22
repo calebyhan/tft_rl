@@ -69,6 +69,19 @@ class EconStrategy:
     level_targets: Mapping[str, int] = field(default_factory=dict)
     roll_floors: Mapping[str, int] = field(default_factory=dict)
     save_floor: int = 50
+    # Below this HP the floor is abandoned and the seat rolls its whole bank.
+    #
+    # `save_floor`'s reasoning -- 50 is the interest cap, below it you lose
+    # interest and above it you gain nothing -- is right for the mid-game and
+    # has no endgame clause, so a plan preserves its economy up to the moment
+    # it dies. Doc 99 entry 97.4 measured the cost against real matches:
+    # challenger players hold ~8 gold when eliminated, this field holds 33.6,
+    # and 24% of eliminated seats die on 60+ gold. Interest on a bank you never
+    # spend is worth nothing.
+    #
+    # 0 disables it, which is the default: enabling it changes every field
+    # number, so it is a measured A/B (entry 99), not a silent default.
+    desperation_hp: int = 0
     # A reroll comp commits to a few specific champions and buys every copy of
     # them. Without this a rolling policy spreads purchases across ~14
     # champions of a tier and copies never concentrate: doc 99 entry 73
@@ -77,6 +90,41 @@ class EconStrategy:
     # same 2-stars everyone else has. 0 disables targeting.
     target_cost: int = 0
     target_count: int = 0
+    # Round label at which a reroll plan that has hit **nothing** abandons the
+    # line: targeting is dropped and `pivot_floor` replaces the roll floor, so
+    # the seat banks and levels like a normal curve from then on.
+    #
+    # Doc 99 entry 111.4: 23.6% of `slowroll6` seats never hit their cost-2
+    # 3-star, and those seats place **6.799** against the archetype's 5.055 --
+    # roughly two thirds of its whole deficit. They keep rolling a shop that
+    # has already failed them, on a six-unit board, into stage 5, because the
+    # plan has no clause for not hitting. A real player who has not hit by 4-2
+    # abandons and levels.
+    #
+    # Deliberately conditioned on **zero** copies at the target star, not on
+    # falling short of `target_count`. A seat holding two of its three 3-stars
+    # is winning the line, not bricking it, and pivoting there would turn the
+    # archetype into something that is no longer a slow roll -- lesson 25's
+    # residue: an intervention is only evidence once it is a *good*
+    # implementation of the behaviour.
+    #
+    # "" disables it, which is the default, so every pre-111 field number
+    # reproduces.
+    pivot_at: str = ""
+    pivot_floor: int = 50
+    # Level to hold **until the line hits**, then release to the plan's curve.
+    #
+    # The mirror of `pivot_at`: that one asks "have I given up?", this one asks
+    # "have I got there yet?". A reroll plan wants to sit at the level where its
+    # target cost is cheapest -- a 1-cost needs 56 rolls per named champion at
+    # level 5 and 84 at level 6 (doc 99 entry 118.4) -- but only until it hits.
+    # Levelling on a fixed schedule rolls the seat out of its own odds; holding
+    # on a fixed schedule forfeits board slots worth 2.2 survivors each (114.2).
+    # Real reroll seats do neither: they end at level 8.26 having hit early.
+    #
+    # 0 disables it, which is the default, so every pre-119 field number
+    # reproduces.
+    commit_level: int = 0
 
     @staticmethod
     def _key(label: str) -> tuple[int, int]:
@@ -99,6 +147,80 @@ class EconStrategy:
     def roll_floor(self, now: RoundId) -> int | None:
         return self._latest(self.roll_floors, now)
 
+    def has_pivoted(self, player, now: RoundId) -> bool:
+        """Has this plan abandoned its reroll line? (doc 99 entry 111.5)
+
+        True only once the pivot round has arrived *and* the seat holds **zero**
+        3-stars at the target cost. Holding one or two is winning the line, not
+        bricking it.
+
+        Reads `all_units`, not `board_units`: a 3-star waiting on the bench is a
+        hit. `board_units` would read it as a brick and pivot a seat that has
+        already succeeded.
+        """
+        if not self.pivot_at or not self.target_cost:
+            return False
+        if self._key(self.pivot_at) > (now.stage, now.round):
+            return False
+        return not self.has_hit(player)
+
+    def hits(self, player) -> int:
+        """3-stars held at the target cost.
+
+        Reads `all_units`, not `board_units`: one waiting on the bench is a hit,
+        and reading the board alone would call a successful line a brick.
+        """
+        if not self.target_cost:
+            return 0
+        return sum(
+            1 for unit in player.all_units
+            if unit.star_level == 3 and unit.champion.cost == self.target_cost
+        )
+
+    def has_hit(self, player) -> bool:
+        """Has the line landed **at all**? The pivot's question."""
+        return self.hits(player) > 0
+
+    def line_complete(self, player) -> bool:
+        """Has the line landed **everything it wanted**? The commit's question.
+
+        Deliberately a different threshold from `has_hit`. Doc 99 entry 119.3:
+        releasing the level cap on the *first* 3-star levels the seat out of its
+        own shop odds with two of its three carries still at 2-star, and yields
+        **fewer** 3-stars (1.100/seat) than never releasing at all (1.248). A
+        real reroll player completes the line and then levels.
+        """
+        return self.target_count > 0 and self.hits(player) >= self.target_count
+
+    def level_target_after_pivot(self, player, now: RoundId) -> int | None:
+        """The level curve to follow, after the pivot and commit clauses.
+
+        Three regimes, in this order:
+
+        1. **Pivoted** -- past `pivot_at` with nothing hit. Follow `STANDARD`'s
+           curve: a pivot that only stopped the rolling would leave the seat
+           banking gold at level 6, and a real player who bricks levels.
+        2. **Committed** -- `commit_level` set and the line has not hit yet.
+           Cap the level there, so the seat keeps rolling at the level its
+           target cost is cheapest at instead of levelling out of its own odds.
+        3. Otherwise the plan's own curve.
+
+        Doc 99 entry 119: `HYPERROLL` reached level 8.00 and hit **0.176**
+        1-cost 3-stars per seat, because a 1-cost needs 84 rolls per named
+        champion at level 6 against 56 at level 5 (118.4). Holding 5 outright
+        lifted that to 1.576 and dropped the seat to level 6.78 and placement
+        5.648 -- entry 73's "never transitioning" failure. Real reroll1 seats
+        end at level **8.26** and place **4.43**: they roll low, hit, *then*
+        level. Only a conditional cap expresses that.
+        """
+        if self.has_pivoted(player, now):
+            return self._latest(_STANDARD_LEVELS, now)
+        curve = self.target_level(now)
+        if self.commit_level and not self.line_complete(player):
+            return (self.commit_level if curve is None
+                    else min(curve, self.commit_level))
+        return curve
+
 
 # The four archetypes players actually run. Level benchmarks follow published
 # guidance (doc 99 entry 70's sources); the roll floors are this project's
@@ -108,9 +230,13 @@ class EconStrategy:
 # is standard from ~5-5 -- and in this engine, where board size dominates
 # (doc 99 entries 67, 68, 72), a plan that caps at 8 forfeits slots to a
 # policy that simply keeps levelling.
+# Named separately so `level_target_after_pivot` can fall back to it without a
+# forward reference to `STANDARD`, and so the two cannot drift apart.
+_STANDARD_LEVELS = {"2-5": 5, "3-2": 6, "4-1": 7, "4-5": 8, "5-5": 9, "6-3": 10}
+
 STANDARD = EconStrategy(
     name="standard",
-    level_targets={"2-5": 5, "3-2": 6, "4-1": 7, "4-5": 8, "5-5": 9, "6-3": 10},
+    level_targets=_STANDARD_LEVELS,
     # Roll down at 4-5 for the level-8 board, then rebuild.
     roll_floors={"4-5": 20, "4-6": 50},
 )
@@ -139,7 +265,27 @@ HYPERROLL = EconStrategy(
     target_cost=1,
     target_count=3,
 )
-STRATEGIES = {s.name: s for s in (STANDARD, FAST8, SLOWROLL6, HYPERROLL)}
+SLOWROLL7 = EconStrategy(
+    name="slowroll7",
+    # The 3-cost reroll line, and the one archetype this field has never had.
+    #
+    # Doc 99 entry 115.3: real seats end holding a cost-3 3-star **0.179 times
+    # per seat**; `DEFAULT_FIELD` manages **0.003**, because no seat sets
+    # `target_cost=3` and an untargeted seat spreads its buys across a tier
+    # (73, 86). The engine 3-stars what a plan aims at and essentially nothing
+    # else, so a missing archetype is a missing *mechanic* as far as the data
+    # is concerned.
+    #
+    # Level 7 rather than 6: real seats holding a cost-3 3-star end at level
+    # **7.99** on average (115.5's mix estimate), and 3-cost reroll is played at
+    # 7 in the real game. Rolling begins at 4-1, the round the curve reaches 7.
+    level_targets={"2-5": 5, "3-2": 6, "4-1": 7, "5-5": 8, "6-1": 9},
+    roll_floors={"4-1": 50},
+    target_cost=3,
+    target_count=3,
+)
+STRATEGIES = {s.name: s
+              for s in (STANDARD, FAST8, SLOWROLL6, SLOWROLL7, HYPERROLL)}
 
 # A real lobby is not eight identical bots. Eight seats running a mix is both
 # closer to the game and better training: a field of one archetype lets a
@@ -221,11 +367,21 @@ class GreedyPolicy:
         reroll_at_gold: int = 45,
         keep_interest: bool = True,
         econ: EconStrategy | None = None,
+        roll_buys: str = "all",
     ) -> None:
         self.rng = random.Random(seed)
         self.level_at_gold = level_at_gold
         self.reroll_at_gold = reroll_at_gold
         self.keep_interest = keep_interest
+        # What the buy phase *inside the roll loop* may spend on (entry 121.2).
+        # "all" is the shipped behaviour and the default, so every measurement
+        # taken before this existed still reproduces (lesson 12). "targets"
+        # restricts it to the reroll line: 121.4 measured that of the 52.8g a
+        # rolling seat spends on units from 5-1, only 2.8g is target copies and
+        # 50.0g is other champions, so the roll-down outbids itself.
+        if roll_buys not in ("all", "targets"):
+            raise ValueError(f"roll_buys must be 'all' or 'targets', got {roll_buys!r}")
+        self.roll_buys = roll_buys
         # None keeps the pre-entry-70 behaviour, so every measurement taken
         # before this existed still reproduces (lesson 12).
         self.econ = econ
@@ -252,7 +408,13 @@ class GreedyPolicy:
         if player.gold >= self.level_at_gold and player.can_buy_xp():
             player.buy_xp()
         if player.gold >= self.reroll_at_gold and player.gold >= player.config.reroll_cost:
-            player.reroll(context.pool, self.rng)
+            # A shop roll is part of the match's stochastic trajectory.  Using
+            # this policy's private stream made the same planning actions draw
+            # a different shop through the action executor, which always uses
+            # ``Match.rng`` (doc 99 entry 154).  One match stream is also what
+            # lets a direct policy be expressed faithfully through the action
+            # space.
+            player.reroll(context.pool, context.rng)
             self._buy_phase(player, context)
 
     def _econ_plan(self, player: PlayerState, context: PlanningContext) -> None:
@@ -260,7 +422,7 @@ class GreedyPolicy:
         self._buy_phase(player, context, budget="all")
 
         # -- levelling: buy XP until on curve, or out of spendable gold ------
-        target = self.econ.target_level(context.round_id)
+        target = self.econ.level_target_after_pivot(player, context.round_id)
         if target is not None:
             cost = player.config.xp_purchase_gold
             # Levelling is worth dipping below the interest floor -- that is
@@ -279,12 +441,19 @@ class GreedyPolicy:
         floor = self.econ.roll_floor(context.round_id)
         if floor is None:
             floor = self.econ.save_floor
+        # An abandoned line stops rolling and banks (doc 99 entry 111.5).
+        if self.econ.has_pivoted(player, context.round_id):
+            floor = self.econ.pivot_floor
+        # A seat one hit from elimination has no use for an interest economy.
+        if self.econ.desperation_hp and player.hp <= self.econ.desperation_hp:
+            floor = 0
         cost = player.config.reroll_cost
         rolls = 0
         while player.gold - cost >= floor and rolls < self.MAX_ROLLS_PER_ROUND:
-            player.reroll(context.pool, self.rng)
+            player.reroll(context.pool, context.rng)
             rolls += 1
-            self._buy_phase(player, context, budget="all")
+            self._buy_phase(player, context, budget="all",
+                            targets_only=self.roll_buys == "targets")
             self._sell_surplus(player, context)
 
     def choose_offering(self, player: PlayerState, offerings: Sequence) -> int:
@@ -335,7 +504,8 @@ class GreedyPolicy:
         return max(player.gold - floor, 0)
 
     def _buy_phase(
-        self, player: PlayerState, context: PlanningContext, budget=None
+        self, player: PlayerState, context: PlanningContext, budget=None,
+        targets_only: bool = False,
     ) -> None:
         """Buy the best affordable shop units.
 
@@ -346,13 +516,19 @@ class GreedyPolicy:
         cannot buy it -- it pays to search and then refuses the result. That
         alone made the reroll archetypes place 5.293 and 6.107 against
         standard's 3.887 (doc 99 entry 73).
+
+        ``targets_only`` narrows it to the reroll line, and is only ever passed
+        from inside the roll loop (doc 99 entry 121.4). It cannot be the default
+        here: outside that loop it would stop the plan building a board at all.
         """
         counts = trait_counts(player.all_units)
-        targets = self._targets(player)
+        targets = self._targets(player, context.round_id)
         candidates = []
         for slot in range(len(player.shop)):
             champion_id = player.shop.peek(slot)
             if champion_id is None or not player.can_buy(slot):
+                continue
+            if targets_only and champion_id not in targets:
                 continue
             champion = player.data.champions[champion_id]
             synergy = sum(counts.get(t, 0) for t in champion.traits)
@@ -369,9 +545,9 @@ class GreedyPolicy:
             if player.can_buy(slot) and cost <= max(available, 0):
                 player.buy(slot, context.pool)
 
-    def _targets(self, player: PlayerState) -> frozenset[str]:
+    def _targets(self, player: PlayerState, now) -> frozenset[str]:
         """The champions a reroll comp is committed to. See :func:`reroll_targets`."""
-        return reroll_targets(player, self.econ)
+        return reroll_targets(player, self.econ, now)
 
     def _sell_surplus(self, player: PlayerState, context: PlanningContext) -> None:
         """Free bench space by selling the weakest surplus 1-stars.
@@ -379,7 +555,7 @@ class GreedyPolicy:
         Never sells a target: those copies are the whole point of rolling, and
         a 3-star needs nine of them held long enough to combine.
         """
-        targets = self._targets(player)
+        targets = self._targets(player, context.round_id)
         while not player.free_bench_slots and player.bench_units:
             sellable = [
                 u for u in player.bench_units
@@ -391,7 +567,7 @@ class GreedyPolicy:
 
 
 
-def reroll_targets(player, econ) -> frozenset[str]:
+def reroll_targets(player, econ, now) -> frozenset[str]:
     """The champions a reroll comp is committed to.
 
     Chosen by copies already held, so the commitment emerges from what the shop
@@ -404,8 +580,16 @@ def reroll_targets(player, econ) -> frozenset[str]:
     bought by generic strength, accumulating copies of nothing -- 0 three-stars
     in the agent seat against 100% in the field, from the same archetype
     (doc 99 entry 86). One definition, both callers.
+
+    ``now`` is required rather than defaulting to None. A default would let a
+    caller silently skip the pivot check and keep buying carries for a line the
+    plan has already abandoned -- the same class of failure `teacher_gap` warns
+    about, arriving through a permissive default rather than a dropped key.
     """
     if econ is None or not econ.target_cost:
+        return frozenset()
+    # An abandoned line has no carries: the seat buys on generic strength again.
+    if econ.has_pivoted(player, now):
         return frozenset()
     held: dict[str, int] = {}
     for unit in player.all_units:
@@ -413,6 +597,14 @@ def reroll_targets(player, econ) -> frozenset[str]:
             held[unit.champion.id] = (
                 held.get(unit.champion.id, 0) + 3 ** (unit.star_level - 1)
             )
+    # Doc 99 entry 117.4 tried commitment hysteresis here -- prefer champions
+    # already past `COMMIT_COPIES` over ones merely leading on raw copies -- and
+    # it was a **clean null**: 26.47 copies, 3.69 champions and 12.31 stranded,
+    # all byte-identical, |err| 0.453 -> 0.458. By the time a seat holds ~7
+    # copies of each champion every candidate is past any sane threshold, so the
+    # rule orders exactly as this one does. The drift it aimed at happens at 1-3
+    # copies; end-state hysteresis cannot see it. Reverted rather than shipped
+    # (entry 118.1).
     ranked = sorted(held, key=lambda c: (-held[c], c))
     return frozenset(ranked[: econ.target_count])
 

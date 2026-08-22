@@ -571,6 +571,25 @@ def test_opponents_are_configurable(data):
     )
 
 
+def test_external_component_hook_is_used_and_survives_reset(data):
+    """Resolution-time anvils belong to the action policy, not a RNG fallback."""
+    calls = []
+
+    class ComponentPolicy:
+        def choose_component(self, player, offered):
+            calls.append((player.player_id, tuple(offered)))
+            return offered[-1]
+
+    env = TFTEnv(data=data)
+    env.register_external_policy(ComponentPolicy())
+    env.reset(seed=1)
+    offered = ("TFT_Item_BFSword", "TFT_Item_ChainVest")
+    assert env.match._pick_component(env.player, offered, anvil=True) == offered[-1]
+    env.reset(seed=2)
+    assert env.match._pick_component(env.player, offered, anvil=True) == offered[-1]
+    assert len(calls) == 2
+
+
 def test_step_before_reset_raises(data):
     env = TFTEnv(data=data)
     with pytest.raises(RuntimeError, match="reset"):

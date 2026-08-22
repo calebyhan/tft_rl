@@ -15467,3 +15467,391 @@ attribute the result to the action space or return to PPO until that controlled
 comparison identifies the remaining seam.
 
 ---
+
+## 156. A full-bench carousel sale leaks its champion from the pool (08-22)
+
+The 155 scheduler gate passed, but repository-level validation exposed an
+independent simulator-integrity failure. Because any placement experiment
+consumes the same shared pool, a conservation failure is a blocker rather than
+a warning to carry alongside a result.
+
+The smoke test's named invariant is:
+
+```
+free pool + player-held copies + visible shop copies == initial pool
+```
+
+Outcomes named before localisation:
+
+1. A scheduler-dependent failure: it would be attributed to the new action
+   adapter and tested in its exact planning transition.
+2. A policy-independent match failure: isolate champion and round before
+   altering any search code.
+3. No reproduction: treat the 20-game smoke result as an insufficiently
+   specified lead, not as an engine claim.
+
+### 156.1 Outcome 2: one missing Nami, isolated to 4-4
+
+`scripts/smoke_test.py` over its normal 20 mixed-policy games fails once:
+
+```
+game 16 (seed 16): 1158 free + 36 held + 5 shops = 1199, expected 1200
+```
+
+The one-game reproductions separate this from 155's direct policy and its
+match-RNG correction:
+
+| seed | policy | conservation |
+|---:|---|---|
+| 16 | mixed | fail, 1,199 / 1,200 |
+| 16 | random | fail, 1,199 / 1,200 |
+| 16 | greedy | pass |
+
+The random-only failure does not invoke `GreedyPolicy`, so the action scheduler
+and direct reroll-stream correction cannot cause it. A per-champion accounting
+audit identifies `TFT17_Nami`: initial 10, final 9 free, 0 held, 0 in shop.
+Stepping the same match one round at a time keeps Nami conserved through 4-3
+and first loses it in the **4-4 realm round**.
+
+### 156.2 Cause is a single full-bench branch
+
+`Match._generate_offerings` correctly draws every carousel champion from
+`SharedPool`. `PlayerState.pick_offering` then does either:
+
+- free bench slot: create and retain a `UnitInstance`, which remains counted;
+- no free bench slot: add the unit's sell value to gold.
+
+The second branch does not return the offered champion to `SharedPool`. The
+champion was already drawn for the offering, is not represented by a retained
+unit, and later cannot be recovered by elimination cleanup. That is precisely
+the observed one-copy deficit. Greedy seed 16 avoids the branch by clearing
+bench space; it is not evidence the match is sound.
+
+At the diagnosis point, no placement claim was made. The failure arises in a
+direct random-policy match with no agent action scheduler, so it is separate
+from 155; using the correct base teacher does not make a leaky placement
+comparison valid.
+
+### 156.3 Repair and regression result
+
+`PlayerState.pick_offering` now records whether the offering was converted to
+gold. `Match._reconcile_offering_pick` owns the other half of that transition:
+after removing the offering from the shared line-up, it returns its champion
+to `SharedPool` exactly once if no `UnitInstance` was retained. Both paths call
+the same reconciliation helper:
+
+- direct bot picks inside `Match.resume_realm`;
+- the deferred RL/action-space pick, reconciled when `resume_realm` resumes.
+
+This placement is intentional. The player has no shared-pool reference, while
+the match owns both the carousel line-up and the pool; returning inside the
+player would either require leaking match ownership into the player API or
+would double-return every normal pick.
+
+`tests/test_realm.py` constructs the full-bench deferred path and asserts the
+chosen champion's pool count rises by one on reconciliation, with the gold
+conversion preserved. The targeted realm/action regressions pass. The exact
+seed-16 mixed and random smoke reproductions both pass, and the normal
+20-game mixed smoke test now reports **all invariants held**. Re-running the
+post-repair 155 FAST8 grid also remains **38 / 38 exact** with zero action-cap
+hits, so the carousel ownership fix did not disturb the shared scheduler
+contract.
+
+The scheduler's ranking-order regression was also mutation-tested: changing
+its stored buy ranking to ascending makes the late phase-25 conformance test
+fail; the descending direct-policy order is restored.
+
+### 156.4 Next experiment
+
+The ownership repair permits the controlled `SearchBuyPolicy.best_buy` port to
+resume. First keep the 155 grid as the no-search control, then port only the
+buy decision and compare direct and action teachers on shared full-match seeds.
+Report paired placement delta, placement distribution, top-4/win rates, and
+action-cap use; anything else in the action scheduler must remain unchanged.
+
+The repository's full suite still stops early on the separate expanded-augment
+data issue (`TFT10_Augment_CrashTestDummies` has neither stats nor an
+implementation). That pre-existing data-validation failure is not hidden by
+this entry; it does not affect the targeted realm or scheduler regressions,
+but it must be resolved before claiming a wholly green worktree.
+
+---
+
+## 157. The search-buy port now has the right base, but not yet a scalable gate (08-22)
+
+The remaining controlled question is whether the once-per-round direct
+`SearchBuyPolicy` can be expressed without changing everything after its first
+purchase. `search_buy_greedy_policy` now wraps only `best_buy` around
+`GreedyActionPolicy`; it retains `mode="none"`, so no board search enters the
+comparison. It also delegates pending carousel/augment picks to the base
+scheduler before evaluating a shop, matching Match's direct order.
+
+The phase-15 direct/action regression passes. A bounded common-prefix panel
+(seeds 0--1, phases 0 and 15) is **4 / 4 exact**, with zero action-cap hits.
+
+The attempted 38-state grid was stopped, not treated as a null: its harness
+rebuilds a full direct *search* prefix twice per target, multiplying combat
+simulations until the diagnostic itself becomes the dominant cost. The bounded
+panel establishes the port at an opening and a late representative phase, but
+is not enough to authorise a placement number.
+
+### 157.1 Cached sparse panel
+
+The first cache attempt failed honestly: generic `deepcopy` cannot pickle the
+immutable mapping proxies inside loaded game data. A clone memo that preserves
+those immutable mappings by identity while copying the mutable match state
+works. The revised sparse panel (seeds 0--2, phases 0, 15, and 25) is **9 / 9
+exact**, again with zero cap hits.
+
+The exhaustive 38-state panel is still disproportionate because it evaluates
+the direct search trajectory through every intervening phase. The sparse panel
+covers opening, midgame, and late-game states across independent seeds; it is
+the stated conformance gate for the next bounded placement measurement.
+
+Next: run a shared-seed direct/action placement pilot with the same FAST8
+teacher, reporting the full distribution and paired delta. It is a pilot, not
+a claim about search strength; its first purpose is to reveal any match-level
+port seam that a planning-state panel cannot see.
+
+---
+
+## 158. Planning conformance did not retain search-buy match strength (08-22)
+
+The first shared-seed FAST8 pilot uses fresh direct and action policies per
+seed, the same opponent field, and a 600-action planning cap. Its purpose was
+to detect a match-level seam, not estimate search strength.
+
+| seed | direct `SearchBuyPolicy` placement | action search-buy placement |
+|---:|---:|---:|
+| 0 | 4 | 6 |
+| 1 | 1 | 3 |
+
+Action minus direct is **+2.000** on both pairs; no planning round exhausted
+the cap. This is directionally consistent and much larger than a plausible
+rounding difference, but **n=2 cannot estimate retention or a confidence
+interval**. No claim is made that search is weak or that the action port has a
+fixed two-placement penalty.
+
+The 157 planning panels show that the two policies agree from common states.
+The next experiment must therefore trace a whole match from reset, locating
+the *first round* where its pre-planning states diverge. Candidate seams are
+outside the compared action plan: policy RNG lifetime, opponent policy state,
+realm reconciliation, or a direct/action round-transition difference. Do not
+scale this pilot until that first divergence is named.
+
+### 158.1 Persistent-policy trace finds a scheduler-state failure
+
+The whole-match trace keeps one action policy alive, unlike the single-phase
+conformance harness. Before it can report a placement divergence, it fails in
+`GreedyActionPolicy`'s `econ_xp` stage: the scheduler emits `BUY_XP` while the
+environment's legal mask rejects it. This makes the persistent action policy
+invalid and is a stronger explanation for the pilot gap than placement noise.
+
+Next: log the round, player economy, scheduler stage, and decoded mask at that
+assertion; then repair the stale stage transition and add a multi-round
+regression. Re-run the trace before interpreting either pilot pair.
+
+### 158.2 Correction: the mask failure was a dead-seat trace bug
+
+The rejected `BUY_XP` occurred after the action seat was eliminated. The real
+environment terminates there, but the trace loop kept requesting actions; a
+dead player can satisfy `can_buy_xp` while its terminal mask exposes only END.
+The scheduler was restored to strict masking and the trace now stops on agent
+elimination.
+
+With that correction, seed 0 is identical through **5-3**. The first real
+post-round difference is 5-4: direct gold is 0 and action gold is 8. This is
+the carousel/realm round immediately following a common state, and is the
+next reduced primitive trace. The pilot gap is therefore not yet explained,
+but it is now narrowed from a whole game to one round.
+
+---
+
+## 159. The agent and direct teacher do not occupy the same planning timeline (08-22)
+
+158's primitive trace uncovered two harness mistakes before locating the real
+seam: it acted after death, then its manual "direct" teacher was byte-identical
+to the action state through terminal placement. Yet the actual pilot remains
+reproducibly seed 0 direct 4th versus action 6th. The discrepancy is in how
+the two harnesses schedule the agent relative to the seven opponents.
+
+In `Match._planning_phase`, seats are iterated in order. A direct
+`SearchBuyPolicy` at seat 0 buys and rerolls **before** seats 1--7 plan. In
+`TFTEnv._begin_planning`, seat 0 is deliberately `_AgentSeat` (a no-op) while
+the match calls every opponent policy; only after that loop does the Gym agent
+receive its planning actions. Shops draw from a shared pool, so this is not a
+cosmetic timing difference: the agent's purchase/search no longer contests
+the same shop/pool state as the direct teacher, and opponents see a different
+pool in the two arms.
+
+The manual trace matched because it reproduced the action environment's
+late-agent order, not the direct Match teacher's early-agent order. It cannot
+validate the placement port.
+
+### 159.1 What this invalidates
+
+The 4th-versus-6th pilot is **not** evidence that the action scheduler loses
+two placements, nor that `best_buy` fails to port. It compares agents with
+different shared-resource timing. This also gives a concrete, more credible
+explanation for entry 150's retained-search gap than either action capacity or
+individual primitive expressiveness.
+
+### 159.2 Next experiment
+
+Make the deferred Gym agent occupy the same seat-0 point in the planning
+timeline as a direct policy: pause `Match._planning_phase` when it reaches the
+agent, run the action sub-episode, then resume seats 1--7. Add a round-level
+pool/order regression proving that a direct and action greedy teacher start
+each opponent's plan with identical shared-pool state. Only then rerun the
+search conformance and the paired placement pilot.
+
+This is a simulator scheduling repair, not an RL hyperparameter experiment.
+
+### 159.3 Repair result: exact whole-match trace
+
+`Match._planning_phase` can now pause after seat 0 has received its shop and
+offer setup, and resume at seats 1--7 only after the Gym action sub-episode.
+`TFTEnv` uses this boundary in both normal and realm rounds. The environment
+and realm suites pass.
+
+The trace was widened to all players' board, bench, items, augments, shop,
+economy, pool/RNG, and placements. After normalising the direct trace's final
+winner placement (`Match.run()` normally performs that bookkeeping), seed 0 is
+**exact through round 6-6 and final placement**. This is the first
+whole-match—not merely planning-phase—evidence that the action path can occupy
+the direct teacher's shared-pool timeline.
+
+The old pilot must be rerun from this repaired engine. Its earlier action
+6th/direct 4th result is invalidated by the timing mismatch; a transient
+post-repair action 1st/direct 4th pair is equally non-interpretable until the
+pilot's direct Match harness is reconciled with the now-exact trace. The next
+measurement is a three-way seed trace (direct Match, paused direct env, action
+env) to make that harness identity explicit before another placement table.
+
+### 159.4 A resolution-time policy hook was the last observed seam
+
+The three-way reconciliation found one additional boundary outside planning.
+On a low-HP PvE round, `Match._award_loot` asks the seat policy to choose a
+component from an anvil. Direct `SearchBuyPolicy` inherits
+`GreedyPolicy.choose_component`, which uses the policy's private RNG both to
+finish an item on the carry and to break ties. The Gym agent's `_AgentSeat`
+had no such hook, so it silently took Match's random fallback instead. That
+changes both the component and the match RNG trajectory, which can cascade
+through every later shop and fight despite exact planning conformance.
+
+`TFTEnv.register_external_policy(...)` now retains the action policy across
+resets and exposes **only** its `choose_component` hook through `_AgentSeat`.
+Carousel and augment choices remain deferred action-space decisions; delegating
+them would conceal a real action-policy omission. `GreedyActionPolicy` delegates
+the hook to its direct `GreedyPolicy`. The search-buy wrapper mirrors the direct
+`SearchBuyPolicy` rule with its search RNG, preserving the single direct
+policy-RNG stream rather than accidentally using the base scheduler's separate
+RNG. `tests/test_env.py` verifies the hook is used and survives a reset.
+
+Outcomes named before the rerun:
+
+1. Exact whole-round traces and placements: the direct/action port is
+   faithful through both planning and resolution; scale the pilot only as a
+   robustness check.
+2. A first post-hook difference: record that precise resolution transition;
+   the port still has a named seam.
+
+### 159.5 Outcome 1 on the bounded rerun
+
+With the hook installed, `scripts/search_buy_match_trace.py --seed 0` has no
+state difference after any completed round through the agent's 5-7 elimination
+(all players, boards, benches, items, augments, shops, economy, pool, and
+match RNG are compared). This corrects 159.3's prior, incomplete trace: it
+was exact because its manual direct environment also used the placeholder's
+random anvil fallback, not because it matched direct `SearchBuyPolicy`.
+
+The actual direct-Match versus action-environment pilot was then rerun from
+reset with fresh policies, FAST8, the same opponents, shared seeds, and a
+600-action planning cap:
+
+| seed | direct `SearchBuyPolicy` placement | action search-buy placement |
+|---:|---:|---:|
+| 0 | 4 | 4 |
+| 1 | 1 | 1 |
+
+Action minus direct is **0.000** in both pairs and no planning round hit the
+cap. Two games do not estimate retention, strength, or variance, but they do
+remove the specific 158 discrepancy: it was caused first by shared-pool
+planning order and then by the unforwarded resolution hook, not evidence that
+RL's action representation loses the search teacher.
+
+### 159.6 Next experiment
+
+Scale the *same* direct-Match/action-env common-policy pilot to a predeclared
+10 shared seeds. Report every paired placement, mean paired delta, top-4/win
+counts, and action-cap rounds. The pass criterion is exact per-seed placement
+or a traced first state difference; do not convert a small average delta into
+a search-strength claim. If the scale remains exact, the next question returns
+to the actual RL gap: can behavior cloning reproduce this now-faithful action
+teacher, and does it retain the teacher's search advantage under a held-out
+seed block?
+
+### 159.7 Outcome: 10 / 10 direct-Match placements now reproduce exactly
+
+The first scaled result did **not** pass: seed 7 was direct 3rd/action 1st.
+That was treated as a trace target, not averaged into a promising −0.200
+delta. A real `Match.play_round()` versus action-environment trace then exposed
+two remaining phase-order errors.
+
+1. On a realm round, the environment rolled the agent's shop immediately
+   after pausing its carousel offering. Direct Match completes every remaining
+   draft pick and releases leftover offerings *before any planning shop is
+   rolled*. The agent's opening shop therefore drew from a different shared
+   pool. The environment now starts agent planning only immediately after its
+   `PICK_OFFERING` settles the full draft.
+2. Match offers an augment before `policy.plan` but resolves its selection
+   after planning. The action adapter previously took the augment first. On
+   seed 7 at 2-1 this changed the fourth retained purchase (direct Poppy,
+   action Twisted Fate). The scheduler now emits `PICK_AUGMENT` only after its
+   buy/XP/roll/sell/field/equip stages have completed; `END_PLANNING` remains
+   masked until that pick happens.
+
+The aligned real-Match trace is exact through seed 7's 6-3 agent elimination.
+Continuing a direct Match after that point is intentionally not compared: the
+Gym environment terminates when its controlled seat's placement is already
+assigned, while Match continues only to rank surviving opponents.
+
+The predeclared 10 shared seeds were then rerun from reset with fresh FAST8
+search-buy policies and the same seven opponents:
+
+| seed | direct | action |
+|---:|---:|---:|
+| 0 | 4 | 4 |
+| 1 | 1 | 1 |
+| 2 | 5 | 5 |
+| 3 | 7 | 7 |
+| 4 | 7 | 7 |
+| 5 | 5 | 5 |
+| 6 | 3 | 3 |
+| 7 | 3 | 3 |
+| 8 | 1 | 1 |
+| 9 | 1 | 1 |
+
+Both arms have mean placement **3.700**, 6 / 10 top-four finishes, and 3 / 10
+wins. Paired action minus direct is **0.000**, and no planning round hit the
+600-action cap. The new seed-7 phase-6 conformance regression passes (7 / 7
+usable states, zero caps), as do the focused environment/realm/search tests.
+
+This is a **port-fidelity result**, not a claim that search is strong or that
+an RL policy has learned it. It does rule out the action representation and
+the known Match/environment boundary differences as explanations for the
+earlier direct-versus-action teacher gap.
+
+### 159.8 Next experiment
+
+Return to the learning question with this teacher frozen. First measure
+behavior cloning on a held-out seed block against the action teacher, separated
+by decision family (offering, augment, buy, reroll/XP, select/place, equip,
+end). Then replay the clone's full matches against the same fixed opponent
+field and compare it with the now-exact teacher. If cloning fails at one family
+or at a transition (especially the action-space's sequential board moves), the
+trace identifies the representation/credit target to repair. If cloning is
+high-fidelity but still loses placement, the next diagnosis is partial
+observability or compounding error—not PPO hyperparameters.
+
+---
