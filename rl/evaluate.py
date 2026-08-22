@@ -17,6 +17,7 @@ import numpy as np
 from engine.hexgrid import axial_to_offset
 from engine.traits import trait_counts
 from rl.env import TFTEnv
+from rl.greedy_action import GreedyActionPolicy
 from rl.opponents import reroll_targets
 
 # Last-place rate above which a result is treated as degenerate rather than
@@ -277,6 +278,7 @@ def scripted_policy(
     roll_at_level: int = 0,
     level_cap: int = 0,
     sell_bench: bool = False,
+    keep_pairs: int = 0,
     econ=None,
     place_rule: str = "rows",
 ) -> PolicyFn:
@@ -528,7 +530,7 @@ def scripted_policy(
             # agent seat against 100% in the field (doc 99 entry 86). A target
             # outranks synergy and cost: a fourth copy of the carry is worth
             # more than a better unit the plan will never star up.
-            targets = reroll_targets(player, econ)
+            targets = reroll_targets(player, econ, env.match.round_id)
 
             def buy_key(i: int):
                 champion = player.data.champions[player.shop.slots[i]]
@@ -564,7 +566,7 @@ def scripted_policy(
         if econ is not None:
             # Level to the curve. Worth dipping below the interest floor --
             # that is what "level 8 at 4-1" means -- so this spends real gold.
-            target = econ.target_level(env.match.round_id)
+            target = econ.level_target_after_pivot(player, env.match.round_id)
             if (
                 mask[space.buy_xp_index]
                 and target is not None
@@ -603,10 +605,48 @@ def scripted_policy(
                 and _copies_owned(player, unit) < 2
                 # Never a reroll target: nine copies must be *held* long
                 # enough to combine, and the bench is where they wait.
-                and unit.champion.id not in reroll_targets(player, econ)
+                and unit.champion.id not in reroll_targets(
+                    player, econ, env.match.round_id)
             ]
             if spare:
-                worst = min(spare, key=lambda b: _unit_strength(player.bench[b]))
+                # Prefer copies that are not progressing an upgrade. A 1-star
+                # of a champion already held at 2-star is the start of the
+                # second pair a 3-star needs, and it is also the weakest thing
+                # on the bench -- so "sell the weakest" reaches for it first.
+                # Doc 99 entry 102 measured the cost: 13.4% of the teacher's
+                # sells were this, and it reached a 3-star in 0 of 30 games
+                # against a real 34.5%, peaking at one 2-star and no more.
+                #
+                # A preference, not a ban: if every candidate is progressing,
+                # the seat still sells rather than deadlocking on a full bench
+                # and stalling every later purchase (entry 37.4).
+                #
+                # `keep_pairs` is a *count*, not a switch: the number of
+                # champions whose progressing copies are protected, chosen by
+                # how close each is to completing. Protecting every one of them
+                # unconditionally cost 0.343 placement (102.3), and bench
+                # congestion could not be ruled out as the reason (102.5) --
+                # a real player commits to two or three carries, not to every
+                # pair the shop happens to offer.
+                protected: set[str] = set()
+                if keep_pairs:
+                    progress: dict[str, int] = {}
+                    for unit in player.all_units:
+                        if unit.star_level >= 2:
+                            progress[unit.champion.id] = (
+                                progress.get(unit.champion.id, 0)
+                                + 3 ** (unit.star_level - 1)
+                            )
+                    protected = set(sorted(
+                        progress, key=lambda c: (-progress[c], c)
+                    )[:keep_pairs])
+                keepers = [
+                    b for b in spare
+                    if not (player.bench[b].star_level == 1
+                            and player.bench[b].champion.id in protected)
+                ]
+                worst = min(keepers or spare,
+                            key=lambda b: _unit_strength(player.bench[b]))
                 return space.sell_offset + space.slot_for_bench(worst)
 
         # -- roll down: the gold sink that did not exist ------------------
@@ -625,6 +665,17 @@ def scripted_policy(
             floor = econ.roll_floor(env.match.round_id)
             if floor is None:
                 floor = econ.save_floor
+            # A seat one hit from elimination has no use for an interest
+            # economy (doc 99 entry 99.1). Honoured here as well as in
+            # `GreedyPolicy`: a field read by one consumer and ignored by the
+            # other is entry 86's defect, and entry 87's guard in
+            # `tests/test_econ_fields.py` exists to catch exactly this.
+            if econ.desperation_hp and player.hp <= econ.desperation_hp:
+                floor = 0
+            # An abandoned reroll line stops rolling and banks (entry 111.5),
+            # honoured here for the same both-consumers reason as above.
+            if econ.has_pivoted(player, env.match.round_id):
+                floor = econ.pivot_floor
             if (
                 mask[space.reroll_index]
                 and player.gold - player.config.reroll_cost >= floor
@@ -641,6 +692,34 @@ def scripted_policy(
         return space.end_index
 
     return act
+
+
+def greedy_action_policy(
+    env: TFTEnv,
+    *,
+    level_at_gold: int = 30,
+    reroll_at_gold: int = 45,
+    keep_interest: bool = True,
+    econ=None,
+    roll_buys: str = "all",
+) -> PolicyFn:
+    """Faithful action-space adapter for :class:`rl.opponents.GreedyPolicy`.
+
+    Unlike :func:`scripted_policy`, this is not an independently evolved
+    heuristic.  It preserves the direct teacher's planning order exactly and
+    is therefore the base required before measuring a search-policy port (doc
+    99 entries 153--154).
+    """
+    policy = GreedyActionPolicy(
+        env,
+        level_at_gold=level_at_gold,
+        reroll_at_gold=reroll_at_gold,
+        keep_interest=keep_interest,
+        econ=econ,
+        roll_buys=roll_buys,
+    )
+    env.register_external_policy(policy)
+    return policy
 
 
 def sb3_policy(model, deterministic: bool = True) -> PolicyFn:

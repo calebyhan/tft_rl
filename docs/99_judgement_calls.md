@@ -15192,3 +15192,278 @@ augments is choosing among 14 archetypes standing in for 274.
 - 151.3's port gap remains unexplained.
 
 ---
+
+## 153. The port is a different policy before it is a different harness (08-22)
+
+151 established that `GreedyPolicy` and `scripted_policy` have different
+constructors. That is a code reading, not yet evidence about the behaviour
+that matters: the action space may still express the direct policy, or the
+environment's action limit may be the missing 89% of 150's search gain.
+
+`scripts/policy_conformance.py` compares one planning phase from an identical
+seeded state. The direct arm calls `GreedyPolicy.plan` through a
+`PlanningContext`; the action arm repeatedly calls `scripted_policy` and stops
+immediately before `END_PLANNING`, so combat cannot hide a planning-state
+difference. Both environments carry a **600-action** phase cap, far above the
+80 rerolls a direct policy permits.
+
+Outcomes named before the first run:
+
+1. Exact snapshots throughout: the present action policy is a faithful port;
+   the search gap lies above it.
+2. Equality until the action cap: the policy is expressible but the wrapper
+   prevents it from completing its plan.
+3. Earlier mismatch: the two control flows are distinct; the first divergent
+   action/state identifies what must be ported before searching or cloning is
+   interpretable.
+
+### 153.1 Outcome 3, early and reproducible
+
+The base of the strong search teacher is `GreedyPolicy(econ=FAST8)`, so that
+is the policy tested. Ten seeds (0--9) were prepared to each target phase by
+the **same direct-policy prefix**; only then were independent direct and action
+arms compared. This makes a later difference a property of the target planning
+phase rather than an accumulated difference from unlike prefixes.
+
+| zero-based planning phase | usable seeds | exact final planning states | action cap hit |
+|---|---:|---:|---:|
+| 0 (1-1) | 10 | **10 / 10** | 0 |
+| 5 | 10 | **1 / 10** | 0 |
+| 15 | 10 | **0 / 10** | 0 |
+| 25 | 7 (three eliminated) | **0 / 7** | 0 |
+
+The opening agreement matters: the adapter correctly aligned the deferred
+Realm offering, and this is not an initial-state or action-mask artefact. The
+action limit is also cleanly excluded in every one of the 37 usable phases.
+
+At phase 5, seed 0, the first different state is `bench[0]`: direct play has
+no unit there, while action play holds Caitlyn. The primitive traces make the
+mechanism visible:
+
+```
+direct: BUY, BUY, SELL, MOVE_TO_BOARD, MOVE_TO_BOARD
+action: BUY, BUY, SELECT/PLACE, BUY, SELECT/PLACE, BUY, SELECT/PLACE,
+        SELL, EQUIP, BUY, SELL
+```
+
+The action policy fields immediately after its second buy, creating bench space
+and then buying/selling three more units. The direct policy buys until its
+bench constraint bites, clears surplus, and only then fills the board. By
+phase 15 the direct arm makes two buys, eight XP purchases, one sale and one
+fielding move; the action arm makes five buys, three sales and two fielding
+moves around the same eight XP purchases. This is a **policy-ordering** gap,
+not a budget result.
+
+### 153.2 What this changes
+
+150's port result cannot be used to price `best_buy`, and no placement A/B can
+repair that interpretation: the nominal base policy has already become a
+different agent before search is called. But the action space itself is not
+refuted. It expressed the opening plan exactly, and every direct primitive in
+the phase trace has an action-space counterpart (`BUY`, `SELL`, `BUY_XP`,
+`REROLL`, `SELECT`/`PLACE`, `EQUIP`). The untested claim is narrower and more
+useful: can a **faithful action scheduler** emit those primitives in the direct
+policy's order?
+
+The screen is deliberately diagnostic, not a new placement figure: n=10 is
+adequate for the 9/10 deterministic behavioural split and says nothing about
+the final strength of either policy. It was run on the current working tree,
+whose broad augment import emits unimplemented-effect warnings; because both
+arms start from the identical state and the result is pre-combat action order,
+that does not explain the mismatch, but it does rule out citing this as an
+augment or placement measurement.
+
+### 153.3 Next experiment
+
+Build a shadow-trace action scheduler for **plain `GreedyPolicy` only**. On a
+cloned planning state it runs the direct policy while recording its calls to
+the shared `PlayerState` primitives, maps that trace to legal action-space
+actions, and replays it on the live state. The test is exact equality of the
+post-planning player and pool states over the same phase/seed grid.
+
+- If it matches, the action space is proven adequate and `SearchBuyPolicy` can
+  be ported and measured on a common base.
+- If a recorded primitive cannot be expressed or replayed, that is the exact
+  action-space limitation to fix; do not train around it.
+- If replay diverges despite an expressible trace, the cause is mutable
+  sequencing/RNG and must be isolated before a search placement run.
+
+Still open: 151.3's search-port gap, augment fidelity, and real combat
+fidelity. None is resolved by this entry.
+
+---
+
+## 154. The action space can replay the direct teacher exactly (08-22)
+
+153 left a narrow question: every direct mutation had an apparent action-space
+counterpart, but could a whole `GreedyPolicy` trace replay on the live player?
+`scripts/greedy_trace_replay.py` records the direct primitive calls on one of
+two identically prepared states and replays their `BUY`, `SELL`, `REROLL`,
+`BUY_XP`, `SELECT`/`PLACE`, `EQUIP`, and draft equivalents on the other. It
+asserts the complete player, shop, pool **and match RNG state** after each
+direct primitive, not just the final board.
+
+Outcomes named before the run:
+
+1. Exact replay: the action space can express the teacher and the present
+   `scripted_policy` is simply the wrong scheduler.
+2. An unmasked primitive: a concrete action-space hole.
+3. A legal but divergent trace: a sequencing or RNG boundary that must be
+   aligned before port strength is measured.
+
+### 154.1 Outcome 3 first: one hidden RNG boundary
+
+With the live executor's normal `Match.rng`, 36 of 37 usable FAST8 phase/seed
+states replayed exactly across phases 0, 5, 15, and 25 (the same grid as 153).
+The one failure is phase 25, seed 9. It agrees through `BUY(3)` and diverges
+on the immediately following `REROLL`: the pool's Cho'Gath count reads 27 in
+the direct arm and 26 through the executor. The next traced `BUY(1)` is then
+masked because the shops differ.
+
+This is not a stochastic fluke. `GreedyPolicy._legacy_plan` and `_econ_plan`
+called `player.reroll(context.pool, self.rng)`, while `ActionExecutor.apply`
+always receives `Match.rng`. Both streams are deterministic, but they are
+different streams. Replaying that exact trace with `Random(0)` -- the direct
+policy's stream -- resolves **37 / 37** states. The action was expressible; the
+two harnesses had assigned it different environment randomness.
+
+### 154.2 The correction, and outcome 1
+
+Shop draws belong to the match stochastic trajectory, so direct rerolls now
+use `context.rng` in both the legacy and economy paths. This is not a random
+seed chosen to make a table agree: it removes a private policy RNG from a game
+transition which the action executor and all learned seats already take from
+the match.
+
+Re-running the grid on the corrected code:
+
+| phase | usable seeds | exact player/shop/pool/RNG replays | illegal/masked actions |
+|---|---:|---:|---:|
+| 0 | 10 | 10 / 10 | 0 |
+| 5 | 10 | 10 / 10 | 0 |
+| 15 | 10 | 10 / 10 | 0 |
+| 25 | 8 | 8 / 8 | 0 |
+| **total** | **38** | **38 / 38** | **0** |
+
+The formerly failing seed/phase is pinned in
+`tests/test_greedy_trace_replay.py`. Reverting either direct reroll to
+`self.rng` reproduces the different shop on the `BUY -> REROLL` trace and the
+test fails, so the assertion does not merely confirm that both policies end a
+round somehow.
+
+### 154.3 What this changes
+
+**The action space is adequate for plain `GreedyPolicy`.** Entry 150's 11%
+search retention no longer has an action-space explanation; it was measured on
+a different action scheduler, and the remaining task is to replace that
+scheduler with a faithful one before re-running any port A/B.
+
+The RNG correction changes the exact shop trajectory of all direct
+`GreedyPolicy` seats. It therefore invalidates placement comparisons that mix
+pre-154 and post-154 direct-policy runs, but it does **not** alter a saved
+model's action semantics or prove any placement improvement. No strength claim
+is made here; the only measured claim is state conformance.
+
+### 154.4 Next experiment
+
+Refactor plain `GreedyPolicy` into a **non-mutating ordered plan of shared
+action primitives**, then expose an action-policy adapter which emits that plan
+through `rl/action.py`. The 154 trace recorder is an oracle and test fixture,
+not a shippable scheduler: it mutates an isolated state to discover the plan.
+The production adapter must produce the same order without mutating the live
+state ahead of the executor.
+
+First gate: exact conformance on 154's seed/phase grid. Only after it passes
+may `best_buy` be wrapped around it and compared against the match-level search
+teacher. If the adapter cannot remain conformant, stop at the first primitive
+where it departs; do not run a placement A/B with an unnamed policy change.
+
+---
+
+## 155. The direct teacher now has a faithful production scheduler (08-22)
+
+154 established that a recorded direct trace can replay; its recorder reached
+the answer by mutating a cloned player, so it was a diagnostic oracle rather
+than a policy an agent could run. The required next gate was narrower: can the
+live action policy produce the same order **without** simulating its future
+state ahead of `ActionExecutor`?
+
+`rl/greedy_action.py` introduces `GreedyActionPolicy`, exposed as
+`greedy_action_policy(...)` from `rl/evaluate.py`. It is an ordered state
+machine, not a new heuristic. A buy phase takes its candidate snapshot once --
+the same `target, owned, synergy, cost, slot` ranking that direct
+`GreedyPolicy._buy_phase` computes -- then emits only its next still-affordable
+`BUY`. XP, roll, sale, field/swap (`SELECT` then `PLACE`), and equip phases
+advance only after the executor has changed the real player. Offers are chosen
+with the direct policy's `choose_offering`; augments retain its existing first
+choice.
+
+This fixed the precise ordering error in 153: recomputing a best action after
+every executor transition is a different policy even where every individual
+action is legal.
+
+Outcomes named before the run:
+
+1. Exact grid agreement: the base direct teacher and action teacher are now a
+   common policy, so a search-port result can localise `best_buy` rather than
+   scheduler drift.
+2. A first mismatch: record its primitive/stage as the still-unfaithful
+   scheduler transition; do not measure placement.
+3. Action-cap exhaustion: the teacher is expressible but the environment cap,
+   not the policy, blocks it.
+
+### 155.1 Outcome 1: 38 / 38 exact production executions
+
+The same FAST8 seed/phase grid as 154 was run through
+`scripts/policy_conformance.py --action-policy greedy`. Each target starts
+from a common direct-policy prefix; the direct arm then mutates through
+`GreedyPolicy.plan`, while the action arm calls the production scheduler until
+`END_PLANNING`. Equality includes player, shop, shared pool, and match RNG.
+
+| phase | usable seeds | exact planning states | action cap hit |
+|---|---:|---:|---:|
+| 0 | 10 | 10 / 10 | 0 |
+| 5 | 10 | 10 / 10 | 0 |
+| 15 | 10 | 10 / 10 | 0 |
+| 25 | 8 | 8 / 8 | 0 |
+| **total** | **38** | **38 / 38** | **0** |
+
+`tests/test_greedy_action_policy.py` pins the late FAST8 state (seed 9,
+phase 25), which exercises economy progression and the late planning path.
+Targeted ruff and both direct/action replay regressions pass. The broad augment
+import still emits its known unimplemented-effect warnings; this is a
+pre-combat identical-state comparison, so it is not a placement or augment
+fidelity claim.
+
+### 155.2 What is now known, and what is not
+
+`GreedyPolicy(FAST8)` is now a common, action-space-expressed base policy.
+This removes the unnamed policy substitution that invalidated 150's 11%
+retention figure. It does **not** show that either teacher is strong, that
+search helps, or that PPO can learn it. It only makes the next A/B capable of
+answering the search-port question.
+
+The implementation duplicates the direct policy's scheduling logic in order
+to avoid mutating the live state. The conformance grid is therefore a
+regression contract, not a one-off validation: any direct-policy ordering edit
+must either preserve it or explicitly revise both paths and invalidate affected
+baselines.
+
+### 155.3 Next experiment
+
+Port **only** `SearchBuyPolicy.best_buy` onto `GreedyActionPolicy`'s buy stage.
+Keep all other direct decisions byte-for-byte equivalent to the scheduler:
+
+1. first run the planning-state conformance grid with search disabled, proving
+   the wrapper itself is transparent;
+2. then compare direct `SearchBuyPolicy` and action `SearchBuyPolicy` on
+   shared full-match seeds, reporting placement distribution, paired delta,
+   top-4, wins, and action count/cap use;
+3. include greedy-vs-greedy as a no-effect control on the same engine revision.
+
+If the search port still loses strength after this common-base control, inspect
+the first planning-phase search decision and its simulated candidates. Do not
+attribute the result to the action space or return to PPO until that controlled
+comparison identifies the remaining seam.
+
+---
