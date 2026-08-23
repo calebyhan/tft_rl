@@ -51,6 +51,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from gymnasium import spaces
 
 from engine.economy import RoundId
 from engine.player import PlayerState
@@ -85,6 +86,7 @@ CHAMPION_ENCODINGS = ("features", "index")
 # Single training seed -- needs 3-seed replication before it is quoted as a
 # result in either direction (22.4).
 SCOUTING_MODES = ("summary", "full")
+SCOUT_TOKEN_MODE = "tokens"
 
 # Per-opponent scouting block, before the trait multi-hot: board unit count,
 # total board value, best star level, average unit cost, items on board, and
@@ -688,3 +690,166 @@ class ObservationEncoder:
             index = self._trait_index.get(trait_id)
             if index is not None:
                 out[cursor + index] = 1.0
+
+
+class ScoutedObservationEncoder:
+    """Dict observation for a policy that can inspect opponent boards.
+
+    The legacy ``full`` observation is intentionally a summary.  The search
+    teacher, however, consumes opponent identity, item allocation and hexes;
+    flattening them into its existing vector recreates the architecture that
+    already failed.  This encoder keeps the normal self/shop state in
+    ``global`` and supplies opponent board facts as categorical unit tokens.
+
+    Storage order is not semantic: a consumer must use the token's coordinates
+    and board grouping, not its array index.  ``ScoutSetExtractor`` in
+    :mod:`rl.scout_policy` enforces that on the model side (doc 99 entry 160).
+    """
+
+    UNIT_TOKEN_WIDTH = 8
+    BOARD_TOKEN_WIDTH = 5
+
+    def __init__(
+        self,
+        data: GameData,
+        board_slots: int,
+        n_opponents: int,
+        **layout_options,
+    ) -> None:
+        # Keep every existing self-facing layout option, but remove scouting:
+        # the legacy opponent summary is zeroed from global below.
+        layout_options.pop("scouting", None)
+        self.base = ObservationEncoder(
+            data,
+            board_slots,
+            n_opponents,
+            scouting="summary",
+            **layout_options,
+        )
+        self.data = data
+        self.spec = self.base.spec
+        self.board_slots = board_slots
+        self.n_opponents = n_opponents
+        self.champion_ids = tuple(sorted(data.champions))
+        self.item_ids = tuple(sorted(data.items))
+        self.augment_ids = tuple(sorted(data.augments))
+        self._champion_index = {cid: i + 1 for i, cid in enumerate(self.champion_ids)}
+        self._item_index = {item_id: i + 1 for i, item_id in enumerate(self.item_ids)}
+        self._augment_index = {aid: i + 1 for i, aid in enumerate(self.augment_ids)}
+        # An augment pick is permanent and the schedule determines the only
+        # reachable maximum.  Keeping this as a separate token set avoids
+        # pretending its arbitrary id has a scalar meaning.
+        self.max_opponent_augments = len(data.config.augments.rounds)
+        self._opponent_offset = self.spec.offset_of("opponents")
+        self._max_hp = float(data.config.starting_hp) or 1.0
+        self._max_level = float(data.config.max_level) or 1.0
+        self._max_items = data.config.max_items_per_unit
+
+        # The board geometry has a stable finite coordinate range.  Encode the
+        # coordinates *inside* each unit token so array row order is free to
+        # permute at the model boundary.
+        self._q_min = self._q_max = self._r_min = self._r_max = 0
+
+    @property
+    def size(self) -> int:
+        """Compatibility size of the unchanged global branch."""
+        return self.base.size
+
+    def bind_board_hexes(self, board_hexes) -> None:
+        if len(board_hexes) != self.board_slots:
+            raise ValueError(
+                f"expected {self.board_slots} board hexes, got {len(board_hexes)}"
+            )
+        self.board_hexes = tuple(sorted(board_hexes))
+        self._hex_index = {hex_: index for index, hex_ in enumerate(self.board_hexes)}
+        self._q_min = min(hex_.q for hex_ in self.board_hexes)
+        self._q_max = max(hex_.q for hex_ in self.board_hexes)
+        self._r_min = min(hex_.r for hex_ in self.board_hexes)
+        self._r_max = max(hex_.r for hex_ in self.board_hexes)
+
+        token_high = max(
+            len(self.champion_ids),
+            len(self.item_ids),
+            self._max_items,
+            self._q_max - self._q_min,
+            self._r_max - self._r_min,
+            1,
+        )
+        self.observation_space = spaces.Dict({
+            "global": spaces.Box(-1.0, 1.0, shape=(self.base.size,), dtype=np.float32),
+            "opponent_units": spaces.Box(
+                0,
+                token_high,
+                shape=(self.n_opponents, self.board_slots, self.UNIT_TOKEN_WIDTH),
+                dtype=np.int32,
+            ),
+            "opponent_board": spaces.Box(
+                0.0,
+                1.0,
+                shape=(self.n_opponents, self.BOARD_TOKEN_WIDTH),
+                dtype=np.float32,
+            ),
+            "opponent_augments": spaces.Box(
+                0,
+                len(self.augment_ids),
+                shape=(self.n_opponents, self.max_opponent_augments),
+                dtype=np.int32,
+            ),
+        })
+
+    def encode(
+        self,
+        player: PlayerState,
+        round_id,
+        opponents: list[PlayerState],
+        board_hexes,
+        **kwargs,
+    ) -> dict[str, np.ndarray]:
+        if not hasattr(self, "board_hexes"):
+            self.bind_board_hexes(board_hexes)
+        global_obs = self.base.encode(player, round_id, opponents, board_hexes, **kwargs)
+        # Opponent data belongs exclusively to the set branch.  Leaving the
+        # legacy fixed-seat summaries here would make board permutation a false
+        # invariant and reintroduce an arbitrary player-order feature.
+        global_obs = global_obs.copy()
+        global_obs[self._opponent_offset:] = 0.0
+
+        units = np.zeros(
+            (self.n_opponents, self.board_slots, self.UNIT_TOKEN_WIDTH), dtype=np.int32
+        )
+        boards = np.zeros(
+            (self.n_opponents, self.BOARD_TOKEN_WIDTH), dtype=np.float32
+        )
+        augments = np.zeros(
+            (self.n_opponents, self.max_opponent_augments), dtype=np.int32
+        )
+        for opponent_index, opponent in enumerate(opponents[:self.n_opponents]):
+            boards[opponent_index] = (
+                opponent.hp / self._max_hp,
+                opponent.level / self._max_level,
+                min(opponent.streak_count / 8.0, 1.0),
+                float(opponent.streak_type == "win"),
+                float(opponent.alive),
+            )
+            for augment_index, augment in enumerate(
+                opponent.augments[:self.max_opponent_augments]
+            ):
+                augments[opponent_index, augment_index] = self._augment_index[augment.id]
+            for hex_, unit in opponent.board.items():
+                slot = self._hex_index.get(hex_)
+                if slot is None:
+                    continue
+                token = units[opponent_index, slot]
+                token[0] = 1
+                token[1] = self._champion_index[unit.champion.id]
+                token[2] = unit.star_level
+                for item_index, item in enumerate(unit.items[:self._max_items]):
+                    token[3 + item_index] = self._item_index[item.id]
+                token[6] = hex_.q - self._q_min
+                token[7] = hex_.r - self._r_min
+        return {
+            "global": global_obs,
+            "opponent_units": units,
+            "opponent_board": boards,
+            "opponent_augments": augments,
+        }

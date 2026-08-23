@@ -15855,3 +15855,876 @@ high-fidelity but still loses placement, the next diagnosis is partial
 observability or compounding error—not PPO hyperparameters.
 
 ---
+
+## 160. The search-buy teacher has information the learner cannot see (08-22)
+
+159.8 assumed that a held-out cloning result could distinguish a weak learner
+from a weak action representation. That only follows if the frozen action
+teacher's label is a function of the observation given to the learner. It was
+not yet checked. `best_buy` selects its two opponents and simulates their
+complete boards, including the hex occupied by each unit and its item
+allocation. The shipped observations do not contain those facts: `summary`
+contains HP/level/streak and `full` adds only board-strength and trait
+summaries.
+
+### 160.1 Counterfactual observability result
+
+`scripts/search_buy_observability_probe.py` captures an eligible live
+`best_buy` state, saves the action observation and mask, and evaluates the
+teacher once. It then swaps two occupied hexes on the strongest panel opponent,
+asserts `np.array_equal` for both the observation and mask, restores the search
+RNG for each evaluation, and asks the same teacher again. The temporary board
+mutation and RNG state are restored before the live episode continues.
+
+The budget was named before the run: at most six eligible search states and
+six position pairs per state, stopping immediately on the first changed label.
+A changed label would be a formal counterexample to exact cloning; no changed
+label in this deliberately small screen would be inconclusive. On seed 0 the
+first game reached four eligible calls before the counterexample at round 2-3.
+The identical state was tested independently under both encodings:
+
+| learner scouting | games / eligible calls | hidden mutation | teacher label before | label after |
+|---|---:|---|---:|---:|
+| `summary` | 1 / 4 | opponent 1: `(-3, 7)` ↔ `(0, 4)` | BUY slot 3 | no buy |
+| `full` | 1 / 4 | same state and swap | BUY slot 3 | no buy |
+
+`n=1` game and one changed state; no t-statistic applies. This is not an
+estimate of prevalence or placement value. It is an indistinguishability
+proof: two complete game states map to the same learner input and legal action
+set, while the teacher maps them to different actions. A deterministic clone
+must choose one label for both; a stochastic clone can only learn their mixture.
+
+This is the first concrete reason **not** to run the 159.8 BC screen yet. Its
+failure would confound model capacity, sequential action execution, and an
+irreducibly many-to-one label target. It also narrows the earlier broad claim
+that "search does not transmit": the current search-buy teacher is not merely
+a computation the MLP must approximate; it reads scouted board facts absent
+from the student.
+
+### 160.2 What changes
+
+The next representation must expose *facts a player can obtain by scouting*,
+not the combat simulation's score or recommendation: for each opponent board,
+unit identity/star level, occupied hex, and item identities/allocation. The
+existing `full` summary is insufficient even though its name suggests otherwise.
+Because opponent boards are unordered collections over hexes, this should be
+represented as board/unit tokens and consumed by a set/attention-style encoder
+or another permutation-aware model, rather than appended as an arbitrary flat
+slot order. This is a real-TFT capability requirement: an advisor that is meant
+to scout must have a place to put the information it scouts.
+
+Do not call a scalar board-strength score a substitute. That would encode an
+expert evaluation, whereas identities, positions, and items are visible game
+facts. It would also fail this exact counterfactual.
+
+### 160.3 Still open / next experiment
+
+1. The counterexample proves insufficiency, not which missing fact accounts for
+   most labels. On a frozen state corpus, run the same collision audit by
+   decision family and by mutation type (position, item allocation, and unit
+   identity while preserving the existing summaries). Report the collision rate
+   with a denominator; do not generalise the one state into a frequency claim.
+2. Specify a scouted-board observation contract and a matching encoder, then
+   prove with counterfactual tests that the position/item mutations above change
+   the encoded input. This is a representation contract, not a training claim.
+3. Only after that contract exists, repeat 159.8's held-out BC gate with a
+   freshly constructed search policy per episode. Separate decision families
+   and full-match placement remain the right measurements, but they are not
+   interpretable until the teacher and student have the same information.
+
+### 160.4 Bounded prevalence screen
+
+Before choosing how broad the first scout-state contract must be, run 20
+eligible search states from seeds 0--4. For each state, try the first six
+lexicographically ordered occupied-hex swaps of the strongest panel opponent;
+continue after collisions rather than stopping at the first. This is a cheap
+screen of one specific hidden variable, not a random estimate of all opponent
+states and not a placement experiment.
+
+Outcomes named before the run:
+
+1. At least one additional changed state: hidden positions are a recurring
+   label conflict in this path. Proceed with complete scouted-board tokens;
+   do not look for a scalar summary that happens to pass the first example.
+2. No additional changed state: the proof in 160.1 remains sufficient, but the
+   selected six swaps were too narrow to estimate prevalence. Do not infer that
+   position can be omitted.
+
+### 160.5 Outcome 1: position collisions recur across the first five seeds
+
+The first invocation accidentally used one global 20-state cap, which seed 0
+filled before seeds 1--4 ran. Its 7 / 20 collisions are retained only as an
+intra-game screen, not presented as a multi-seed result. The predeclared design
+was then run correctly as five independent four-state probes, each with the
+same six-swap budget and a fresh episode/policy:
+
+| seed | eligible states | states with a changed label |
+|---:|---:|---:|
+| 0 | 4 | 1 |
+| 1 | 4 | 3 |
+| 2 | 4 | 3 |
+| 3 | 4 | 2 |
+| 4 | 4 | 1 |
+| **total** | **20** | **10 (50%)** |
+
+Every seed has at least one collision. The denominator is deliberately narrow:
+an eligible state, the strongest simulated opponent, and the first six sorted
+occupied-hex pairs. States within a game are correlated and the pair order is
+not a random sample, so no t-statistic or population confidence claim is made.
+The readable result is only that this is a recurring teacher/learner
+information conflict, not a rare single-state pathology.
+
+Outcome 1 holds. The first scout-state contract must retain complete visible
+opponent boards, including position; it should not be designed around aggregate
+opponent summaries and then patched with a single positional scalar. Item
+allocation and unit identity remain required by the teacher's actual combat
+input and are still to be mutation-audited, but position alone already gates
+BC/PPO on the current encoding.
+
+### 160.6 Component audit design
+
+Run two further bounded counterfactuals under `scouting="full"`, each keeping
+the observation and action mask byte-identical: (a) swap two unequal item
+loadouts between opponent units, preserving the board's item count; (b) replace
+one opponent with a different champion of the same cost and exact trait set,
+preserving all current strength/trait summaries. A changed label in either case
+proves that component belongs in the scout-state contract. No changed label is
+only a screen failure, because the chosen candidates are deliberately narrow.
+
+> **IDENTITY METHOD CORRECTED by 160.7.** Set 17 has no two champions with the
+> same cost and exact complete trait set, so that proposed substitution has zero
+> eligible cases. The correct invariant is not a hand-derived trait condition;
+> it is the observer's own byte-for-byte equality assertion after the mutation.
+
+### 160.7 All three omitted board facts can change `best_buy`
+
+The item test under `full` found its predeclared outcome A on seed 0 at 2-3:
+moving `TFT17_Item_SummonTraitEmblemItem` from hex `(-3, 7)` to `(-2, 4)` and
+`TFT_Item_Spatula` in the opposite direction preserved the complete observation
+and mask, but changed the teacher from BUY slot 3 to no buy. Board item *count*
+is therefore not sufficient; allocation matters.
+
+The first identity method had zero eligible substitutions, as 160.6's banner
+records. Its replacement enumerates champions of equal cost and admits a
+candidate only after directly asserting that the shipped `full` observation
+and action mask are unchanged. On seed 0 at 1-4 it found one: changing the
+opponent at `(-3, 7)` from `TFT17_Milio` to `TFT17_Jax` kept the encoded input
+identical and changed the teacher from no buy to BUY slot 3.
+
+Each is `n=1` counterexample, no t-statistic, and neither estimates frequency.
+Together with 160.1/160.5's position evidence, they are sufficient component
+tests: the search teacher's full board simulation depends on opponent unit
+identity, item-to-unit allocation, and hex position; every one is absent from
+the current learner input.
+
+The scout-state contract is now concrete. Each visible opponent unit token must
+at minimum carry champion identity, star level, item identities, and board hex,
+with a board/opponent boundary. Aggregate HP, level, streak, and traits may
+remain useful global context but cannot stand in for the tokens. This records
+facts visible through scouting, not a teacher-produced combat value.
+
+### 160.8 Next experiment
+
+Do not train a flat widened vector merely because the missing fields are now
+known. First write the scouted-board observation/encoder contract and tests
+that make each of the three mutations change its token representation while a
+permutation of token storage order does not. Then collect a small search-teacher
+dataset and run the held-out decision-family cloning gate. The result will at
+last distinguish a capacity/sequence failure from information mismatch.
+
+### 160.9 Proposed scout-state contract (unimplemented)
+
+The route is a Gym dict observation and `MaskablePPO`'s existing
+`MultiInputPolicy` support, with a custom feature extractor. This is not an
+assumption that PPO will now work; it makes the BC experiment well-posed. The
+current flat `MlpPolicy` and `SlotPolicy` cannot consume an opponent-board
+collection without flattening away the structure that 03 §3.1 identifies as
+the untested set/attention path.
+
+Keep the present self/shop/action-state vector as `global`. Add:
+
+| input | shape / fields | encoder requirement |
+|---|---|---|
+| `opponent_units` | up to 7 boards × 28 visible unit tokens: champion id, star level, up to 3 item ids, axial hex, present flag | shared unit embedding; item-id embeddings pooled within a unit; axial coordinates stay attached to the unit |
+| `opponent_board` | 7 board-level tokens: HP, level, streak and an alive/present flag | concatenate each board's pooled/attended unit representation with these facts |
+| opponent set | the 7 resulting board tokens | self-attention or set pooling with no player-index embedding; the agent can attend to multiple threats without treating an arbitrary seat order as meaning |
+
+The hierarchy matters. A mean over all 196 units would erase which units fight
+together; a mean over all boards would erase the two opponents `best_buy`
+selects. Encode units within each board first, then let the global/self query
+attend across board tokens. Hex is a *feature of a unit*, not its storage index,
+so rearranging a token array must not change the extractor output; moving a
+unit to another hex must.
+
+This adds visible facts only. It must not include combat-rollout margins,
+teacher ranks, opponent strength scores, or a preselected "strongest two"
+marker. The network may learn a comparison; the representation must not supply
+the teacher's conclusion.
+
+Acceptance tests before data collection:
+
+1. The three 160.1/160.7 mutations change the corresponding token input while
+   leaving `global` and the action mask unchanged.
+2. Permuting token **storage order** (with coordinates and board membership
+   fixed) leaves the extractor output and masked action logits unchanged.
+3. Permuting whole opponent boards together with their board tokens also leaves
+   the extractor output/logits unchanged.
+4. A reset/step rollout preserves the new Dict space's declared dtypes, shapes,
+   and masks. This is an environment contract test, not a learning result.
+
+Only then collect the small fresh-policy BC dataset. The existing `full`
+flat-vector result is not a baseline for this architecture; it was a different,
+known-inadequate information/inductive-bias regime.
+
+### 160.10 Contract result: token state and permutation-safe policy boundary
+
+`scouting="tokens"` now exposes a Gym Dict instead of widening the old vector:
+`global` is the existing self/shop/action state with its opponent-summary tail
+zeroed; `opponent_units` is `7 × 28 × 8` categorical tokens (present,
+champion, star, three item ids, q, r); and `opponent_board` is `7 × 5` for HP,
+level, streak, streak sign, and alive. `ScoutSetExtractor` embeds units with
+shared weights, pools units within their board, then pools board tokens. It has
+no row-index or player-seat embedding.
+
+The new four-test contract passes:
+
+1. Position, item-allocation, and identity mutations each change
+   `opponent_units` while leaving `global` unchanged.
+2. Reordering unit-token storage rows leaves extractor output unchanged.
+3. Reordering complete opponent boards leaves both extractor output and logits
+   from a real untrained `MaskablePPO("MultiInputPolicy")` unchanged.
+4. `reset()` and `step()` both satisfy the declared Dict space.
+
+This verifies information flow and inductive bias only. It does **not** show
+that the extractor learns combat, clones the teacher, improves placement, or
+rescues PPO. The next measurement is now authorised: a small fresh-policy
+search-teacher BC dataset with held-out decisions split by action family.
+
+### 160.11 The old BC collector is not safe to reuse for this gate
+
+The token environment itself accepts `search_buy_greedy_policy` and emits a
+legal action (a focused regression pins that boundary). The existing imitation
+pipeline does not yet make the required experiment valid: `rl.collect` copies
+observations as flat arrays and concatenates them with `np.array`,
+`fit_clone` assumes an `(N, D)` tensor and `MlpPolicy`, and the parallel worker
+constructs one search policy for many episodes. The last is a correctness
+failure, not an optimisation concern: search RNG must be constructed fresh for
+each reset to reproduce the direct teacher's stream.
+
+The next implementation is therefore a narrow collector/trainer adaptation:
+preserve Dict observations by key, construct a fresh action search teacher
+after every reset and register its resolution hook, select `MultiInputPolicy`
+with `ScoutSetExtractor`, and make the supervised fit convert batches by key.
+It must retain the existing flat path unchanged. Only its smoke collection and
+held-out action-family table should run next; PPO remains out of scope.
+
+### 160.12 Bounded Dict-BC feasibility gate
+
+Use a dedicated probe rather than changing the established flat trainer:
+collect four fresh-policy FAST8 search-teacher games on seeds 0--3 and two
+held-out games on seeds 10000--10001, with the token observation. Fit an
+untrained `MultiInputPolicy` + `ScoutSetExtractor` for eight supervised epochs
+only; report train and held-out masked action match by action family before and
+after fitting. It does not run `learn()`, evaluate placement, or claim a sample
+estimate from six games.
+
+Outcomes named before the run:
+
+1. The pipeline cannot collect or fit: repair that named data-path boundary;
+   no reading about RL or the representation is licensed.
+2. It fits training labels but not held-out labels: the new representation is
+   usable, but this small data regime is insufficient or the search rule remains
+   hard; scale BC before PPO.
+3. It has nontrivial held-out action-family match: scale the same BC gate with
+   a predeclared seed block, then replay full matches. PPO remains a separate,
+   previously negative question.
+
+### 160.13 Outcome: the first valid Dict-BC path runs, but eight epochs underfit
+
+The dedicated probe collected **809** training transitions from seeds 0--3 and
+**450** held-out transitions from seeds 10000--10001. It constructed the token
+environment and search teacher once per episode, including the external
+resolution hook; all emitted actions passed the live mask. The loss fell from
+3.442 to 2.391 across eight epochs, so this is not an input/Dict/policy wiring
+failure.
+
+It is also not a cloning result. Overall masked action match rose from 2.0% to
+**21.3%** on train and 1.1% to **24.0%** held out. The visible success is
+concentrated in `BUY_XP` (100% on both, 120/72 labels) and `END_PLANNING`
+(29.9%/37.0%); BUY is 2.3% train and 0% held out, and SELL/EQUIP remain 0%.
+The held-out number exceeding train in this tiny sample is not generalisation;
+it is evidence that neither set has been fitted.
+
+This is outcome 1's successful pipeline branch, followed by neither outcome 2
+nor 3: an eight-epoch feasibility setting is underfit even on its own data. No
+placement or PPO claim follows.
+
+### 160.14 Long-fit control
+
+Repeat the exact same fresh-teacher seed blocks and architecture with 80
+supervised epochs. This changes only optimisation duration. If train match
+remains low, the next diagnosis is the token extractor/action head or label
+structure; adding data would only make an unfitted probe more expensive. If
+train rises while held out remains low, the small corpus is the limit. If both
+rise, scale the held-out BC gate before any match or PPO evaluation.
+
+### 160.15 Outcome: longer fitting improves the teacher's BUY signal, but cannot fit its own game
+
+At 80 epochs on the identical 809/450 transition blocks, train match reaches
+**39.4%** and held-out match **22.2%** (loss 1.818). This rejects the narrow
+claim that eight epochs alone explained the first result, but it does not yet
+distinguish insufficient fitting from a representational ceiling. BUY improves
+to 30.4% train / 24.3% held out; SELECT/PLACE reach 48.0%/45.3% on train but
+18.6%/16.3% held out. SELL remains **0 / 111** on train and holdout despite
+being a deterministic action family in this teacher.
+
+Do not call 22.2% a generalisation result: it is below the 24.0% short-fit
+readout, and the model has not fitted its training states. The sharpest next
+test is an overfit control, not a larger dataset.
+
+### 160.16 One-game overfit control
+
+Train the exact same Dict policy and masked objective on one fresh teacher game
+for 400 epochs, retaining one disjoint game only as a sanity readout. A high
+train match says the 809-row screen is data/optimisation limited; a low train
+match says the current global-MLP action head or token encoder cannot express
+the teacher even on a fixed deterministic trajectory. Neither outcome licenses
+PPO; it only chooses the next BC repair.
+
+### 160.17 Outcome: the token policy can fit one deterministic trajectory
+
+One search-teacher game supplies 217 transitions. At 400 epochs it reaches
+**78.3%** train match (BUY 77.6%, SELL 58.1%, PLACE 100%, offering/augment
+100% on their tiny cells) with loss 0.746. This rejects the claim that the
+token state or set extractor makes the teacher unrepresentable. The 242-row
+held-out game remains 25.2%, including BUY 24.5% and SELL 6.1%; that is a
+single-game distribution gap, not an estimate of deployment performance.
+
+The control changes both corpus size and fit duration relative to 160.15, so it
+does **not** prove that four games are data-limited. It does establish the
+ordering: BC must be made to generalise before PPO is meaningful. PPO on a
+policy that only memorises its seed would measure exploration noise, exactly
+the old failure mode.
+
+### 160.18 Fixed-corpus duration control
+
+Repeat the 809/450 four-game/two-game split at 400 epochs. If train catches up
+to the one-game control while holdout remains low, collect a larger predeclared
+BC block. If train remains low, four game trajectories require more capacity or
+a structured action head. If both rise, scale the held-out BC gate then replay
+matches. PPO is excluded in all three outcomes.
+
+### 160.19 Outcome: four games fit; four games do not generalise
+
+At 400 epochs on the unchanged 809/450 transition split, training match reaches
+**92.1%** (BUY 96.7%, BUY_XP 98.3%, END 96.9%, EQUIP 92.0%, SELECT 94.7%; SELL
+73.9%) while held-out match reaches only **26.0%** (BUY 33.6%, SELECT 14.0%,
+SELL 6.8%). Loss is 0.319. This is the discriminating result 160.18 asked for:
+the token representation, set extractor, masked objective, and action head can
+fit the deterministic search teacher; the four-game corpus is not enough to
+generalise it across matches.
+
+The 92.1%/26.0% gap is not a reason to turn on PPO. PPO would start from a
+policy that has memorised its seed trajectories, then apply a signal already
+measured to degrade valid clones. It cannot tell a data-generalisation gap from
+an improvement. The next experiment is a predeclared larger BC dataset and
+disjoint held-out block, with the same architecture and fresh search policy per
+episode. Only a held-out improvement and then a full-match replay can put PPO
+back on the agenda.
+
+### 160.20 First scaled BC block
+
+Keep the architecture, masked objective, 400 epochs, FAST8 field, and
+fresh-policy-per-episode rule fixed. Increase only the corpus to 12 training
+games (seeds 0--11) and 4 disjoint held-out games (10000--10003). Report every
+action family with its denominator; this is still a feasibility measurement,
+not a confidence interval or placement claim.
+
+Outcomes named before the run:
+
+1. Held-out match rises materially above the 26.0% four-game result across the
+   important BUY/SELECT/PLACE/SELL families: data coverage was binding. Scale
+   BC once more before any match replay.
+2. Training fits but held-out remains near 26%: the issue is not merely four
+   games; localise the remaining generalisation failure by decision family and
+   state regime before changing PPO.
+3. Training no longer fits: the fixed 400-epoch optimisation budget does not
+   scale with data; repair that fit control before interpreting holdout.
+
+### 160.21 Outcome: 3× more games improve broad imitation, not yet proven search transfer
+
+The 12/4-game block collected **2,630** training and **856** held-out
+transitions. At 400 epochs it fits training at **98.9%** (loss 0.052) and raises
+held-out overall action match from 26.0% to **35.2%**. Several broad families
+rise: END is 60.9%, BUY_XP 57.8%, SELL 19.3%, PLACE 25.0%, and EQUIP 21.7% on
+held out.
+
+The all-action mean is not the search claim. Its `BUY` row is only 23.1% and
+combines ordinary greedy buys with the once-per-round combat-simulated buy that
+made the teacher strong. A gain in END/XP can raise the mean while the key
+search decision fails. The first version of the probe could not separate them,
+so outcome 1 is **partly supported for generic action coverage but unproven for
+search transmission**.
+
+`search_policy` now exposes non-behavioural `last_search_buy_slot` provenance:
+it is set only on the action emitted from a positive `best_buy` result and
+reset every policy call. The collector records that action as `SEARCH_BUY`,
+leaving all other buys as `BUY`; a focused token-teacher test pins the reset
+path. This does not alter the teacher, its RNG, or action sequence.
+
+### 160.22 Next measurement
+
+Recollect a bounded token BC block with this provenance and report `SEARCH_BUY`
+as its own held-out family, including its denominator. Do not use overall action
+match to claim transfer unless that cell improves. The same run can also verify
+that the prior 35.2% aggregate remains reproducible after instrumentation; PPO
+is still excluded.
+
+### 160.23 Provenance rerun design
+
+Repeat the exact 12-train/4-held-out seed blocks and 400-epoch setting of
+160.20, changing only the reported BUY provenance. If `SEARCH_BUY` has a
+meaningful held-out match with a usable denominator, the generic gain includes
+the teacher's central decision and the next BC scale is justified. If it is low
+or absent while ordinary action families improve, localise search-buy's
+remaining feature/architecture gap before a further data run. Exact agreement
+with 160.21's aggregate is a reproducibility check, not a new effect.
+
+### 160.24 Panel-tie observability check
+
+`opponent_panel` orders opponents by visible board count and HP, then by
+internal `player_id`. The token state intentionally has no player-seat/id
+feature. On bounded eligible `best_buy` states, swap the ids of two living
+opponents tied on board count and HP, assert the token observation and mask are
+unchanged, and recompute the label from the same search RNG state. A changed
+label proves another non-observable teacher input; no changed label only says
+the selected tied states did not expose it. This check precedes an attention
+extractor change, because architecture cannot repair a many-to-one target.
+
+### 160.25 Outcome: hidden panel identity is a second label collision
+
+The token-mode probe found a counterexample on seed 0, round 1-4, after three
+eligible `best_buy` calls. Two living opponents had the same HP (100) and board
+size (3). Swapping only their internal ids, `1` and `3`, preserved every Dict
+observation array and the action mask byte-for-byte, while the teacher changed
+from **no buy** to **BUY slot 3**. The probe restores the ids and the search RNG
+before continuing the match.
+
+This is a proof about the current teacher/input contract, not a rate estimate:
+one changed state suffices; three calls do not establish prevalence. It also
+explains why mean pooling is not the only concern. The token set already
+contains the two different boards, but neither board has a meaningful internal
+seat/id feature and the teacher used that hidden field to decide which two
+boards to simulate. Attention cannot infer a quantity that is absent from the
+input.
+
+### 160.26 Visible tie-break control
+
+Test a policy-neutral replacement only in the probe before changing the
+teacher: retain the existing primary rank (board count, then HP), but replace
+the final `player_id` tie-break with a canonical signature of already-tokenised
+facts: each unit's hex, champion id, star level, and item ids. This does not
+rank a board by combat strength or expose a recommendation; it makes an
+otherwise arbitrary choice reproducible from scouted facts.
+
+On the same seed/block, the visible-key variant evaluated all six eligible
+states and found **0/6** id-swap label changes. This is the predicted local
+repair, but not yet a production change or a quality result: it uses one seed,
+and changing a teacher's deterministic tie-break can change match outcomes.
+Next, replace the production tie-break with this observable key, pin it with a
+unit test, replay direct/action conformance, and run a bounded paired
+match-quality retention check before recollecting BC. Then audit opponent
+augment visibility separately: combat consumes their augment bonuses, while
+the current token contract does not yet expose them.
+
+### 160.27 Outcome: opponent augments are another missing combat input
+
+The reachable augment-swap probe ran under `scouting="tokens"` after the
+visible panel tie-break repair. It swaps the actual augment lists of two living
+opponents (at least one in the selected panel), asserts all token arrays and
+the legal mask remain unchanged, restores both lists and the search RNG, and
+re-evaluates `best_buy`. On seed 0, round 3-1, it changed **BUY slot 0** to
+**BUY slot 2** by exchanging `TFT_Augment_FindYourCenter` and
+`TFT7_Augment_BestFriends1`; this occurred after 7 eligible calls.
+
+Again, one collision proves insufficiency but does not estimate its frequency.
+It is not repaired by the new panel tie-break: the search combat clone applies
+`owner_bonuses()` from each opponent's augments, while the student cannot see
+which bonuses are present. The next scout-state revision must add a bounded
+per-opponent augment-id token set (or a lossless visible equivalent), with a
+permutation-aware pooling path. It must not substitute combat-derived stats or
+the search score. BC and PPO remain excluded until that contract has a
+counterfactual test and the existing collector can retain it.
+
+### 160.28 Completed state-contract repair; BC improves, but search transfer remains poor
+
+The production panel now uses the visible board signature as its final
+tie-break, with a focused test that swapping two equal-HP/equal-size opponents'
+ids cannot change the selected panel. The original six-state token counterfactual
+then has **0/6** id-swap label changes. A direct/action shared-seed replay also
+retains identical placements over seeds 0--9 (paired delta 0.0; no action-cap
+rounds). That verifies the modified teacher is still faithfully expressed in
+the action environment; it is not a comparison of the old and new tie-break's
+playing strength.
+
+`scouting="tokens"` now additionally carries a fixed three-slot
+`opponent_augments` id set per opponent, derived from the three scheduled
+augment rounds and pooled permutation-invariantly into that opponent's board
+representation. The token contract test verifies that adding an opponent
+augment changes this new field but not the global branch; the extractor and
+`MultiInputPolicy` remain invariant to token-row and opponent-board storage
+permutations. The focused observation/environment/search tests pass (101
+tests).
+
+With that repaired state and teacher, repeat the prior 12-train/4-held-out,
+400-epoch BC gate on the same seed blocks. The new run has 2,741 / 836
+transitions (the teacher's observable tie-break changes trajectories, so counts
+need not equal 160.21). It reaches 98.4% train match and 38.2% held-out action
+match. Crucially, `SEARCH_BUY` is **22.7% (15/66)** held out, up from 17.2%
+(11/64) in 160.23; ordinary BUY is 33.8% (48/142). The state repairs therefore
+matter, but the 5.5-point search gain does not establish useful transfer and
+does not license PPO.
+
+### 160.29 Next experiment: query the opponent set instead of mean-pooling it
+
+The remaining structural mismatch is explicit. `best_buy` evaluates the two
+highest-ranked threats, whereas the current extractor takes an unweighted mean
+over every living opponent. Mean pooling makes a strong and weak board
+exchangeable with two middling boards; it has no direct mechanism to focus the
+current shop/self state on relevant opponents. Replace only this final pooling
+operation with permutation-invariant cross-attention: a query derived from the
+global self/shop state attends to the per-opponent board tokens, with dead
+boards masked. Do not encode the teacher's top-two rule or use a player index.
+
+Rerun exactly 160.28's 12/4 seed blocks, token contract, optimizer, and
+400-epoch budget. Report the `SEARCH_BUY` denominator and row before the
+overall mean. A material held-out gain supports aggregation as the remaining
+barrier; no gain says the problem is not solved by letting the model select
+opponents. Either outcome remains BC-only: require a larger disjoint holdout
+and match replay before reconsidering PPO.
+
+### 160.30 Outcome: attention fits more and generalises less
+
+The cross-attention ablation used the exact repaired 2,741/836 corpus, masks,
+seed, optimiser, batch size, and 400 epochs from 160.28. It fitted training
+still more tightly (99.7% overall; **100% `SEARCH_BUY`**) but moved held-out
+overall match down from 38.2% to **37.2%**, and `SEARCH_BUY` down from 22.7%
+(15/66) to **21.2% (14/66)**. This is a one-corpus result, so the 1/66 search
+difference is not a population estimate; its direction alongside the overall
+drop is enough to reject the promised material gain.
+
+The useful conclusion is negative and specific: once the teacher inputs are
+made observable, replacing mean pooling with a flexible global-query attention
+module does not repair transfer at this data scale. It gives the model more
+capacity to memorise the teacher trajectories, not a mechanism that carries to
+unseen matches. Revert to the simpler mean-pooling extractor for the next data
+experiment. Do not run PPO: it would start from a clone whose central decision
+is 14--15 correct labels out of 66 on held out states, while the more flexible
+model has already demonstrated the overfit direction.
+
+### 160.31 Next experiment: scale the repaired BC corpus before another architecture change
+
+The two capacity controls now agree: both mean pooling and attention fit the
+12-game teacher corpus essentially perfectly, while neither produces usable
+search-buy holdout accuracy. Hold the repaired token contract and simpler mean
+pool fixed. Scale to 48 fresh training episodes (seeds 0--47) and 16 disjoint
+held-out episodes (10000--10015), retaining 400 epochs and reporting every
+family's denominator. This changes data coverage deliberately; it is not a
+claim that sample count must solve simulated-combat generalisation.
+
+Interpret `SEARCH_BUY` first. A substantial, denominator-supported increase
+would show that the current architecture has a data frontier worth mapping.
+No increase despite near-perfect train fit would close the "just collect more
+search-teacher labels" explanation and shift the next work to a different
+target or a supervised search/surrogate formulation. Neither branch licenses
+PPO or a placement claim without an independent holdout and match replay.
+
+### 160.32 Outcome: 4× more repaired BC data does not improve search-buy transfer
+
+The predeclared mean-pooling 48/16 run collected 10,271 training and 3,364
+held-out transitions, with **753 / 234 `SEARCH_BUY`** decisions respectively.
+At the unchanged 400 epochs it fits training at 99.8% overall and 99.9%
+`SEARCH_BUY` (loss 0.025). Held-out overall action match rises to 42.8%, but
+the row that matters is **22.2% `SEARCH_BUY` (52/234)**, slightly below the
+12/4 repaired-state result of 22.7% (15/66). Ordinary BUY is 36.7% (225/613);
+END and XP are 60.7% and 71.8%, so their broad gains again cannot be used as a
+search-transfer claim.
+
+The larger denominator makes the result decisive for this direction: four
+times the trajectories and near-perfect train fit do not move the central
+simulated-buy decision above its prior low-20s holdout ceiling. This closes the
+"collect more exact next-action labels" explanation for the current BC target.
+PPO is not a reasonable next run: it would optimize from a policy that
+memorises 753 search labels yet selects only 52 of 234 disjoint search states
+correctly.
+
+### 160.33 Next target: learn candidate combat value, then search
+
+Do not ask a network to reproduce the teacher's discrete `best_buy` argmax as
+one opaque action label. The teacher itself chooses by comparing simulated
+combat values for legal shop candidates. Build a bounded supervised dataset of
+`(scouted state, legal candidate slot) -> matched combat-value delta`, with a
+shared trial seed set per state just as `best_buy` uses. Train and evaluate
+candidate *ranking/regret* on held-out states, then use the model only to
+shortlist or rank candidates for inference-time search. Compare its selected
+action directly to full simulation and then in full matches.
+
+This changes the learning target, not the evidence standard. It retains
+scoutable facts and can exploit the existing fast simulator for labels, while
+avoiding the many-way, state-distribution-sensitive next-action classifier that
+has now failed under corrected observability, two aggregators, and 4× data.
+No PPO phase belongs in this branch unless a separately measured policy can
+beat the search/surrogate control in matched full games.
+
+### 160.34 Candidate-value probe design
+
+The old combat surrogate (145--146) is not this test: it trains on generic
+two-board fights from a different field and evaluates fielding candidates. The
+new bounded probe captures only states at which the action search teacher calls
+`best_buy`. For the no-buy board and every legal first-shop buy, it uses the
+same panel and matched trial seeds to label the candidate's combat-value delta
+from no buy. The feature is a policy-neutral relational summary of each
+resulting candidate board against every selected scouted opponent; it contains
+no simulation score, chosen action, or player id.
+
+Train a scalar regressor on 12 fresh matches and score candidates from four
+disjoint matches. Report candidate MSE, rank/top-one agreement, and true
+simulated regret of the model-selected candidate against no-buy, random, and
+the full simulation oracle. The outcomes are deliberately diagnostic: failure
+to fit training says the feature/target is wrong; training fit with low
+held-out ranking says candidate-value supervision has not fixed the
+distribution problem; useful held-out regret versus random warrants scaling
+this *target*, not PPO.
+
+### 160.35 First candidate-value result: genuine held-out signal, large generalisation gap
+
+The 12/4 run captured 342 / 110 search-buy ranking states, comprising 2,052 /
+660 labelled candidates (no-buy plus every legal first-shop buy). At 100 epochs
+the relational value regressor gets train MSE 4.80 and removes **70.1%** of
+random candidate regret, with 45.6% exact top-one selection. On the disjoint
+110 states it has MSE 17.48, **30.0%** top-one selection, and regret 2.223
+against random regret 2.577: it removes only **13.8%** of random regret.
+
+This is not the opaque-action BC result repeated: the held-out ranking signal
+is positive and the metric directly prices its search use. It is also nowhere
+near sufficient to replace or confidently shortlist simulation. The 100-epoch
+run has not fitted its own corpus cleanly, so this does not yet distinguish
+feature insufficiency from optimisation duration. Cache the expensive exact
+candidate corpus and rerun 400 epochs without recollecting it. If train ranking
+improves while held-out regret remains near random, reject this coarse
+relational representation for search-buy; if both improve, validate a top-k
+hybrid against full simulation before any placement run. PPO remains irrelevant.
+
+### 160.36 Duration control: fitting harder worsens candidate-value generalisation
+
+The expensive 12/4 candidate corpus was cached and the exact same 2,052/660
+candidate rows and 342/110 ranking states were retrained for 400 rather than
+100 epochs. Training improved materially: MSE 4.80 -> **1.99**, regret 0.819
+-> **0.503**, random-regret elimination 70.1% -> **81.6%**, and top-one 45.6%
+-> **50.6%**. The held-out direction is the opposite: MSE 17.48 -> **31.61**,
+while regret improves only 2.223 -> **2.145** (13.8% -> **16.8%** of random
+regret eliminated) and top-one only 30.0% -> **30.9%**.
+
+This resolves the ambiguity in 160.35. The 100-epoch run was somewhat
+underfit, but fixing that increases memorisation far more than held-out
+ranking. The present 60-float mean/std relational panel summary is therefore
+not a sufficient search-buy value representation. Do not scale its epochs or
+data next. The next discriminating change is representation: retain the exact
+candidate/panel labels and add per-opponent candidate-board interactions (not
+only their aggregate mean/std), then measure whether held-out regret moves.
+The model remains a supervised search component, never a PPO initialization.
+
+### 160.37 Per-opponent candidate-value representation
+
+The 60-float summary in 160.36 averages and takes a coordinate-wise standard
+deviation of the candidate-versus-opponent vectors before the model sees them.
+For two opponents that loses cross-feature structure: it cannot know which
+health, trait, and item differences belonged to the same board. Replace it
+with a shared nonlinear encoder over each candidate/opponent relational vector,
+then mean-pool those encoded vectors into the scalar value head. Add only an
+opponent-present flag for a late-game one-opponent panel; do not add board
+order, seat id, a combat score, or the teacher's selection rule.
+
+Recollect the same 12/4 exact-value task because the old cache discarded the
+per-opponent rows. Hold matched trials, seeds, candidate construction, and
+100-epoch first budget fixed. Held-out regret/top-one must improve materially
+over 160.35's 13.8% random-regret elimination / 30.0% top-one before a
+duration control or top-k hybrid is justified. A high train score with the same
+held-out result rejects this representation as another memorisation path.
+
+### 160.38 Outcome: retaining per-opponent interactions materially improves value ranking
+
+On the same 342/110 state and 2,052/660 candidate 12/4 task, the shared
+per-opponent encoder reaches train MSE 5.76, 64.0% random-regret elimination,
+and 46.8% top-one. Held out it reaches MSE **11.89**, regret **1.600** against
+random regret 2.577, or **37.9%** random-regret elimination, with 32.7%
+top-one. Against 160.35's coarse mean/std input, held-out MSE improves
+17.48 -> 11.89 and regret elimination 13.8% -> 37.9% on the identical states
+and matched combat labels.
+
+This is a material ranking gain, not an oracle claim: the model still selects
+the exact best only 36/110 states and cannot replace simulation. It validates
+the representation hypothesis of 160.37, so a cached 400-epoch duration
+control is now justified. If that holds or improves the held-out ranking, the
+next experiment is top-k recall and a simulation-finalised hybrid; if it
+overfits as in 160.36, retain the 100-epoch model for that hybrid screen. PPO
+remains out of scope.
+
+### 160.39 DeepSets duration control: retain the 100-epoch checkpoint
+
+On the cached identical corpus, 400 epochs improves train MSE 5.76 -> 2.75 and
+train regret elimination 64.0% -> 81.5%, but worsens held-out MSE 11.89 ->
+22.67, regret elimination 37.9% -> **28.7%**, and top-one 32.7% -> **29.1%**.
+This is the same overfit direction as 160.36. Retain the 100-epoch DeepSets
+model as the only current candidate-value checkpoint; the 400-epoch output is
+evidence about duration, not a model to deploy.
+
+The next measurement is top-k recall on its held-out 110 states. A hybrid uses
+the surrogate only to select k candidates and runs the real matched simulator
+on those k, so exact top-one accuracy is not its quality gate. Report recall
+of the true best at k=2 and k=3, the average number of legal candidates, and
+the implied simulation fraction. Only high recall with a meaningful cost
+reduction licenses a full hybrid decision replay.
+
+### 160.40 Top-k gate: the current surrogate cannot safely halve simulation
+
+The retained 100-epoch DeepSets model was rerun on the cached held-out 110
+states with top-k recall reported. Each state has exactly six candidates on
+average (no buy plus the five shop slots). It contains the true simulation-best
+candidate in top-1 **32.7%**, top-2 **49.1%**, and top-3 **64.5%** of states.
+Top-3 would halve the candidate simulations but discard the true best on 39 of
+110 states (35.5%).
+
+That is not a safe shortlist gate. The 37.9% random-regret elimination in
+160.38 is real but insufficient for a simulation-finalised hybrid: the hybrid
+would be exact only when the true best survives the shortlist, and it misses
+too often at the first cost-saving k. Do not run a placement replay of this
+model. The next representation must add the combat-relevant facts explicitly
+named by 145.5/146.3—trait identity, positions, and ability-sensitive unit
+information—while keeping candidate/opponent interactions separate. This is a
+new feature-contract experiment, not another duration, data-scale, or PPO run.
+
+### 160.41 Next feature contract: trait identity, geometry, and cast structure
+
+The current per-opponent vectors retain only aggregate trait counts, generic
+derived combat stats, and item count. Augment them with three bounded,
+policy-neutral relational groups: (1) per-trait count differences and ratios,
+so equal totals from different traits are no longer identical; (2) nearest
+enemy distance, mean cross-board distance, and attack-range contact counts,
+so candidate and opponent hex geometry is represented; and (3) starting/max
+mana, mana per attack, cooldown-cast count, and cooldown, so the model can
+distinguish generic ability cadence without treating an arbitrary ability id as
+a learned policy feature.
+
+Keep the per-opponent DeepSets encoder and the exact 12/4 matched-trial task.
+The old 100-epoch DeepSets result (37.9% random-regret elimination, 64.5%
+top-3 recall) is the control. Improved held-out regret/top-k recall supports
+the named missing-facts hypothesis; unchanged performance rejects this bounded
+feature expansion. Neither permits PPO.
+
+### 160.42 Outcome: bounded combat facts improve candidate ranking again
+
+The enriched 12/4 DeepSets task has the same 342/110 states and 2,052/660
+candidates as the prior cached task. At 100 epochs it reaches train MSE 2.67,
+83.6% random-regret elimination, and 55.3% top-one. Held out it improves on
+the prior per-opponent control: MSE **13.76**, regret **1.395**, **45.9%**
+random-regret elimination, 34.5% top-one, 59.1% top-2 recall, and **68.2%**
+top-3 recall. The directly comparable 160.38 values were 37.9% and 64.5% for
+regret elimination and top-3 recall.
+
+This supports the named feature-contract hypothesis: trait identity, geometry,
+and cast cadence contain decision-relevant information that aggregate combat
+stats omitted. It still fails the safe-shortlist gate—top-3 discards the true
+best candidate on 35/110 states—so it cannot trigger a hybrid replay yet. Run
+the cached duration control; retain the 100-epoch checkpoint if the familiar
+train-improves/holdout-worsens pattern recurs. PPO remains excluded.
+
+### 160.43 Enriched duration control: ranking improves despite worse scalar MSE
+
+On the identical cached 12/4 corpus, increasing the enriched DeepSets model to
+400 epochs improves training MSE 2.67 -> **1.02**, random-regret elimination
+83.6% -> **93.5%**, and top-one 55.3% -> **66.1%**. Held-out scalar MSE moves
+the wrong way, 13.76 -> **18.46**, but the decision metric moves decisively in
+the useful direction: regret falls 1.395 -> **1.209** against random regret
+2.577, or **53.1%** random-regret elimination; top-one is **38.2%**, top-two
+**60.0%**, and top-three **72.7%**. The measured top-four recall is **84.5%**
+(93/110 states), while six candidates are available on average.
+
+Unlike 160.36 and 160.39, the predeclared duration control improved held-out
+*ranking*, the quantity search actually consumes. Retain the 400-epoch
+enriched checkpoint for the next measurement, while recording the MSE increase
+as a warning against interpreting it as a general value estimator. Top-four
+would reduce simulation work by one third but still excludes the exact oracle
+candidate in 17/110 states, so recall alone is not a sufficient deployment
+gate.
+
+### 160.44 Hybrid decision-replay gate
+
+Evaluate the current frozen 400-epoch enriched model without collecting new
+labels or changing it. For k=2, 3, and 4, let the model choose the shortlist,
+then choose the highest already-labelled matched-simulator value in that
+shortlist. Report this hybrid's exact regret versus the full six-candidate
+simulator and its fraction of random regret eliminated. This is the decision
+quantity a live hybrid would incur; top-k recall is only a stricter proxy,
+because excluding a tied or nearly tied oracle need not cost a meaningful
+decision.
+
+Top-four is the only cost setting with a meaningful one-third reduction. It
+needs to eliminate at least 90% of random regret on this replay to license one
+fresh, independent 12/4 replication of the frozen configuration. Anything
+below that leaves full simulation as the search mechanism; neither outcome
+licenses a placement run or PPO.
+
+### 160.45 Hybrid replay passes the value gate; freeze before replication
+
+The frozen enriched 400-epoch model's exact matched-simulator replay has
+held-out hybrid regret **0.500** at top-two, **0.309** at top-three, and
+**0.155** at top-four, versus full-model direct regret 1.209 and random regret
+2.577. Thus top-four eliminates **94.0%** of random regret while evaluating
+four rather than all six candidates on average. The 84.5% oracle-containment
+rate was conservative: several excluded best candidates are tied or nearly
+tied with one retained by the shortlist.
+
+This passes 160.44's 90% predeclared gate, but it is not final validation: the
+same 110 states selected the enriched feature contract and 400-epoch duration.
+Freeze the complete configuration—per-opponent enriched relational features,
+DeepSets, 400 epochs, two matched combat trials, and k=4—and collect a
+disjoint 12-train / 4-test block at episode seeds 20,000--20,011 and
+30,000--30,003. Reproduce the exact hybrid replay there. If it still clears
+90% random-regret elimination, implement and measure a live search-buy hybrid
+against full search in matched full games; otherwise reject it as holdout
+selection and return to feature diagnosis. No placement or PPO experiment is
+licensed at this stage.
+
+### 160.46 Independent replication: the unconstrained top-four replay survives
+
+The disjoint seed block produced 358 training and 106 held-out search-buy
+states (2,148 / 636 candidates). Its direct held-out regressor ranking is much
+weaker—27.2% random-regret elimination and 17.9% top-one—but the frozen
+top-four simulator-finalised replay has regret **0.184** against random regret
+**2.009**, eliminating **90.8%**. Oracle containment is 79.2%, yet the
+simulation resolves most exclusions as ties or small gaps. This independently
+passes the 90% gate from 160.45 (the original block was 94.0%).
+
+Do not yet call it a live four-candidate policy. The existing replay allowed
+the no-buy candidate itself to fall outside the top four. A real `best_buy`
+decision needs an exact no-buy simulation to apply its margin, so that policy
+would not actually use the evaluated candidate set. Measure the deployable
+four-simulation contract next: always simulate no-buy plus the model's top
+three *buy* candidates, then choose exactly as `best_buy` does. This correction
+is about operational equivalence, not a reason to relax the validation gate.
+
+### 160.47 Deployable hybrid replay gate
+
+On each already-labelled state, retain row zero (no buy) unconditionally and
+add the three highest model-ranked purchase rows. Select the maximum exact
+matched-simulator value from those four. This reports the regret of precisely
+the live policy's candidate-evaluation budget; it cannot confuse an excluded
+baseline with a known one. Run it on both completed 12/4 blocks at their frozen
+400-epoch settings.
+
+If both blocks eliminate at least 90% of random regret, implement a temporary
+live hybrid `best_buy` experiment and compare it seed-paired with full
+simulation on placement *and* simulated-fight count. If either fails, the
+unconstrained result is non-deployable and full simulation remains the control.
+No PPO branch follows either outcome.
