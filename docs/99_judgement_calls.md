@@ -16728,3 +16728,269 @@ live hybrid `best_buy` experiment and compare it seed-paired with full
 simulation on placement *and* simulated-fight count. If either fails, the
 unconstrained result is non-deployable and full simulation remains the control.
 No PPO branch follows either outcome.
+
+### 160.48 Deployable four-simulation replay also passes twice
+
+The corrected contract—exact no-buy plus the top three predicted purchases—has
+held-out regret **0.155 / 2.577** random on the original block, again **94.0%**
+eliminated. On the fully disjoint replication it has regret **0.193 / 2.009**,
+or **90.4%** eliminated. It therefore passes 160.47's 90% gate on both blocks.
+The small replication change from unconstrained top-four (0.184 -> 0.193) is
+the real price of retaining no-buy; reporting it rather than the more flattering
+unconstrained value keeps the inference budget honest.
+
+Implement a temporary direct-Match hybrid search buyer with exactly this
+contract, trained only on the replica block's 358 training states. First run a
+32-seed paired smoke comparison against an otherwise identical full-simulation
+buyer: report placement distribution, paired placement delta/t, number of
+`fight_value` calls, and legal-action-equivalent buy counts. Expected outcomes:
+(A) about one-third fewer fight calls with no apparent placement collapse,
+which licenses a larger paired placement test; (B) the saving but a clear loss,
+which rejects the shortcut despite offline replay; or (C) no saving/behavioural
+parity failure, which is an implementation defect to repair before judging the
+model. It remains a search optimisation experiment, not PPO evidence.
+
+### 160.49 Live 32-seed smoke: the saving transfers without an apparent collapse
+
+On 32 fresh seed-paired direct matches (41,000--41,031), the full buyer averages
+placement **3.469** (distribution 7/8/3/4/4/1/3/2 for places 1--8), 655.5
+`fight_value` calls, 27.81 search calls, and 15.56 search purchases per game.
+The frozen replica-trained hybrid averages placement **3.750** (6/4/6/5/2/6/2/1),
+435.0 fight calls, 27.63 search calls, and 14.41 search purchases. Its paired
+placement difference is **+0.281** (worse) with t=**0.52**, while fight calls
+fall **33.6%**.
+
+This is outcome A from 160.48: the measured compute claim transfers and there
+is no small-sample placement collapse. It is not evidence of equality—the
+paired difference's estimated standard deviation is about 3.07, so n=32 cannot
+resolve the relevant sub-half-placement cost. Freeze the implementation and
+run 200 new seed-paired games (42,000--42,199). With the smoke variance, its
+95% paired-difference half-width is about 0.43, the project's established
+resolution for a 0.45-placement effect. Retain the shortcut only if the 95%
+upper bound of hybrid-minus-full placement is below +0.45; otherwise its speed
+saving does not justify it. A clear improvement is welcome but does not expand
+the claim to policy learning or PPO.
+
+### 160.50 Full 200-seed result: learned shortlist makes exact buy search cheaper
+
+On 200 new seed-paired direct matches (42,000--42,199), full search averages
+placement **3.405** (53/35/33/15/22/16/15/11), 654.72 fight calls, 28.005
+search calls, and 15.27 search purchases per game. The frozen hybrid averages
+placement **3.475** (49/31/33/37/10/11/11/18), 435.44 fight calls, 27.86
+search calls, and 13.64 search purchases. Hybrid-minus-full placement is
+**+0.070**, t=**0.395**; its paired standard error is 0.177, giving a 95%
+upper bound of **+0.417**, below the predeclared +0.45 non-inferiority limit.
+Fight calls fall **33.5%**.
+
+The narrowed claim is now supported: the replica-trained relational model can
+shortlist three purchases while preserving full-search placement to the
+project's 0.45-placement resolution, because the simulator still makes the
+final choice. This does *not* make the value model a standalone policy—the
+same replica's direct selected-candidate regret was weak (160.46)—and it says
+nothing yet about rerolls, items, augments, positioning, or PPO.
+
+The next required experiment is action-space transmission. Extract the exact
+hybrid buy decision into a reusable callable, use it through
+`search_buy_greedy_policy`, and trace it against the validated direct-Match
+hybrid on byte-identical seeds. A zero first divergence licenses a fresh
+seed-paired 200-game action-env reproduction of this result; any divergence is
+a port bug, not model evidence. Keep the model/checkpoint and four-simulation
+contract frozen.
+
+### 160.51 Action-port trace exposes inherited phase-order divergence
+
+The first hybrid direct-vs-action trace diverges at 2-1: direct Match picks an
+augment before shop actions, while the Gym action policy buys/sells/equips and
+then emits `PICK_AUGMENT`. Running the unchanged full-search trace on the same
+seed produces the same first-round phase-order divergence. It is therefore an
+existing direct-Match/action-environment conformance limitation, not a hybrid
+regression, and cannot serve as the zero-divergence gate proposed in 160.50.
+
+Do not infer action performance from the direct result. Instead compare full
+and hybrid buyers *within the same action environment*, with the same per-seed
+search RNG seeding and opponents. Start a fresh 32-seed paired smoke: verify
+the fight-call reduction remains near one third and reject an obvious placement
+collapse. If it passes, use a fresh 200-seed paired non-inferiority run with
+the same +0.45 upper-bound criterion as 160.49. This is the valid test of
+action-space transmission until planning-phase conformance is repaired.
+
+### 160.52 Action-environment 32-seed smoke also transfers the saving
+
+Within the action environment on 32 fresh paired seeds (44,000--44,031), full
+search averages placement **3.688** (6/4/4/8/4/3/2/1), 638.13 fight calls, and
+13.84 search buys. The hybrid averages placement **3.875** (7/3/5/3/6/4/2/2),
+422.75 fight calls, and 12.72 search buys. Hybrid-minus-full is **+0.188**,
+t=**0.46**, and fight calls fall **33.8%**.
+
+This is the same smoke outcome as 160.49 under the action scheduler: the cost
+saving transfers and there is no evident placement collapse. Freeze the action
+wrapper and run a fresh 200-seed paired confirmation at 45,000--45,199. Keep
+the +0.45 95%-upper-bound non-inferiority gate. Passing it validates this
+buy-search component in the only environment that can emit advisor actions;
+it does not validate any other TFT decision family or PPO.
+
+### 160.53 Critical result: the learned shortlist survives in the action environment
+
+On 200 fresh action-environment seed pairs (45,000--45,199), full buy search
+averages placement **3.900** (39/34/23/25/22/24/14/19), 645.76 fight calls,
+and 14.59 search buys. The frozen replica-trained hybrid averages **3.575**
+(40/33/34/34/16/21/11/11), 433.72 fight calls, and 13.58 search buys. Its
+paired placement difference is **-0.325** (better), t=**-1.88**, while exact
+combat calls fall **32.8%**. The implied paired standard error is 0.173, so
+the 95% upper bound on hybrid-minus-full placement is **+0.013**, far within
+the predeclared +0.45 non-inferiority limit.
+
+This is the first validated learned component that helps the real action path:
+it converts visible relational scouting facts into a cheaper shortlist, then
+uses exact simulation—not learned policy output—to make the buy/no-buy action.
+It explains a concrete part of why prior RL/BC failed: direct next-action
+imitation had to reproduce a high-variance simulation argmax, whereas candidate
+value supervision plus a simulator-finalised decision transmits useful signal.
+The conclusion is deliberately narrow. It does not establish a general RL
+solution, a standalone learned buyer, or an advisor for rerolls/items/augments/
+positioning. Freeze this buy component as the current control. The next branch
+should apply the same candidate-value-plus-exact-finaliser test to one other
+decision family, beginning with positioning where `best_move` already supplies
+legal simulated candidates; do not start PPO from this result.
+
+### 160.54 Position candidate-value probe design
+
+Positioning is the next fight-evaluable family because `best_move` already
+constructs a bounded, state-seeded set of legal empty-hex moves and swaps,
+then scores them against a visible opponent panel with matched combat seeds.
+Expose that exact candidate construction as a shared helper; do not recreate it
+in the data probe, since a differently sampled move set would make the labels
+unrelated to the deployed search.
+
+At every live move-search call, label the unchanged layout and each of its six
+actual sampled layouts by the same-panel, same-seed combat-value delta. Reuse
+the buy branch's per-opponent relational feature contract, which already
+includes per-trait facts, ability cadence, and candidate-versus-opponent
+geometry; the changed candidate layout is the input, not a teacher score.
+Train DeepSets for 100 epochs on 12 matches and score four disjoint matches.
+Report candidate regret, top-k recall, and a deployable exact-finaliser replay
+that always retains unchanged layout plus the top three predicted moves.
+
+Possible outcomes are discriminating: no held-out rank signal rejects this
+feature contract for positional value despite its buy result; useful ranking but
+poor deployable replay says the model cannot safely save simulation; a replay
+near the buy branch's 90%-of-random-regret threshold licenses an independent
+replication and only then a live action-hybrid test. PPO is not an outcome of
+this experiment.
+
+### 160.55 Position candidate-contract test repair
+
+Refactoring move sampling into the shared `move_search_candidates` helper made
+the old legacy-stream test's accidental premise visible: it compared final
+`best_move` outputs and expected different answers, but all differently sampled
+sets may legitimately be declined by the fixed +0.5 margin, producing uniform
+`None`. The state-seeded half still checks identical final decisions. Repair
+the legacy half to compare its sampled legal `(source, target)` pairs directly.
+That is the actual contract needed by both the search and the value-label probe,
+and it avoids weakening the margin merely to manufacture different outputs.
+
+### 160.56 First positional fit is invalid: zero-variance feature scaling explodes
+
+The frozen 12/4 positional corpus completed with 369 training and 109 held-out
+seven-layout groups (2,583 and 763 candidate rows, respectively). Its first
+100-epoch DeepSets fit must **not** be read as a model result. Although labels
+are bounded (training −13.0 to +9.33; holdout −9.0 to +7.0), held-out MSE was
+1.13e13 and several predictions were −1.57e7. Inspection found two relational
+dimensions with zero standard deviation in the 12-game train split but nonzero
+values in holdout. The generic normaliser added `1e-8` to every standard
+deviation, making those ordinary values roughly 1e8 standard deviations away.
+The apparent held-out regret (1.101 versus random 1.052) and baseline-plus-top3
+replay regret (0.226) are therefore dominated by a preprocessing fault, not
+evidence against positional value learning.
+
+Repair the shared DeepSets normalisation contract: when a feature has negligible
+training variation, use scale 1.0 rather than `1e-8`; it remains centered at
+zero on training data but an unseen, finite value retains its natural scale.
+Retrain only from the saved corpus—do not recollect labels—and re-report the
+same held-out rank and exact-finaliser metrics. A stable repaired fit that still
+misses the roughly 90%-of-random-regret replay gate rejects positional
+shortlisting; a passing fit licenses the independently seeded replication from
+160.54. This is a measurement repair, not PPO evidence and not permission to
+change the candidate/feature/label contract.
+
+### 160.57 Repaired positional result: this relational contract does not shortlist moves
+
+Retraining the saved 12/4, three-trial corpus after the variance-safe scaling
+repair produces ordinary held-out predictions and MSE **3.307** (train 2.096),
+so 160.56's numerical failure is resolved. The actual ranking result is still
+negative: across 109 held-out states, direct predicted-move regret is
+**1.089**, slightly *worse* than random's **1.052** (−3.5% of random regret
+eliminated); top-1, top-2, top-3, and top-4 recall are 11.9%, 18.3%, 34.9%, and
+55.9%. Most importantly, the deployable unchanged-plus-top-three exact
+simulator replay leaves **0.229** regret, nowhere near the roughly 90%-of-
+random-regret elimination gate from 160.54.
+
+Reject the current positional candidate-value feature contract. This is useful
+counterevidence to a broad claim that visible opponent geometry plus generic
+combat relations solves every simulator-evaluable action: it helped purchases
+(160.53) but does not transfer to seven-layout move ranking. Do not tune model
+width, epochs, or loss against this one holdout after seeing the result, and do
+not run a live positional hybrid or PPO. Move to a genuinely different
+fight-evaluable action family: item/component allocation, whose candidate is a
+different final board rather than a rearrangement of the same units.
+
+### 160.58 Item allocation candidate-value probe design
+
+The next test is one legal item-bag action at a time: unchanged board plus the
+existing item search's exact eligible-board-unit candidates for the first
+bagged item (at most four, ordered only to bound simulator cost). For every
+candidate, clone the board, equip the item on the clone—thereby preserving real
+component-combination semantics—and label its matched-panel combat delta. The
+feature input is the resulting candidate board against each visible opponent,
+using the same relational facts as the buy probe; it must never include the
+incumbent item-strength heuristic or a teacher score.
+
+Start with the same 12/4 split and report direct candidate regret, top-k recall,
+and the deployable unchanged-plus-top-three exact-finaliser replay. A stable
+held-out replay near the buy branch's 90%-of-random-regret elimination level
+licenses an independent corpus replication and then an action-space hybrid;
+otherwise reject item shortlisting and inspect a non-combat decision such as
+reroll/economy. This remains a test of simulator-finalised candidate values,
+not a reason to start BC/PPO.
+
+### 160.59 Item result: stable values, but insufficient shortlist transmission
+
+The frozen 12/4 item corpus contains 148 train and 41 held-out item-action
+states (710 and 194 candidate rows), each with one unchanged board and up to
+four legal first-bag-item targets, labelled by three matched fights. The
+DeepSets fit is numerically ordinary (train MSE **0.102**, holdout **0.129**),
+unlike the initial position preprocessing fault. It nevertheless does not meet
+the deployment gate: held-out direct regret is **0.114** versus random
+**0.122** (only 6.7% random regret eliminated), and unchanged-plus-top-three
+exact-finaliser replay has **0.033** regret—73.3% of random regret removed,
+but below the approximately 90% criterion set in 160.58. Top-1/2/3 recall is
+19.5%/22.0%/34.1%.
+
+Reject deployment and do not lower the criterion after observing this modest
+result. The evidence now has a useful asymmetric shape: relational candidate
+value plus an exact final simulator is a validated buy shortcut (160.53), but
+the same mechanism fails clearly for positioning and falls short for item
+allocation. This is stronger diagnosis of the RL gap than a generic "more
+training" explanation: an action's consequences must be both represented by
+the candidate features and sufficiently immediate/stable for a compact model
+to rank. The remaining major advisor decisions are not immediate fights.
+
+### 160.60 Next design: price the reroll decision's delayed stochastic target
+
+Reroll cannot honestly reuse the combat-value label: it changes gold and a
+stochastic shop, not the current board. Before learning or PPO, measure whether
+the simulator can give it a usable *decision target*. At action states where
+REROLL and END_PLANNING are both legal, branch an otherwise identical cloned
+match into REROLL versus END, then let the fixed action teacher play a fixed
+short horizon under common-random-number future streams. Record the paired
+change in a declared terminal proxy (board combat value and gold/HP), and the
+sign agreement of the estimated reroll advantage as the number of rollout
+replicas rises.
+
+This is a target-quality experiment, not an economy optimisation. If signs are
+unstable even after the budgeted replicas, it explains why on-policy RL sees a
+high-variance delayed gradient and closes reroll learning until simulator
+fidelity or a better long-horizon value target exists. If they stabilise, only
+then collect a candidate-value corpus for reroll-versus-end and evaluate an
+exact-rollout finaliser. Do not use hidden future shops, a direct-policy
+heuristic score, or aggregate placement as a label.
