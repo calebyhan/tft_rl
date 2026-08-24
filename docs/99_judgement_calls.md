@@ -232,6 +232,14 @@ before adding another case** — `test_roll_buys` passed against a mutation
 that broke board-building until the buy counts were split by phase. (§123.2,
 §118.3, §122.4)
 
+**28. The teacher's decision input must be observable to the student.** A
+counterfactual opponent-position swap left both the learner vector and legal
+mask exactly unchanged, but changed the search-buy teacher from BUY slot 3 to
+no buy. That is not a low accuracy or a sample-size problem: the same input
+has incompatible labels. Before cloning a search teacher, audit whether every
+fact it reads is represented to the student; a single collision refutes exact
+imitation. (§160)
+
 ---
 
 ## Index
@@ -343,6 +351,70 @@ that broke board-building until the buy counts were split by phase. (§123.2,
 | 94 | 08-08 | **Flat fitness landscape then a cliff; ES viable only at 3-6 days of compute** | ✅ |
 | 95 | 08-08 | **Every RL run saw ~378 games; DummyVecEnv was serial; ~2.5x reachable** | ⚠️ |
 | 96 | 08-09 | **33x the data changes nothing; 95.1 refuted; every learning method now exhausted** | ✅ |
+| 97 | 08-09 | **Real-TFT reference collected: window refuted, the field dies with 45 gold, payoff mispriced per tier** | ⚠️ 101.3 |
+| 98 | 08-09 | **Carousel schedule fixed: elimination timing closes, a late-game stalemate appears; all prior baselines void** | ✅ |
+| 99 | 08-09 | **The gold gap is the interest floor with no endgame clause; closing it works and buys nothing** | ✅ |
+| 100 | 08-09 | **Reroll mispricing survives both fixes (+0.553, t=+3.54); 86's table reproduces exactly** | ⚠️ 111.5 |
+| 101 | 08-09 | **Untargeted seats 3-star 0.33% of the time vs a real 34.5%; 97.7 is archetype-confounded** | ✅ |
+| 102 | 08-09 | **Making the teacher 3-star works and costs 0.343; three lines say the engine under-values a 3-star** | ⚠️ 103.1 |
+| 103 | 08-09 | **It was bench congestion: keep_pairs=2 is free and still 3-stars; 102.4 and lesson 25 withdrawn** | ✅ |
+| 104 | 08-09 | **Agent baseline re-derived post-98: clone 4.900 vs teacher 4.750 on shared seeds -- still parity** | ✅ |
+| 105 | 08-09 | **External review: Riot uses a combat surrogate; this engine's search is single-action and capped by 91** | ⚠️ 106.1 |
+| 106 | 08-09 | **Multi-action search is a null vs one swap; surrogate unjustified. Search is worth 0.527 to the teacher** | ⚠️ 107.1 |
+| 107 | 08-10 | **79 reproduces post-98 with labels now single-valued: the observation, not label noise, is the wall** | ✅ |
+| 108 | 08-10 | **Swap search doesn't transmit either; residual is SELECT alone (54.7% vs 86.3%). 106.2's 0.527 halves at n=300** | ⚠️ 109.3 |
+| 109 | 08-10 | **Observation caps SELECT at 61.2% for the search rule vs 93.4% for the plain one; clone is at 89% of both** | ✅ |
+| 110 | 08-10 | **Relational features fail for the first time (+2.5 of 32 points). Search transmission closed; a simulation is not a function of features** | ✅ |
+| 111 | 08-10 | **Real reroll seats place -0.410, engine's -0.031: mispricing is +0.379 (t=+4.82). Deficit is the miss branch, not the payoff** | ⚠️ 112.4 |
+| 112 | 08-10 | **The pivot works and is worth +0.006 (t=+0.05); reroll is dominated at every pivot. Mispricing is the simulator's** | ⚠️ 113.4 |
+| 113 | 08-10 | **A board slot is worth more than the value in it: slowroll6 boards lose 36.4% carrying more value on 1.4 fewer units** | ✅ |
+| 114 | 08-11 | **A slot is worth 2.9 star-ups (2.23 vs 0.78 survivors); predicts 90% of slowroll6's deficit. Traits are only a quarter of it** | ✅ |
+| 115 | 08-11 | **Real prices a slot at 2.62 star-ups vs engine's 1.97; the real gap is the field 3-starring only what it targets (0.46x)** | ⚠️ 116.2 |
+| 116 | 08-11 | **3-star shortfall is not coverage, odds, pools or gold; adding a cost-3 line made fidelity worse. Contention untested** | ✅ |
+| 117 | 08-11 | **Not contention either: the seat buys 26.5 copies (2.94 three-stars' worth) and converts 45%. The targeting rule drifts** | ⚠️ 118.2 |
+| 118 | 08-11 | **Cost-2 matches reality (0.344 vs 0.326); the gap is hyperroll rolling at level 6 where 1-costs need 84 rolls not 56** | ✅ |
+| 119 | 08-11 | **Hyperroll can hit or level, never both: 3-stars and end level trade off monotonically. Real does both. Budget untested** | ⚠️ 120.2 |
+| 120 | 08-11 | **Budget fits with room (level 8 at P=0.577). Hyperroll spends 3.3x more on XP than rolls and dies with 39g. Allocation, not economy** | ✅ |
+| 121 | 08-12 | **Surplus roll-down beats capping the level: +66% 3-stars at no placement cost. But the floor is not the gate -- the buy phase eats 52.8g of 101.9g** | ✅ |
+| 122 | 08-12 | **Not a leak: blocking the non-target buys gives the best fidelity in the arc (0.316) and costs 0.256 placement, t=+2.45. Rolls did not rise** | ✅ |
+| 123 | 08-12 | **The rows settle it: rolling to zero forfeits interest, so income falls to ~9g/round and caps rolls at ~29. 120.2's 91 assumed a seat that buys no units** | ✅ |
+| 124 | 08-12 | **No averaging artefact: real 1-cost hitters sit at level 8.34 and place 4.42, 82.7% at level 8+. Cost-3 reroll places best of all (4.01) at 10.1%** | ✅ |
+| 125 | 08-12 | **Real 3-cost seats hold ONE 3-star (59.3%) at level 8, on a board with 1.4 cost-4s. `SLOWROLL7`'s target_count=3 and level-7 hold are both wrong** | ✅ |
+| 126 | 08-12 | **Levelling to 8 is worth 0.96 placement (t=-9.70) and costs two thirds of the hits. target_count barely registers. The 10.0% vs 10.1% is a denominator coincidence** | ✅ |
+| 127 | 08-12 | **Parking generalises: slowroll6 levelling is worth 0.774 (t=-10.80) but drops cost-2 3-stars 0.339->0.069 vs real 0.326. The one fidelity match is bad play** | ✅ |
+| 128 | 08-12 | **Fidelity arc closed: 17 entries, 0 ships, structural negative, no remaining measurable hypothesis. Agent still at teacher parity -- that is the real open problem** | ✅ |
+| 129 | 08-12 | **Reward is not the problem: one action does not move the NEXT FIGHT either (t=0.95, n=1072). Retires reward engineering; the action granularity is the cause** | ✅ |
+| 130 | 08-18 | **Not granularity either (t=0.74, n=1151). Search worth 0.243/game = 0.017/application; effect is 46x smaller than its own sd. PPO-shaped RL closed** | ✅ |
+| 131 | 08-18 | **Bridge milestone 1: ObservedState + adapter, proven by observation round-trip. Caught collapsed bench holes and missing augments; 4 mutations caught** | ✅ |
+| 132 | 08-18 | **No live TFT API (issue #373 open since 2020): vision is the only path. Post-game data fills 38% of the observation; bench/shop/augments are 0%. Real TFT has 4-stars** | ✅ |
+| 133 | 08-18 | **Milestone 3: decision service works, advice legal by construction. Found executor statefulness and the missing pool history; 4 mutations caught** | ✅ |
+| 134 | 08-18 | **Milestone 4: usable end to end with actionable validation. A mutation survived because a typo contained its own real id -- the test was the bug** | ✅ |
+| 135 | 08-18 | **Board search at inference (no cloning needed). Found the shipped template ships an invalid hex; an empty result and a broken one look identical** | ✅ |
+| 136 | 08-19 | **Advisor search budget re-derived: panel 4 takes it 81% → 97% of a large-budget reference. A first table was void — collected states were live references that all aliased their game's final state** | ✅ |
+| 137 | 08-19 | **Board advice needs opponent *breadth*, not identity: a self-mirror panel keeps 70% of the value with zero opponent info, and scouting one real board beats it by nothing** | ✅ |
+| 138 | 08-19 | **A prior recovers nothing: four opponent-free panels all land at 67–71%. Corrects 137.1's breadth reading, and the 100% baseline is itself in-sample** | ✅ |
+| 139 | 08-19 | **Fair held-out grading does not rescue opponent-free advice: still 68%. My own in-sample caveat was directionally right, too small to matter, and its prediction failed** | ✅ |
+| 140 | 08-20 | **Pool overlap and panel strength both refuted; five explanations now eliminated. Opponent-free advice sits at 60–78% however the panel is built, and the cause is unidentified** | ✅ |
+| 141 | 08-20 | **The instrument is not the problem: dense metrics buy 1.4x, not 10x. Three small-n reversals in one day; effects >= 0.5 cost 140 games and effects <= 0.15 cost 1,570** | ✅ |
+| 142 | 08-21 | **60-candidate joint econ search: nothing beats the hand-written archetypes. Both screen winners are *worse* on held-out seeds; the two-stage design is what caught it** | ✅ |
+| 143 | 08-21 | **Shop advice by simulated combat: the buy decision now gets the same combat surrogate the board decision has. A test premise repeated 135.3's board-size mistake** | ✅ |
+| 144 | 08-21 | **A teacher that searches its buy reaches 3.005/3.080 against a 4.0-4.4 incumbent, replicated, with a matched control excluding the board-size explanation. Largest teacher gain in the log** | ✅ |
+| 145 | 08-21 | **The combat surrogate learns: R² 0.53 against a 0.11 baseline and a measured ceiling of 1.00. Combat is near-deterministic given the boards — the first learnable signal in this project** | ✅ |
+| 146 | 08-21 | **The surrogate can choose: 56% of random's regret against the teacher rule's 13%. Not oracle-grade, so it shortlists rather than replaces simulation** | ✅ |
+| 147 | 08-21 | **Real challenger data predicts placement from composition (+0.198 R² over level and gold), with no engine involved. A first control was the label in disguise and inverted the finding** | ✅ |
+| 148 | 08-21 | **A composition advisor with no engine in the loop: your units' real placement association, and what the top-four boards like yours held** | ✅ |
+| 149 | 08-21 | **Search stacks across decisions: teacher reaches 2.665 from 4.360. Items add nothing. And 8 workers deliver 1.76x, not 8x — which explains every runtime underestimate** | ✅ |
+| 150 | 08-22 | **The search teacher ported into the action space retains only 11% of its −1.355. Two wiring bugs found and fixed; the dilution explanation was wrong** | ⚠️ |
+| 151 | 08-22 | **150's dilution is withdrawn: it counted gross buys, which `sell_bench` churn inflates 4.8x. By net retained units the two harnesses are comparable. `scripted_policy` and `GreedyPolicy` are structurally different agents with near-disjoint option sets** | ✅ |
+| 152 | 08-22 | **No engine bug or data gap behind the RL failures (mask clean over 2,505 probes). Two latent guards-that-guarded-nothing fixed. The real gap: 14 augments shipped against 274 in CDragon — which 17.1 wrongly called unexposed** | ✅ |
+| 153 | 08-22 | **The action budget is not the search-teacher port gap: `GreedyPolicy` and `scripted_policy` agree at 1-1, then diverge in 9/10 common states by phase 5 and all later states. The action policy fields too early and churns buys/sells; a faithful adapter remains untested** | ✅ |
+| 154 | 08-22 | **The action space can replay the direct teacher exactly. Its one failure was a hidden RNG split: direct rerolls used `GreedyPolicy.rng`, executor rerolls used `Match.rng`. Unifying the stream produces 38/38 exact player/shop/pool replays; the current scheduler, not the action space, caused the port gap** | ✅ |
+| 155 | 08-22 | **A non-mutating `GreedyActionPolicy` now reproduces direct `GreedyPolicy(FAST8)` on all 38 common planning states. It preserves each buy phase's initial ranking and emits primitives only after the executor has applied their predecessors. The base teacher is finally common; port `best_buy` next** | ✅ |
+| 156 | 08-22 | **A full-bench carousel sale leaked one champion from `SharedPool`; the match now reconciles the sold offering and returns it exactly once. The mixed/random seed-16 Nami failure and normal 20-game smoke run are green. The common-base search-port experiment may resume** | ✅ |
+| 157 | 08-22 | **`best_buy` now wraps the faithful greedy scheduler rather than `scripted_policy`; a bounded common-prefix panel is 4/4 exact. The exhaustive grid was stopped because its redundant search-prefix reconstruction is cost-prohibitive; optimise that harness before placement measurement** | ⚠️ |
+| 158 | 08-22 | **The first shared-seed search-buy placement pilot retains no strength: direct places 4/1, action 6/3 (action − direct = +2.0) on seeds 0/1, with no cap events. n=2 is not a placement claim; trace the first whole-match divergence before scaling** | ⚠️ |
+| 159 | 08-22 | **The real port seam is planning order: direct seat 0 acts before opponents, while `TFTEnv` lets all opponents mutate the shared pool before the agent acts. The 4th-vs-6th seed-0 pilot is therefore not a policy-retention result. Match the direct timing or re-baseline the teacher before any RL/search conclusion** | ⚠️ |
+| 160 | 08-22 | **The search-buy teacher's label is not a function of either shipped scouting encoding: a hidden enemy-position swap preserves the observation and mask but changes BUY slot 3 to no buy. Do not begin BC/PPO against this privileged teacher; first expose the scouted boards it uses** | ✅ |
 
 ### The arc, in one table
 
@@ -7092,6 +7164,12 @@ then mis-specified, so the question is still open.
 
 ## 68. Slow-rolling, specified correctly, fails; the reason is targeting (08-06)
 
+> **Mechanism narrowed by [entry 98.5](#985-a-casualty-the-level-cap-no-longer-frees-gold-into-rerolls).** `level_cap` was added here on the
+> reasoning that capping levels frees gold into the reroll branch. On the
+> corrected carousel schedule it does not: the freed gold becomes buy/sell
+> churn instead (+41 rerolls before the fix, -4 after, n=24). The placement
+> table below is also void under 98's rules change.
+
 Entry 67 is flagged ⚠️ because the arm it called "slow roll" was
 `level_at_gold=80`, which starves levelling from stage 1 and tests *never
 level*. Real slow-rolling levels normally to 6-7, **stops there**, and rolls the
@@ -10534,6 +10612,12 @@ That leaves two readings, and 101 does not separate them:
 ---
 
 ## 102. The teacher can be made to 3-star, and it makes it worse (08-09)
+
+> **102.4 WITHDRAWN by [entry 103.1](#1031-what-this-withdraws).** The 0.343 loss was bench
+> congestion from protecting *every* progressing copy, not the price of a
+> 3-star. A cap of two costs nothing (-0.017, t=-0.14) and still reaches a
+> 3-star in 15% of games. 102.1-102.3 stand as measured; the inference in
+> 102.4 does not.
 
 101 found untargeted seats reaching a 3-star in 0.33% of games against a real
 34.5%. This traces the mechanism, fixes it, and measures the fix. Lesson 16 is
@@ -14210,6 +14294,11 @@ agent. `TFTEnv.reset` uses `match_seed = seed` and `default_opponent(i)` for
 seats 1-7, so the same seed builds an identical `Match` with identical
 opponents in either harness and the two are pairable seed for seed.
 
+| n | teacher (fast8) | native GreedyPolicy(FAST8) | teacher − native | t |
+|---|---|---|---|---|
+| 120 | 4.642 | 4.192 | **+0.450** | +1.57 |
+| 400 | 4.327 | 4.478 | **−0.150** | −1.01 |
+
 **The n=120 result was noise and its sign did not survive.** Recorded because a
 recommendation was nearly built on it: an 0.45 handicap in the cloning target
 would have meant every result in this log was measured against an artificially
@@ -17063,3 +17152,59 @@ immutable data by reference. It must round-trip exact action masks and produce
 the same post-action state under a fixed action/seed before it can be used for
 reroll rollouts. That snapshot is still open; no learning experiment is
 licensed until it exists.
+
+### 160.64 Planning snapshot design: reconstruct mutable state, reuse data
+
+Implement the missing boundary as a narrow planning-state value object, not a
+general `deepcopy` substitute. It captures one player's planning-relevant
+scalars, board/bench unit `(champion id, star, item ids, position)` ownership,
+bag/augment/shop ids, trait/realm state, the shared pool's remaining-copy map,
+and `random.Random` state. Restoration receives the immutable `GameData` and
+`ItemRegistry` by reference and constructs fresh `PlayerState`, `UnitInstance`,
+`SharedPool`, and RNG objects; it must never serialise or copy mapped data.
+
+First prove only the contract needed for reroll: capture a real pre-reroll
+state, restore it, assert identical legal action mask and canonical planning
+facts, then execute REROLL in both independently reconstructed states with the
+same RNG state and assert the resulting player/shop/pool/RNG snapshot is exact.
+Any mismatch rejects the snapshot rather than permitting rollout labels. A
+passing round trip licenses only independent *shop* sampling at one planning
+state; it does not clone opponents, combat, future rounds, or validate PPO.
+
+### 160.65 Snapshot sampler feasibility probe
+
+After the 160.64 round-trip contract passes, capture one real pre-reroll state
+and restore it repeatedly while replacing only its shop RNG stream with
+independent seeds. Execute the legal reroll and report the number of distinct
+shops, legal affordable buy slots, and pair-completing offers. These are raw
+planning facts, not an expert strength score or a reroll value label. The
+probe answers only whether the new boundary can generate diverse, legal
+counterfactual shop continuations from an identical observed state.
+
+Expected outcomes: diverse shops with varying legal/pair opportunities proves
+the sampler primitive and licenses construction of a separately justified
+short-horizon rollout target; identical or illegal shops rejects the snapshot
+despite its deterministic round trip. Neither outcome licenses PPO or a reroll
+policy by itself.
+
+### 160.66 Snapshot and sampler pass; target specification remains the blocker
+
+The planning snapshot round-trip test now captures a real seed-0 pre-reroll
+state, restores it twice with the identical legal-action mask, and verifies
+that REROLL produces identical player, shop, shared-pool, and RNG state across
+the two restores **and** the original live state. It therefore passes the
+narrow 160.64 contract without copying immutable data. On that same state, 64
+independent replacement shop RNG streams produced **64 distinct legal shops**.
+Affordable buy slots ranged 0--2 (mean **0.188**), and true pair-completing
+offers ranged 0--2 (mean **0.188**).
+
+This resolves the mechanical forkability blocker in 160.63, but not the
+learning blocker: diverse shops expose an *expectation* over opportunities,
+not a value that trades a combat improvement against gold, future odds, HP,
+and the altered shared pool. `legal_buys` and pair completion are reported as
+facts specifically because promoting either to a hand-written reroll reward
+would repeat the expert-score leakage rule in CLAUDE.md. Do not train PPO or a
+reroll ranker yet. The next required judgement is a predeclared, deployable
+short-horizon rollout utility whose components do not smuggle in the greedy
+policy; until that is specified and validated, the snapshot is infrastructure
+only.
