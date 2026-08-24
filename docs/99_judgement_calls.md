@@ -16994,3 +16994,72 @@ fidelity or a better long-horizon value target exists. If they stabilise, only
 then collect a candidate-value corpus for reroll-versus-end and evaluate an
 exact-rollout finaliser. Do not use hidden future shops, a direct-policy
 heuristic score, or aggregate placement as a label.
+
+### 160.61 Reroll pilot mechanics: source replay, one forced legal decision
+
+The environment cannot be deep-copied because its immutable game data contains
+a `mappingproxy` (the same constraint documented by the earlier action
+counterfactual probes). Implement 160.60 by replaying from the episode seed,
+not by copying a live environment. Select at most the first baseline action
+where the fixed greedy action policy actually emits a legal REROLL; replay its
+deterministic prefix, then run two branches: the original REROLL and a forced
+legal END_PLANNING. Let either branch finish that planning phase and one round.
+This preserves every pre-decision RNG draw and makes the only intentional
+difference the decision, while allowing reroll's genuine shop draw to affect
+the future stream.
+
+The pilot's output is deliberately descriptive: paired change in next-round
+HP, gold, board count, and a fresh fixed-seed combat margin against the
+post-round visible opponent panel. It also verifies prefix snapshots are
+identical before branching and that both substituted actions were legal. It
+does **not** call several replays of a deterministic seed "replicas" or claim
+an expected reroll value; that requires a future explicit sampler over the
+unobserved shop continuation. Possible pilot outcomes are (A) clean replay
+with broadly variable immediate deltas, which demonstrates the delayed-target
+problem and licenses the sampler feasibility investigation; (B) a replay or
+legality mismatch, which is an implementation defect; or (C) unexpectedly
+uniform deltas, which would make a short-horizon target more plausible. No
+policy is changed by this probe.
+
+### 160.62 Reroll pilot result: immediate proxy is delayed, variable, and not a label
+
+On 12 fixed greedy-policy episode seeds, only five reached a baseline action
+where the policy itself emitted REROLL; each source-replayed prefix matched
+exactly and both REROLL and forced END_PLANNING were legal. After the resolved
+round, reroll-minus-end HP was **0 in all five** states, while gold changed by
+−1, −16, −11, −7, and −15 (mean **−10**), board count changed only once
+(+1), and the fresh fixed-seed visible-panel combat-margin deltas were
+**+4.67, +2.0, −3.0, +3.0, 0.0** (mean +1.33).
+
+This is pilot outcome A from 160.61, not a value result: a single reroll can
+be very combat-positive, neutral, or negative before its dominant opportunity
+cost is realised, and next-round HP is uniformly uninformative in this small
+sample. The action-replay machinery is sound, but it cannot turn five realised
+hidden shop draws into an expected reroll target. Do not fit a model or PPO to
+this proxy. The still-open technical question is whether the player, shared
+pool, and shop RNG state can be safely forked *below* the non-copyable Gym
+environment, allowing independent legal shop continuations from one observed
+state; test that feasibility next.
+
+### 160.63 Reroll sampler feasibility fails at the current state boundary
+
+At a real seed-0 REROLL decision, `copy.deepcopy` fails independently for
+`TFTEnv`, `Match`, `PlayerState`, `SharedPool`, a board unit, a bench unit,
+`Shop`, the item bag, and augments: each reaches the immutable `mappingproxy`
+inside shared game data. The RNG object alone copies. Thus there is no safe
+existing object boundary at which to sample several independent legal shops
+from one observed reroll state. Replaying the same seed merely repeats the
+same hidden shop draw and cannot estimate expectation.
+
+This is a concrete architectural reason current RL cannot obtain a clean reroll
+target cheaply: immediate rewards are uninformative (160.62), the useful
+consequence is stochastic and delayed, and the simulator exposes no forkable
+decision snapshot. Do not work around it with hidden future shop labels or a
+shallow copy, either of which would make a non-deployable target. The next
+possible work is infrastructure, not PPO: specify and test an explicit
+serialisable decision snapshot that reconstructs player ownership, the shared
+pool, shop slots, all planning-relevant state, and RNG state while reusing
+immutable data by reference. It must round-trip exact action masks and produce
+the same post-action state under a fixed action/seed before it can be used for
+reroll rollouts. That snapshot is still open; no learning experiment is
+licensed until it exists.
