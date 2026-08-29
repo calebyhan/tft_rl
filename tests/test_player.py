@@ -427,6 +427,34 @@ def test_two_components_on_one_unit_combine_automatically(player, pool):
     assert unit.derived_stats().crit_chance == 0.25 + 0.25
 
 
+def test_unit_level_item_transition_matches_the_player_action(player, pool):
+    """Search clones and live actions must resolve the same component recipe."""
+    stock_shop(player, "TFT17_Jinx")
+    live = player.buy(0, pool)
+    player.add_item("TFT_Item_BFSword")
+    player.add_item("TFT_Item_Deathblade")
+    player.add_item("TFT_Item_SparringGloves")
+    player.equip_from_bag("TFT_Item_BFSword", live)
+    player.equip_from_bag("TFT_Item_Deathblade", live)
+
+    clone = UnitInstance(
+        live.champion,
+        live.star_level,
+        live.items,
+        registry=player.registry,
+    )
+    result = clone.equip_or_combine(player.data.items["TFT_Item_SparringGloves"])
+    assert result.id == "TFT_Item_InfinityEdge"
+    assert [item.id for item in clone.items] == [
+        "TFT_Item_Deathblade",
+        "TFT_Item_InfinityEdge",
+    ]
+
+    live_result = player.equip_from_bag("TFT_Item_SparringGloves", live)
+    assert live_result.id == result.id
+    assert [item.id for item in live.items] == [item.id for item in clone.items]
+
+
 def test_components_with_no_recipe_stay_separate(player, pool):
     stock_shop(player, "TFT17_Jinx")
     unit = player.buy(0, pool)

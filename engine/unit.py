@@ -165,6 +165,38 @@ class UnitInstance:
         self._items.append(item)
         self._invalidate()
 
+    def equip_or_combine(self, item: ItemDef) -> ItemDef:
+        """Equip ``item``, combining it with the first held component if possible.
+
+        This is the item-state transition shared by live player actions and
+        hypothetical search boards.  Keeping it on the unit matters because a
+        search clone has no item bag, while calling :meth:`equip` directly does
+        *not* implement TFT component recipes.
+        """
+        if item.is_component and self.registry is not None:
+            held_ids = [held.id for held in self._items]
+            for index, held in enumerate(self._items):
+                if not held.is_component:
+                    continue
+                combined_id = self.registry.combine(held.id, item.id)
+                if combined_id is None:
+                    continue
+                combined = self.registry.get(combined_id)
+                # Validate the final loadout before mutating, so a failed
+                # unique/cap check leaves the clone or live unit untouched.
+                loadout = held_ids[:index] + held_ids[index + 1 :] + [combined_id]
+                self.registry.validate_loadout(loadout)
+                # Preserve PlayerState's historical ordering: the consumed
+                # component is removed and the completed item is appended.
+                # Later components combine with the first eligible held item,
+                # so replacing in place would be an observable rules change.
+                self._items.pop(index)
+                self._items.append(combined)
+                self._invalidate()
+                return combined
+        self.equip(item)
+        return item
+
     def unequip(self, item_id: str) -> ItemDef:
         for i, item in enumerate(self._items):
             if item.id == item_id:
