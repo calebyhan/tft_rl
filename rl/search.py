@@ -28,10 +28,12 @@ search running and discards its result.
 from __future__ import annotations
 
 import hashlib
+import math
 import random
-from typing import Sequence
+from typing import Callable, Sequence
 
 from engine.combat import CombatSimulator
+from engine.items import ItemError
 from engine.player import PlayerState
 from engine.unit import UnitInstance
 
@@ -112,15 +114,18 @@ def opponent_panel(match, player: PlayerState, size: int) -> list[PlayerState]:
     """
     def visible_board_signature(opponent: PlayerState):
         """Canonical tie-break made only of facts present in scout tokens."""
-        return tuple(
-            (
-                hex_.q,
-                hex_.r,
-                unit.champion.id,
-                unit.star_level,
-                tuple(item.id for item in unit.items),
-            )
-            for hex_, unit in sorted(opponent.board.items())
+        return (
+            tuple(
+                (
+                    hex_.q,
+                    hex_.r,
+                    unit.champion.id,
+                    unit.star_level,
+                    tuple(item.id for item in unit.items),
+                )
+                for hex_, unit in sorted(opponent.board.items())
+            ),
+            tuple(augment.id for augment in opponent.augments),
         )
 
     others = [
@@ -219,6 +224,63 @@ def best_swap(
     if best is None or best[0] <= baseline + margin:
         return None
     return best[1], best[2]
+
+
+def blind_swap(
+    env,
+    rng: random.Random,
+    max_candidates: int = 4,
+    panel_size: int = 2,
+    accept_rate: float = 0.353,
+) -> tuple[int, object] | None:
+    """Matched-volume control for :func:`best_swap`: same churn, no simulation.
+
+    A search that changes ~12 boards a game cannot be credited with the
+    placement it gains until a policy that changes the *same* boards at the
+    *same* rate by no judgement at all has been measured -- lesson 6's rule
+    that a rate is uninterpretable without its achievable maximum, applied to
+    a placement gain rather than to a fit (doc 99 entry 160.141).
+
+    Every structural gate, the candidate shortlist and the target/drop rule are
+    ``best_swap``'s, character for character. Only the choice among candidates
+    and the accept decision are replaced -- uniform, and a coin at
+    ``accept_rate``. Makes **zero** ``fight_value`` calls by construction.
+    """
+    player = env.player
+    match = env.match
+    if match is None or not player.board:
+        return None
+
+    # Kept even though nothing is simulated: ``best_swap`` declines outright
+    # when the panel is empty, and the control has to decline in the same
+    # states or its volume would not match.
+    if not opponent_panel(match, player, panel_size):
+        return None
+
+    benched = [
+        (index, unit)
+        for index, unit in enumerate(player.bench)
+        if unit is not None
+    ]
+    if not benched:
+        return None
+    benched.sort(key=lambda pair: (-pair[1].star_level, -pair[1].champion.cost))
+    benched = benched[:max_candidates]
+
+    free_hexes = [h for h in sorted(player._own_hexes) if h not in player.board]
+    weakest_hex = min(
+        player.board,
+        key=lambda h: (player.board[h].star_level, player.board[h].champion.cost),
+    )
+
+    # Drawn before the accept test so the stream advances identically whether
+    # or not the coin lands, which keeps the candidate distribution unbiased.
+    index, _unit = benched[rng.randrange(len(benched))]
+    if rng.random() >= accept_rate:
+        return None
+    if len(player.board) < player.max_board_units and free_hexes:
+        return index, None
+    return index, weakest_hex
 
 
 def best_board(
@@ -395,6 +457,259 @@ def item_candidates(player: PlayerState, max_candidates: int = 4):
     return item, tuple(targets[:max_candidates])
 
 
+def _item_clone_index(player: PlayerState, own_hex) -> int:
+    return sorted(player.board).index(own_hex)
+
+
+def item_candidate_team(player: PlayerState, match, prefix, *, finish: bool):
+    """Build the item loadout produced by ``prefix`` on a fresh board clone.
+
+    Prefix entries are ``(original_bag_index, own_hex)``. ``finish`` applies
+    the shipped strongest-unit rule to the remainder, so the empty prefix is
+    the exact control assignment rather than an unequipped board.
+    """
+    from rl.opponents import _strength
+
+    team = clone_board(match, player, 0)
+    remaining = list(enumerate(player.item_bag))
+    for token, own_hex in prefix:
+        position = next(
+            i for i, (original, _item) in enumerate(remaining)
+            if original == token
+        )
+        _original, item = remaining.pop(position)
+        team[_item_clone_index(player, own_hex)].equip_or_combine(item)
+
+    if finish:
+        cap = player.config.max_items_per_unit
+        board_order = tuple(player.board)
+        while remaining:
+            targets = [
+                own_hex for own_hex in board_order
+                if len(team[_item_clone_index(player, own_hex)].items) < cap
+            ]
+            if not targets:
+                break
+            target_hex = max(
+                targets,
+                key=lambda own_hex: _strength(
+                    team[_item_clone_index(player, own_hex)]
+                ),
+            )
+            _token, item = remaining[0]
+            try:
+                team[_item_clone_index(player, target_hex)].equip_or_combine(item)
+            except ItemError:
+                break
+            remaining.pop(0)
+    return team, remaining
+
+
+def item_layout_signature(team) -> tuple[tuple[str, ...], ...]:
+    return tuple(tuple(item.id for item in unit.items) for unit in team)
+
+
+def item_search_state_seed(player: PlayerState, panel) -> int:
+    """Stable seed made only from facts exposed by the token observation.
+
+    The old free-running private stream made an identical item state map to
+    multiple EQUIP labels. Python's process-randomised ``hash`` is deliberately
+    excluded; spawn workers must derive the same seed byte for byte.
+    """
+    def combat_signature(owner: PlayerState):
+        return (
+            owner.hp,
+            tuple(augment.id for augment in owner.augments),
+            tuple(
+                (
+                    hex_.q,
+                    hex_.r,
+                    unit.champion.id,
+                    unit.star_level,
+                    tuple(item.id for item in unit.items),
+                )
+                for hex_, unit in sorted(owner.board.items())
+            ),
+        )
+
+    key = hashlib.sha256(
+        repr(
+            (
+                combat_signature(player),
+                tuple(item.id for item in player.item_bag),
+                tuple(combat_signature(opponent) for opponent in panel),
+            )
+        ).encode()
+    ).digest()
+    return int.from_bytes(key[:8], "big")
+
+
+def item_candidate_layouts(
+    player: PlayerState,
+    match,
+    depth: int,
+    *,
+    max_items: int | None = None,
+):
+    """Unique final boards reachable by changing at most ``depth`` equips."""
+    allowed = set(range(len(player.item_bag)))
+    if max_items is not None:
+        allowed = set(range(min(len(player.item_bag), max_items)))
+    prefixes: list[tuple] = [()]
+    frontier: list[tuple] = [()]
+    seen_states: set[tuple] = set()
+    completion_candidates = 0
+
+    for _ in range(depth):
+        next_frontier: list[tuple] = []
+        for prefix in frontier:
+            before, remaining = item_candidate_team(
+                player, match, prefix, finish=False
+            )
+            for token, item in remaining:
+                if token not in allowed:
+                    continue
+                for own_hex in sorted(player.board):
+                    child = prefix + ((token, own_hex),)
+                    try:
+                        after, child_remaining = item_candidate_team(
+                            player, match, child, finish=False
+                        )
+                    except ItemError:
+                        continue
+                    target = _item_clone_index(player, own_hex)
+                    if (
+                        item.is_component
+                        and len(after[target].items) <= len(before[target].items)
+                    ):
+                        completion_candidates += 1
+                    state = (
+                        item_layout_signature(after),
+                        tuple(original for original, _item in child_remaining),
+                    )
+                    if state in seen_states:
+                        continue
+                    seen_states.add(state)
+                    prefixes.append(child)
+                    next_frontier.append(child)
+        frontier = next_frontier
+
+    unique: dict[tuple[tuple[str, ...], ...], tuple] = {}
+    for prefix in sorted(prefixes, key=len):
+        try:
+            team, _remaining = item_candidate_team(
+                player, match, prefix, finish=True
+            )
+        except ItemError:
+            continue
+        unique.setdefault(item_layout_signature(team), prefix)
+    return unique, completion_candidates
+
+
+def best_item_prefix(
+    player: PlayerState,
+    match,
+    rng: random.Random,
+    *,
+    depth: int = 1,
+    panel_size: int = 2,
+    trials: int = 2,
+    max_items: int | None = None,
+    state_seeded: bool = True,
+    margin: float = 0.0,
+    trace_callback: Callable[[tuple[tuple[tuple, float], ...]], None] | None = None,
+):
+    """Return a simulator-ranked item prefix and measurement diagnostics.
+
+    The player and match RNG are untouched. Every candidate is a completed
+    final loadout: after the searched prefix, the historical strongest-unit
+    rule equips the rest of the bag. This is the deployable depth-1 planner
+    validated in doc 99 entry 160.111.
+    """
+    empty = {
+        "search_decisions": 0,
+        "changed_layouts": 0,
+        "component_candidates": 0,
+        "component_completions": 0,
+        "candidate_boards": 0,
+        "fight_calls": 0,
+    }
+    if not player.item_bag or not player.board:
+        return (), empty
+    panel = opponent_panel(match, player, panel_size)
+    if not panel:
+        return (), empty
+    if state_seeded:
+        rng = random.Random(item_search_state_seed(player, panel))
+
+    layouts, completions = item_candidate_layouts(
+        player, match, depth, max_items=max_items
+    )
+    if len(layouts) <= 1:
+        return (), empty | {"component_candidates": completions}
+
+    seeds = [[rng.randrange(2**31) for _ in range(trials)] for _ in panel]
+    best_prefix = ()
+    best_value = -math.inf
+    fight_calls = 0
+    scored_prefixes = []
+    for prefix in layouts.values():
+        total = 0.0
+        for other, trial_seeds in zip(panel, seeds, strict=True):
+            for seed in trial_seeds:
+                ours, _remaining = item_candidate_team(
+                    player, match, prefix, finish=True
+                )
+                total += fight_value(
+                    player.data,
+                    player.hex_board,
+                    ours,
+                    clone_board(match, other, 1),
+                    seed,
+                )
+                fight_calls += 1
+        value = total / (len(panel) * trials)
+        scored_prefixes.append((prefix, value))
+        if value > best_value:
+            best_value = value
+            best_prefix = prefix
+
+    baseline_value = next(
+        value for prefix, value in scored_prefixes if not prefix
+    )
+    if best_value <= baseline_value + margin:
+        best_prefix = ()
+
+    if trace_callback is not None:
+        trace_callback(tuple(scored_prefixes))
+
+    baseline_signature = next(iter(layouts))
+    selected_team, _remaining = item_candidate_team(
+        player, match, best_prefix, finish=True
+    )
+    component_completions = 0
+    prefix_team, remaining = clone_board(match, player, 0), list(enumerate(player.item_bag))
+    for token, own_hex in best_prefix:
+        position = next(
+            i for i, (original, _item) in enumerate(remaining)
+            if original == token
+        )
+        _original, item = remaining.pop(position)
+        result = prefix_team[_item_clone_index(player, own_hex)].equip_or_combine(item)
+        if item.is_component and not result.is_component:
+            component_completions += 1
+    return best_prefix, {
+        "search_decisions": 1,
+        "changed_layouts": int(
+            item_layout_signature(selected_team) != baseline_signature
+        ),
+        "component_candidates": completions,
+        "component_completions": component_completions,
+        "candidate_boards": len(layouts),
+        "fight_calls": fight_calls,
+    }
+
+
 def best_buy(env, rng: random.Random, panel_size: int = 2, trials: int = 2,
              margin: float = 0.25, max_candidates: int = 5) -> int | None:
     """Which shop slot to buy, decided by simulating the fight (entry 150).
@@ -419,8 +734,23 @@ def best_buy(env, rng: random.Random, panel_size: int = 2, trials: int = 2,
     if not panel:
         return None
 
-    board, data = player.hex_board, player.data
     seeds = [[rng.randrange(2**31) for _ in range(trials)] for _ in panel]
+    scored = buy_candidate_values(player, match, panel, seeds, trials, max_candidates)
+    return best_buy_from_scores(scored, margin, len(panel))
+
+
+def buy_candidate_values(player, match, panel, seeds, trials: int = 2,
+                         max_candidates: int = 5):
+    """Exact fight value of the unchanged board and of each legal buy candidate.
+
+    Split out of ``best_buy`` so a study can read the same numbers the search
+    decides on without an ``env`` (doc 99 entry 160.67). Legality comes from
+    ``buy_candidates``, which asks ``player.can_buy``; the bench-space guard in
+    ``best_buy`` is deliberately not repeated here.
+
+    Returns ``(baseline, [(slot, value, extra, drops), ...])``.
+    """
+    board, data = player.hex_board, player.data
 
     def score(extra=(), drops=()) -> float:
         total = 0.0
@@ -433,15 +763,22 @@ def best_buy(env, rng: random.Random, panel_size: int = 2, trials: int = 2,
         return total / max(trials, 1)
 
     baseline = score()
-    best: tuple[float, int] | None = None
-    for slot, extra, drops in buy_candidates(player, match, max_candidates):
-        value = score(extra=extra, drops=drops)
-        if best is None or value > best[0]:
-            best = (value, slot)
+    candidates = [
+        (slot, score(extra=extra, drops=drops), extra, drops)
+        for slot, extra, drops in buy_candidates(player, match, max_candidates)
+    ]
+    return baseline, candidates
 
-    if best is None or best[0] <= baseline + margin * len(panel):
+
+def best_buy_from_scores(scored, margin: float, panel_size: int) -> int | None:
+    """Apply ``best_buy``'s acceptance rule to ``buy_candidate_values`` output."""
+    baseline, candidates = scored
+    if not candidates:
         return None
-    return best[1]
+    best = max(candidates, key=lambda candidate: candidate[1])
+    if best[1] <= baseline + margin * panel_size:
+        return None
+    return best[0]
 
 
 def search_policy(env, rng_seed: int = 0, base=None, mode: str = "swap",
@@ -472,6 +809,7 @@ def search_policy(env, rng_seed: int = 0, base=None, mode: str = "swap",
     # games, which is what "the feature never fires" looks like (entry 150).
     last_round: list = [None]
     pending_swaps: list[tuple] = []
+    move_stats = {"search_decisions": 0, "accepted_moves": 0}
 
     def _bench_index_of(unit) -> int | None:
         for index, candidate in enumerate(env.player.bench):
@@ -564,6 +902,7 @@ def search_policy(env, rng_seed: int = 0, base=None, mode: str = "swap",
             return action
 
         if mode == "move":
+            move_stats["search_decisions"] += 1
             moved = best_move(env, rng, **search_kwargs)
             if moved is None:
                 searched_this_phase[0] = False
@@ -574,6 +913,7 @@ def search_policy(env, rng_seed: int = 0, base=None, mode: str = "swap",
             if not mask[select]:
                 searched_this_phase[0] = False
                 return action
+            move_stats["accepted_moves"] += 1
             queued.append(place)
             return select
 
@@ -608,6 +948,7 @@ def search_policy(env, rng_seed: int = 0, base=None, mode: str = "swap",
     # configuration returned 3.333 and 3.257 (doc 99 entry 54.1). Every search
     # number in 46, 47 and 53 carries that instability.
     act.rng = rng
+    act.move_stats = move_stats
     return act
 
 
@@ -656,6 +997,153 @@ def search_buy_greedy_policy(
     return policy
 
 
+def search_item_greedy_policy(
+    env,
+    *,
+    econ=None,
+    rng_seed: int = 0,
+    depth: int = 1,
+    panel_size: int = 2,
+    trials: int = 2,
+    state_seeded: bool = True,
+    margin: float = 0.0,
+    buy_search: bool = False,
+    buy_kwargs: dict | None = None,
+    swap_search: bool = False,
+    swap_kwargs: dict | None = None,
+    swap_before_items: bool = True,
+    swap_mode: str = "exact",
+    move_search: bool = False,
+    move_kwargs: dict | None = None,
+):
+    """Faithful greedy scheduler plus post-board simulator-ranked ``EQUIP``.
+
+    The planner returns only a prefix. :class:`GreedyActionPolicy` emits those
+    assignments through the action space and then resumes its historical item
+    loop, which is the action-space contract measured in doc 99 entry 160.112.
+    """
+    from rl.evaluate import greedy_action_policy
+
+    rng = random.Random(rng_seed)
+    totals = {
+        "search_decisions": 0,
+        "changed_layouts": 0,
+        "component_candidates": 0,
+        "component_completions": 0,
+        "candidate_boards": 0,
+        "fight_calls": 0,
+    }
+    latest_trace = []
+
+    swap_rng = random.Random(rng_seed)
+    swap_totals = {"search_decisions": 0, "accepted_swaps": 0}
+
+    def board_planner():
+        """One ``best_swap`` decision, resolved to (unit, target hex).
+
+        ``best_swap`` and its matched-volume control :func:`blind_swap` both
+        answer in bench indices and an optional hex to displace;
+        the scheduler wants the unit itself, because the index it names can go
+        stale before the SELECT is emitted. The free-hex fallback mirrors
+        :func:`search_policy`'s ``mode="swap"`` branch exactly, so the two
+        orderings differ only in when the search fires.
+        """
+        assert env.match is not None
+        swap_totals["search_decisions"] += 1
+        chooser = best_swap if swap_mode == "exact" else blind_swap
+        found = chooser(env, swap_rng, **(swap_kwargs or {}))
+        if found is None:
+            return []
+        bench_index, drop_hex = found
+        unit = env.player.bench[bench_index]
+        if unit is None:
+            return []
+        if drop_hex is None:
+            free = [h for h in sorted(env.player._own_hexes)
+                    if h not in env.player.board]
+            if not free:
+                return []
+            drop_hex = free[0]
+        swap_totals["accepted_swaps"] += 1
+        return [(unit, drop_hex)]
+
+    def planner():
+        assert env.match is not None
+        latest_trace.clear()
+        original_bag = tuple(env.player.item_bag)
+        prefix, diagnostics = best_item_prefix(
+            env.player,
+            env.match,
+            rng,
+            depth=depth,
+            panel_size=panel_size,
+            trials=trials,
+            max_items=env.action_space_helper.item_bag_slots,
+            state_seeded=state_seeded,
+            margin=margin,
+            trace_callback=latest_trace.extend,
+        )
+        for field, value in diagnostics.items():
+            totals[field] += value
+        return [(original_bag[token].id, own_hex) for token, own_hex in prefix]
+
+    item_policy = greedy_action_policy(
+        env,
+        econ=econ,
+        item_planner=planner,
+        board_planner=board_planner if swap_search else None,
+        board_planner_first=swap_before_items,
+    )
+    policy = item_policy
+    if buy_search or move_search:
+        # Positioning fires where ``search_policy`` has always fired it: once
+        # the base scheduler ends the phase, i.e. after buys, the fielding
+        # swap and the item plan. Units carry their items when they move, so
+        # unlike the swap there is no settlement hazard in going last (doc 99
+        # entry 160.147).
+        policy = search_policy(
+            env,
+            rng_seed=rng_seed,
+            base=item_policy,
+            mode="move" if move_search else "none",
+            buy_search=buy_search,
+            buy_kwargs=buy_kwargs,
+            **(move_kwargs or {}),
+        )
+    if buy_search:
+        # Match the existing buy teacher's resolution-time hook. Its search
+        # stream owns both combat candidates and anvil tie breaks.
+        from rl.opponents import _carry_unit
+
+        def choose_component(player, offered):
+            carry = _carry_unit(player)
+            if carry is not None:
+                for component in (
+                    item for item in carry.items if item.is_component
+                ):
+                    completions = [
+                        candidate
+                        for candidate in offered
+                        if player.registry.combine(component.id, candidate)
+                        is not None
+                    ]
+                    if completions:
+                        return policy.rng.choice(sorted(completions))
+            return policy.rng.choice(sorted(offered))
+
+        policy.choose_component = choose_component
+        env.register_external_policy(policy)
+    policy.item_search_rng = rng
+    policy.item_search_stats = totals
+    policy.item_search_trace = latest_trace
+    policy.swap_search_rng = swap_rng
+    policy.swap_search_stats = swap_totals
+    policy.move_search_stats = getattr(
+        policy, "move_stats", {"search_decisions": 0, "accepted_moves": 0}
+    )
+    return policy
+
+
 def best_move(
     env,
     rng: random.Random,
@@ -664,6 +1152,7 @@ def best_move(
     margin: float = 0.5,
     trials: int = 3,
     state_seeded: bool = True,
+    trace_callback: Callable[[tuple], None] | None = None,
 ) -> tuple[object, object] | None:
     """Search *where* a unit stands rather than *which* unit is fielded.
 
@@ -711,7 +1200,16 @@ def best_move(
     # are still drawn uniformly, so search *quality* is untouched -- while
     # making the draw reproducible for a given state. `rng` still supplies the
     # stream when `state_seeded=False`, which reproduces every pre-79 number.
-    return _best_move_from_context(player, match, panel, seeds, moves, margin, trials)
+    return _best_move_from_context(
+        player,
+        match,
+        panel,
+        seeds,
+        moves,
+        margin,
+        trials,
+        trace_callback=trace_callback,
+    )
 
 
 def move_search_candidates(
@@ -764,7 +1262,17 @@ def move_search_candidates(
     return panel, seeds, moves
 
 
-def _best_move_from_context(player, match, panel, seeds, moves, margin, trials):
+def _best_move_from_context(
+    player,
+    match,
+    panel,
+    seeds,
+    moves,
+    margin,
+    trials,
+    *,
+    trace_callback: Callable[[tuple], None] | None = None,
+):
     """Score a ``move_search_candidates`` result without resampling it."""
     board, data = player.hex_board, player.data
 
@@ -791,6 +1299,7 @@ def _best_move_from_context(player, match, panel, seeds, moves, margin, trials):
     baseline = score(dict(player.board))
 
     best: tuple[float, object, object] | None = None
+    trace = [(None, baseline)]
     for source, target in moves:
         # Construct after the baseline just as the original ``best_move`` did.
         # Candidate dicts carry unit objects, so constructing them early risks
@@ -802,8 +1311,12 @@ def _best_move_from_context(player, match, panel, seeds, moves, margin, trials):
         if displaced is not None:
             layout[source] = displaced
         value = score(layout)
+        trace.append(((source, target), value))
         if best is None or value > best[0]:
             best = (value, source, target)
+
+    if trace_callback is not None:
+        trace_callback(tuple(trace))
 
     if best is None or best[0] <= baseline + margin:
         return None

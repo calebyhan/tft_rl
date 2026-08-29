@@ -323,6 +323,31 @@ def test_positional_search_is_a_function_of_the_board(data):
     )
 
 
+def test_positional_search_trace_reuses_the_values_it_selects(data):
+    env = TFTEnv(data=data)
+    policy = scripted_policy(env, **FLAGS)
+    assert _drive_to_a_searchable_state(env, policy)
+    before = dict(env.player.board)
+    trace = []
+
+    selected = best_move(
+        env,
+        random.Random(7),
+        max_candidates=6,
+        panel_size=1,
+        trials=1,
+        trace_callback=trace.extend,
+    )
+
+    assert env.player.board == before
+    assert len(trace) == 7
+    assert trace[0][0] is None
+    assert len({move for move, _value in trace[1:]}) == 6
+    best_move_pair, best_value = max(trace[1:], key=lambda row: row[1])
+    expected = best_move_pair if best_value > trace[0][1] + 0.5 else None
+    assert selected == expected
+
+
 def test_state_seeding_does_not_depend_on_pythonhashseed(data):
     """The key must survive `spawn`, where every worker hashes differently.
 
