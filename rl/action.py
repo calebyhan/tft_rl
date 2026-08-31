@@ -258,7 +258,7 @@ class ActionExecutor:
         for choice in range(min(len(player.realm_offer), space.realm_offerings)):
             mask[space.offering_offset + choice] = True
 
-        mask[space.reroll_index] = player.gold >= player.config.reroll_cost
+        mask[space.reroll_index] = player.can_reroll()
         mask[space.buy_xp_index] = player.can_buy_xp()
         # Real TFT does not let you leave an augment unpicked, so ending the
         # planning phase with an offer outstanding is not an option. Without

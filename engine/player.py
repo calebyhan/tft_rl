@@ -393,30 +393,11 @@ class PlayerState:
         if unit not in self.all_units:
             raise IllegalAction(f"{self.name} does not own {unit.name}")
         item = self._take_from_bag(item_id)
-
-        if item.is_component:
-            for held in unit.items:
-                if not held.is_component:
-                    continue
-                combined_id = self.registry.combine(held.id, item.id)
-                if combined_id is None:
-                    continue
-                combined = self.registry.get(combined_id)
-                try:
-                    unit.unequip(held.id)
-                    unit.equip(combined)
-                except ItemError as exc:
-                    unit.equip(held)
-                    self.item_bag.append(item)
-                    raise IllegalAction(str(exc)) from exc
-                return combined
-
         try:
-            unit.equip(item)
+            return unit.equip_or_combine(item)
         except ItemError as exc:
             self.item_bag.append(item)
             raise IllegalAction(str(exc)) from exc
-        return item
 
     def can_equip_from_bag(self, item_id: str, unit: UnitInstance) -> bool:
         """Whether :meth:`equip_from_bag` would succeed, without mutating.
@@ -550,8 +531,27 @@ class PlayerState:
         """Refresh the shop for free (start of a planning phase)."""
         return self.shop.roll(self.level, pool, rng)
 
+    def can_reroll(self) -> bool:
+        """Is a reroll legal? Asks the same question ``reroll`` answers.
+
+        Exists so the RL action mask can ask the engine instead of restating
+        the rule. ``rl/action.py`` used to test ``gold >= reroll_cost``
+        directly, which silently disagreed with the engine the moment free
+        rerolls became real (doc 99 entry 160.86).
+        """
+        return self.free_rerolls > 0 or self.gold >= self.config.reroll_cost
+
     def reroll(self, pool: SharedPool, rng: random.Random) -> list[str | None]:
-        """Pay to refresh the shop (doc 01 sec 5)."""
+        """Refresh the shop, spending a trait's free reroll before gold.
+
+        The ``free_rerolls`` field carried its own specification -- "Rerolls
+        owed by a trait, spent before gold is (Timebreaker)" -- and nothing
+        honoured it: Timebreaker incremented a counter no code read, so the
+        trait did nothing at all (doc 99 entry 160.83).
+        """
+        if self.free_rerolls > 0:
+            self.free_rerolls -= 1
+            return self.shop.roll(self.level, pool, rng)
         cost = self.config.reroll_cost
         if self.gold < cost:
             raise IllegalAction(

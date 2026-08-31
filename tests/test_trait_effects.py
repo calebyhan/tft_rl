@@ -19,6 +19,7 @@ from engine.effects import EffectTrigger
 from engine.hexgrid import Board
 from engine.items import ItemRegistry
 from engine.loader import load_all
+from engine.player import IllegalAction
 from engine.trait_effects import TRAIT_HOOKS, trait_id_of
 from engine.unit import UnitInstance
 from tests.paths import REAL_DATA_DIR
@@ -552,3 +553,21 @@ def test_timebreaker_grants_free_rerolls_on_a_loss_streak(data, registry):
     player.streak_type, player.streak_count = "loss", 2
     apply_round_end(player)
     assert player.free_rerolls == 1
+
+    # The counter alone asserts nothing: it was incremented for a long time
+    # while `reroll` ignored it entirely, so the trait granted nothing and this
+    # test still passed (doc 99 entry 160.83). Spend it.
+    import random
+
+    from engine.shop import SharedPool
+
+    pool = SharedPool(data)
+    player.gold = 0
+    assert player.can_reroll()
+    player.reroll(pool, random.Random(0))
+    assert player.free_rerolls == 0
+    assert player.gold == 0
+    # With the free reroll spent and no gold, the next one is refused.
+    assert not player.can_reroll()
+    with pytest.raises(IllegalAction):
+        player.reroll(pool, random.Random(0))
