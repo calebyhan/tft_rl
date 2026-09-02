@@ -702,6 +702,10 @@ def greedy_action_policy(
     keep_interest: bool = True,
     econ=None,
     roll_buys: str = "all",
+    off_policy: bool = False,
+    item_planner=None,
+    board_planner=None,
+    board_planner_first: bool = True,
 ) -> PolicyFn:
     """Faithful action-space adapter for :class:`rl.opponents.GreedyPolicy`.
 
@@ -717,6 +721,10 @@ def greedy_action_policy(
         keep_interest=keep_interest,
         econ=econ,
         roll_buys=roll_buys,
+        off_policy=off_policy,
+        item_planner=item_planner,
+        board_planner=board_planner,
+        board_planner_first=board_planner_first,
     )
     env.register_external_policy(policy)
     return policy
@@ -805,7 +813,8 @@ def _parallel_init(
     data = load_all(data_dir) if data_dir is not None else load_all()
     env = TFTEnv(data=data, **env_kwargs)
     _WORKER["env"] = env
-    policy = scripted_policy(env, **policy_kwargs)
+    kwargs = dict(policy_kwargs)
+    policy = expert_base_policy(env, kwargs.pop("expert_base", "scripted"), **kwargs)
     if search_kwargs is not None:
         from rl.search import search_policy
 
@@ -840,6 +849,47 @@ def _parallel_episode(seed: int):
     )
 
 
+EXPERT_BASES = ("scripted", "greedy")
+
+
+def expert_base_policy(env: TFTEnv, base: str = "scripted", **policy_kwargs):
+    """Build the cloning teacher's base policy (doc 99 entry 160.93).
+
+    ``scripted`` is the separately evolved heuristic; ``greedy`` is the faithful
+    :class:`~rl.opponents.GreedyPolicy` port. The two place the same to within
+    a quarter of a standard error (160.91) and are **not** interchangeable: exact
+    buy search is worth −1.095 placement wrapped around ``greedy`` and −0.095
+    around ``scripted`` (160.92), because ``scripted``'s flags already buy well.
+    Which base a search teacher wraps decides whether it is worth anything, so
+    the base is selected explicitly and recorded, never assumed.
+
+    ``greedy`` takes no scripted-only flags. Silently dropping them would let a
+    run record ``expert_flags=True`` in its sidecar while the teacher ignored
+    them, which is a sidecar that lies about the policy that produced the
+    labels -- the failure ``teacher_gap`` exists to prevent.
+    """
+    if base not in EXPERT_BASES:
+        raise ValueError(f"unknown expert base {base!r}, expected one of {EXPERT_BASES}")
+    if base == "scripted":
+        return scripted_policy(env, **policy_kwargs)
+    ignored = {
+        key: value for key, value in policy_kwargs.items()
+        if key not in ("econ", "level_at_gold", "keep_interest", "off_policy")
+        and value
+    }
+    if ignored:
+        raise ValueError(
+            f"expert base 'greedy' does not take {sorted(ignored)}; "
+            "these are scripted_policy flags and would be silently dropped"
+        )
+    return greedy_action_policy(
+        env,
+        econ=policy_kwargs.get("econ"),
+        **{k: v for k, v in policy_kwargs.items()
+           if k in ("level_at_gold", "keep_interest", "off_policy")},
+    )
+
+
 def evaluate_scripted_parallel(
     seeds: Sequence[int],
     workers: int | None = None,
@@ -866,7 +916,9 @@ def evaluate_scripted_parallel(
 
         data = load_all(data_dir) if data_dir is not None else load_all()
         env = TFTEnv(data=data, **env_kwargs)
-        policy = scripted_policy(env, **policy_kwargs)
+        kwargs = dict(policy_kwargs)
+        policy = expert_base_policy(
+            env, kwargs.pop("expert_base", "scripted"), **kwargs)
         if search_kwargs is not None:
             from rl.search import search_policy
 

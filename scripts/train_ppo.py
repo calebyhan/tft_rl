@@ -40,6 +40,7 @@ from rl.env import SHAPING_MODES, TFTEnv  # noqa: E402
 from rl.evaluate import (  # noqa: E402
     end_planning_policy,
     evaluate,
+    expert_base_policy,
     random_policy,
     sb3_policy,
     scripted_policy,
@@ -309,7 +310,8 @@ def collect_expert_data(
     # The teacher's own configuration is part of the dataset, not a detail:
     # imitation caps at whatever this policy does, so cloning a teacher that
     # cannot sell caps the student there too (doc 99 entry 37.4).
-    policy = scripted_policy(env, **(expert_kwargs or {}))
+    kwargs = dict(expert_kwargs or {})
+    policy = expert_base_policy(env, kwargs.pop("expert_base", "scripted"), **kwargs)
     if search_kwargs is not None:
         from rl.search import search_policy
 
@@ -1055,6 +1057,30 @@ def main() -> int:
     # unit slot -- the `features` encoding supplies it too, at ~1800 floats,
     # and was rejected three times (doc 99 44).
     parser.add_argument("--unit-range", action="store_true")
+    parser.add_argument(
+        "--expert-base",
+        choices=("scripted", "greedy"),
+        default="scripted",
+        help=(
+            "which base policy the teacher is built from. 'scripted' is the "
+            "evolved heuristic every clone so far has used; 'greedy' is the "
+            "faithful GreedyPolicy port. They place the same, but exact buy "
+            "search is worth -1.095 over 'greedy' and -0.095 over 'scripted' "
+            "(doc 99 entry 160.92), so --expert-buy-search is only worth "
+            "anything on 'greedy'."
+        ),
+    )
+    parser.add_argument(
+        "--expert-buy-search",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "decide the teacher's buys by exact simulation instead of the "
+            "scripted rule. Worth -1.040 placement over the flagged scripted "
+            "teacher at n=200, t=-5.19 (doc 99 entry 160.91). Without this "
+            "flag no training run can target that teacher at all."
+        ),
+    )
     parser.add_argument("--expert-reposition-candidates", type=int, default=12)
     parser.add_argument("--expert-reposition-panel", type=int, default=1)
     # Which search the teacher is wrapped in. `move` is the historical default
@@ -1293,6 +1319,7 @@ def main() -> int:
     # *same* teacher. Two different teachers across rounds would aggregate
     # contradictory labels for identical states.
     expert_kwargs = {
+        "expert_base": args.expert_base,
         "sell_bench": args.expert_sell,
         "roll_at_level": args.expert_roll_at_level,
         "buy_synergy": args.expert_flags,
@@ -1305,8 +1332,12 @@ def main() -> int:
     # in the validated world: -0.330 (t=-2.53) for the teacher at c12/p1,
     # against 47.10's pooled -0.198 (t=-1.78) in the world entry 71.4 voided.
     search_kwargs = None
+    if args.expert_buy_search:
+        # `search_policy` defaults to mode="swap", so a bare {"buy_search":
+        # True} would silently add repositioning as well. The mode is stated.
+        search_kwargs = {"mode": "none", "buy_search": True}
     if args.expert_reposition:
-        search_kwargs = {
+        search_kwargs = {**(search_kwargs or {}), 
             "mode": args.expert_reposition_mode,
             "panel_size": args.expert_reposition_panel,
             "max_candidates": args.expert_reposition_candidates,

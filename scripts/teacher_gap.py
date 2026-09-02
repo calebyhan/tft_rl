@@ -61,8 +61,13 @@ def search_config(args: dict) -> dict | None:
     6/1 because that is what runs predating these flags hardcoded, not because
     it is a sensible default for a new run.
     """
+    buy_search = bool(args.get("expert_buy_search", False))
     if not args.get("expert_reposition", False):
-        return None
+        # Buy search alone is still a search teacher. Returning None here would
+        # rebuild the plain scripted teacher and score a clone against a policy
+        # 1.040 placement weaker than the one that labelled it -- the same
+        # failure this function's econ note describes (doc 99 entry 160.91).
+        return {"mode": "none", "buy_search": True} if buy_search else None
     mode = args.get("expert_reposition_mode", "move")
     config = {
         # Defaults to "move" because that is the only mode that existed until
@@ -87,6 +92,8 @@ def search_config(args: dict) -> dict | None:
         # dropped key.
         config["state_seeded"] = args.get(
             "expert_reposition_state_seeded", False)
+    if buy_search:
+        config["buy_search"] = True
     return config
 
 
@@ -102,6 +109,11 @@ def teacher_config(run_dir: Path) -> tuple[dict, dict, dict | None]:
     # teacher, which places 4.823 against 4.213 -- so a clone trained on the
     # good teacher would be scored against the bad one and the gap would be
     # measured against a policy that never labelled it (doc 99 entry 74).
+    # Which base produced the labels. Defaults to "scripted" because every run
+    # predating the flag used it; rebuilding a greedy-based teacher as scripted
+    # would score a clone against a policy that never labelled it, and the two
+    # bases differ by 1.0 placement once buy search is involved (160.92).
+    expert["expert_base"] = args.get("expert_base", "scripted")
     econ_name = args.get("expert_econ")
     expert["econ"] = STRATEGIES[econ_name] if econ_name else None
     env = {
