@@ -9,7 +9,7 @@ in doc 99 entry 154 is its contract.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Sequence
 
 import numpy as np
 
@@ -41,8 +41,13 @@ class GreedyActionPolicy:
         keep_interest: bool = True,
         econ: EconStrategy | None = None,
         roll_buys: str = "all",
+        off_policy: bool = False,
+        item_planner: Callable[[], Sequence[tuple[str, object]]] | None = None,
+        board_planner: Callable[[], Sequence[tuple[object, object]]] | None = None,
+        board_planner_first: bool = True,
     ) -> None:
         self.env = env
+        self.off_policy = off_policy
         self.greedy = GreedyPolicy(
             seed=0,
             level_at_gold=level_at_gold,
@@ -57,6 +62,20 @@ class GreedyActionPolicy:
         self._buy_candidates: list[tuple[int, int]] | None = None
         self._buy_after = ""
         self._pending_place: int | None = None
+        self._item_planner = item_planner
+        self._item_actions: list[tuple[str, object]] | None = None
+        self._board_planner = board_planner
+        self._board_actions: list[tuple[object, object]] | None = None
+        # Where an injected board search sits relative to the item phase. TFT
+        # items cannot be moved once equipped, so a swap that fires after the
+        # equip stage strands them on a unit that leaves the board -- the
+        # ordering defect entry 160.108 corrected for item search itself. Both
+        # orders are expressible so the ordering can be measured rather than
+        # assumed (doc 99 entry 160.139).
+        self._stage_after_field, self._stage_after_board, self._stage_after_equip = (
+            ("board", "equip", "done") if board_planner_first
+            else ("equip", "done", "board")
+        )
         self._rolls = 0
 
     def __call__(self, _obs: np.ndarray, mask: np.ndarray) -> int:
@@ -75,10 +94,23 @@ class GreedyActionPolicy:
             choice = self.greedy.choose_offering(player, player.realm_offer)
             return space.encode(Action(ActionKind.PICK_OFFERING, choice))
 
+        replanned = False
         for _ in range(100):
             action = self._advance(mask)
             if action is not None:
                 if not mask[action]:
+                    # Off-policy drivers (counterfactual harnesses) advance the
+                    # world with somebody *else's* action, which strands a plan
+                    # this scheduler already committed to -- a queued PLACE for
+                    # a unit that was never selected. Re-planning from the live
+                    # state is the defensible answer to "what would the teacher
+                    # do here"; asserting is the right answer on-policy, where a
+                    # stranded plan can only be a scheduler bug. Hence the flag
+                    # rather than a blanket softening (doc 99 entry 160.98).
+                    if self.off_policy and not replanned:
+                        replanned = True
+                        self._invalidate_plan()
+                        continue
                     raise AssertionError(
                         f"Greedy scheduler emitted masked action "
                         f"{space.decode(action)!r} in stage {self._stage}; "
@@ -99,11 +131,22 @@ class GreedyActionPolicy:
         if round_id == self._round:
             return
         self._round = round_id
+        self._invalidate_plan()
+        self._rolls = 0
+
+    def _invalidate_plan(self) -> None:
+        """Discard the committed plan and restart the phase from live state.
+
+        ``_rolls`` and ``_round`` deliberately survive: they are the round's
+        reroll *budget*, not part of the plan, and resetting them would let an
+        off-policy replan roll past ``MAX_ROLLS_PER_ROUND``.
+        """
         self._stage = "econ_initial_buy" if self.econ is not None else "legacy_initial_buy"
         self._buy_candidates = None
         self._buy_after = ""
         self._pending_place = None
-        self._rolls = 0
+        self._item_actions = None
+        self._board_actions = None
 
     def _advance(self, mask: np.ndarray) -> int | None:
         player = self.env.player
@@ -182,14 +225,21 @@ class GreedyActionPolicy:
             action = self._next_field_action()
             if action is not None:
                 return action
-            self._stage = "equip"
+            self._stage = self._stage_after_field
+            return None
+
+        if self._stage == "board":
+            action = self._next_board_action(mask)
+            if action is not None:
+                return action
+            self._stage = self._stage_after_board
             return None
 
         if self._stage == "equip":
             action = self._next_equip_action()
             if action is not None:
                 return action
-            self._stage = "done"
+            self._stage = self._stage_after_equip
             return None
 
         if self._stage == "done":
@@ -272,11 +322,65 @@ class GreedyActionPolicy:
         self._pending_place = space.place_offset + space.slot_for_hex(weakest_hex)
         return space.select_offset + space.slot_for_bench(player.bench.index(best_bench))
 
+    def _next_board_action(self, mask: np.ndarray) -> int | None:
+        """Emit one injected board-search swap as a SELECT with a queued PLACE.
+
+        The planner names units, not bench indices: an earlier swap in the same
+        phase displaces a board unit back onto the bench and renumbers every
+        later slot, so an index computed at plan time goes stale mid-sequence
+        (the note ``rl.search.search_policy`` carries for the same reason).
+        """
+        if self._board_planner is None:
+            return None
+        player = self.env.player
+        space = self.env.action_space_helper
+        if self._board_actions is None:
+            self._board_actions = list(self._board_planner())
+        while self._board_actions:
+            unit, target_hex = self._board_actions.pop(0)
+            index = next(
+                (i for i, candidate in enumerate(player.bench) if candidate is unit),
+                None,
+            )
+            if index is None:
+                continue  # already fielded, sold, or combined away
+            select = space.select_offset + space.slot_for_bench(index)
+            if not mask[select] or target_hex not in player._own_hexes:
+                continue
+            self._pending_place = space.place_offset + space.slot_for_hex(target_hex)
+            return select
+        return None
+
     def _next_equip_action(self) -> int | None:
         player = self.env.player
         space = self.env.action_space_helper
         if not player.item_bag or not player.board:
             return None
+        if self._item_planner is not None:
+            if self._item_actions is None:
+                self._item_actions = list(self._item_planner())
+            while self._item_actions:
+                item_id, target_hex = self._item_actions.pop(0)
+                item_index = next(
+                    (
+                        index
+                        for index, item in enumerate(
+                            player.item_bag[: space.item_bag_slots]
+                        )
+                        if item.id == item_id
+                    ),
+                    None,
+                )
+                if item_index is None or target_hex not in player.board:
+                    continue
+                target = player.board[target_hex]
+                if not player.can_equip_from_bag(item_id, target):
+                    continue
+                return (
+                    space.equip_offset
+                    + item_index * space.unit_slots
+                    + space.slot_for_hex(target_hex)
+                )
         cap = player.config.max_items_per_unit
         targets = [unit for unit in player.board_units if len(unit.items) < cap]
         if not targets:
