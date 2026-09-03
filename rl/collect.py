@@ -27,7 +27,7 @@ from typing import Sequence
 import numpy as np
 
 from rl.env import TFTEnv
-from rl.evaluate import scripted_policy
+from rl.evaluate import expert_base_policy
 
 _WORKER: dict = {}
 
@@ -81,7 +81,13 @@ def _init(data_dir, env_kwargs: dict, expert_kwargs: dict,
     data = load_all(data_dir) if data_dir is not None else load_all()
     env = TFTEnv(data=data, **env_kwargs)
     _WORKER["env"] = env
-    policy = scripted_policy(env, **expert_kwargs)
+    # Routed through the factory so `expert_base` selects the teacher here too.
+    # This initialiser was missed when the flag landed, and the failure mode was
+    # not a crash: a TypeError inside a Pool initialiser makes the pool respawn
+    # workers forever, so the run burned 75 minutes at full CPU writing nothing
+    # (doc 99 entry 160.94).
+    kwargs = dict(expert_kwargs)
+    policy = expert_base_policy(env, kwargs.pop("expert_base", "scripted"), **kwargs)
     if search_kwargs is not None:
         from rl.search import search_policy
 

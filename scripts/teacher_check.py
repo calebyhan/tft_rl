@@ -39,7 +39,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from rl.evaluate import EvalResult, evaluate  # noqa: E402
+from rl.evaluate import (  # noqa: E402
+    EvalResult,
+    evaluate,
+    expert_base_policy,
+)
 from rl.timing import timed  # noqa: E402
 
 _WORKER: dict = {}
@@ -120,7 +124,11 @@ def _init(run_dir: str, env_kwargs: dict, expert_kwargs: dict,
         env.opponent_factory = snapshot_factory(pool, env, mix=1.0, seed=7)
 
     if agent == "teacher":
-        policy = scripted_policy(env, **expert_kwargs)
+        # `teacher_config` now yields `expert_base`; the factory honours it and
+        # plain `scripted_policy` would raise on the key (doc 99 entry 160.94).
+        _kwargs = dict(expert_kwargs)
+        policy = expert_base_policy(
+            env, _kwargs.pop("expert_base", "scripted"), **_kwargs)
         if search_kwargs is not None:
             from rl.search import search_policy
 

@@ -36,7 +36,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rl.action import ActionKind  # noqa: E402
-from rl.evaluate import EvalResult, evaluate  # noqa: E402
+from rl.evaluate import (  # noqa: E402
+    EvalResult,
+    evaluate,
+    expert_base_policy,
+)
 from rl.timing import timed  # noqa: E402
 
 # Which kinds the probe varies. PICK was the original question (51); the same
@@ -113,14 +117,18 @@ def _init(run_dir: str, env_kwargs: dict, expert_kwargs: dict, mode: str,
 
     from engine.loader import load_all
     from rl.env import TFTEnv
-    from rl.evaluate import sb3_policy, scripted_policy
+    from rl.evaluate import sb3_policy
 
     logging.getLogger("engine.loader").setLevel(logging.ERROR)
     torch.set_num_threads(1)
     data = load_all()
     env = TFTEnv(data=data, **env_kwargs)
     _WORKER["env"] = env
-    teacher = scripted_policy(env, **expert_kwargs)
+    # `teacher_config` now yields `expert_base`; the factory honours it and
+    # plain `scripted_policy` would raise on the key (doc 99 entry 160.94).
+    _kwargs = dict(expert_kwargs)
+    teacher = expert_base_policy(
+        env, _kwargs.pop("expert_base", "scripted"), **_kwargs)
     space = env.action_space_helper
     # Seeded **per episode**, in `_episode`, not once per worker.
     #
