@@ -53,7 +53,8 @@ def source_fingerprint() -> str:
 
 
 def _init(run_dir: str, env_kwargs: dict, expert_kwargs: dict,
-          kind: str | None = None, per_episode: int = 3) -> None:
+          kind: str | None = None, per_episode: int = 3,
+          search_kwargs: dict | None = None) -> None:
     import logging
 
     import torch
@@ -61,7 +62,7 @@ def _init(run_dir: str, env_kwargs: dict, expert_kwargs: dict,
 
     from engine.loader import load_all
     from rl.env import TFTEnv
-    from rl.evaluate import sb3_policy, scripted_policy
+    from rl.evaluate import expert_base_policy, sb3_policy
 
     logging.getLogger("engine.loader").setLevel(logging.ERROR)
     torch.set_num_threads(1)
@@ -69,7 +70,36 @@ def _init(run_dir: str, env_kwargs: dict, expert_kwargs: dict,
     _W["data"] = data
     _W["env_kwargs"] = env_kwargs
     env = TFTEnv(data=data, **env_kwargs)
-    _W["teacher"] = scripted_policy(env, **expert_kwargs)
+    # `teacher_config` now yields `expert_base`; the factory honours it and
+    # plain `scripted_policy` would raise on the key (doc 99 entry 160.94).
+    _kwargs = dict(expert_kwargs)
+    base = _kwargs.pop("expert_base", "scripted")
+    if base == "greedy":
+        # The teacher is driven on the *clone's* action stream, which strands
+        # any plan it committed to. `scripted` re-derives every call and needs
+        # nothing; `greedy` is a scheduler and must be told to replan instead
+        # of asserting (doc 99 entry 160.98).
+        _kwargs["off_policy"] = True
+    teacher = expert_base_policy(env, base, **_kwargs)
+    if search_kwargs is not None:
+        # Buy-search only; `main` refuses any positional mode. The wrapper adds
+        # exactly one BUY to the phase, so the teacher's decision still *is* a
+        # single action and the counterfactual stays well defined.
+        from rl.search import search_policy
+
+        teacher = search_policy(env, base=teacher, **search_kwargs)
+    # **The shadow env must not carry hooks the clone's env lacks.**
+    # `greedy_action_policy` registers resolution-time hooks (anvil and
+    # component choices) on the seat it is built for. `scripted_policy` does
+    # not -- which is the only reason entry 82's lockstep was ever sound. With
+    # them installed the shadow env resolves items differently, becomes a
+    # *different game* from the clone's, and terminated first in 8 of 10
+    # episodes, returning no placement. The teacher's actions still come from
+    # `__call__`; only env-internal resolution is affected, and the clone's env
+    # has no hooks either, so dropping them is what makes the two games the
+    # same one (doc 99 entry 160.101).
+    env.register_external_policy(None)
+    _W["teacher"] = teacher
     _W["teacher_env"] = env
     _W["clone"] = sb3_policy(MaskablePPO.load(run_dir, device="cpu"))
     _W["kind"] = kind
@@ -89,17 +119,31 @@ def _rollout(seed: int, override: tuple[int, int] | None):
 
     env = TFTEnv(data=_W["data"], **_W["env_kwargs"])
     tenv = _W["teacher_env"]
+    # A search teacher carries its own stream, created once per worker. Without
+    # this the baseline and counterfactual branches draw different candidate
+    # seeds *before* the substitution point, so the "only difference is the one
+    # action" claim fails. Same offset convention as `_parallel_episode`.
+    rng = getattr(_W["teacher"], "rng", None)
+    if rng is not None:
+        from rl.evaluate import SEARCH_SEED_OFFSET
+
+        rng.seed(seed + SEARCH_SEED_OFFSET)
     obs, _info = env.reset(seed=seed)
     tobs, _tinfo = tenv.reset(seed=seed)
     space = env.action_space_helper
 
     trace = []
     placement = None
+    held = stuck = 0
     for step in range(10_000):
         mask = env.action_masks()
         clone_action = int(_W["clone"](obs, mask))
-        teacher_action = int(_W["teacher"](tobs, tenv.action_masks()))
-        if clone_action != teacher_action:
+        teacher_action = _teacher_opinion(tenv, tobs)
+        if teacher_action == "held":
+            held += 1
+        elif teacher_action == "stuck":
+            stuck += 1
+        elif clone_action != teacher_action:
             trace.append((step, clone_action, teacher_action,
                           space.decode(teacher_action).kind.name,
                           env.match.round_id))
@@ -115,16 +159,46 @@ def _rollout(seed: int, override: tuple[int, int] | None):
             break
         if tterm or ttrunc:
             break
-    return placement, trace
+    return placement, trace, held, stuck
+
+
+def _teacher_opinion(tenv, tobs) -> int | None:
+    """The teacher's action here, or why it has none.
+
+    Returns an int action, or one of two *distinct* reasons. The distinction is
+    the whole point: they are not the same kind of silence (doc 99 entry
+    160.100).
+
+    Two states have none, both of them consequences of driving a *scheduler*
+    on a trajectory it did not choose (doc 99 entry 160.98):
+
+    * **A unit is held.** `ActionExecutor` masks every SELECT while
+      ``selected`` is set, so a freshly replanned scheduler asking to field a
+      bench unit is refused. This is not a stale plan -- it is a state the
+      teacher never enters, because it always PLACEs what it SELECTs.
+    * **A fresh plan is still illegal.** Rarer, and caught rather than
+      crashed so the rate is observable. `main` refuses to report an
+      attribution when it exceeds `MAX_UNDEFINED_RATE`.
+
+    Skipping is the honest handling: there is no teacher action to disagree
+    with, so recording one would invent a disagreement. The cost is scope --
+    see the SELECT/PLACE note in 160.99.
+    """
+    if tenv.executor.selected is not None:
+        return "held"
+    try:
+        return int(_W["teacher"](tobs, tenv.action_masks()))
+    except AssertionError:
+        return "stuck"
 
 
 def _episode(seed: int):
     """Baseline rollout, then one counterfactual per sampled disagreement."""
     import random
 
-    base_placement, trace = _rollout(seed, None)
+    base_placement, trace, held, stuck = _rollout(seed, None)
     if base_placement is None or not trace:
-        return []
+        return [], held, stuck, len(trace)
     rng = random.Random(seed)
     # Stratify when a kind is named. Entry 82.1 sampled disagreements
     # uniformly, so a kind holding 4.7% of them got n=42 and t=-1.55 -- too
@@ -134,17 +208,40 @@ def _episode(seed: int):
     kind_filter = _W.get("kind")
     pool = [row for row in trace if row[3] == kind_filter] if kind_filter else trace
     if not pool:
-        return []
+        return [], held, stuck, len(trace)
     picks = rng.sample(pool, min(_W.get("per_episode", 3), len(pool)))
     rows = []
     for step, _clone_action, teacher_action, kind, round_id in picks:
-        alt_placement, _ = _rollout(seed, (step, teacher_action))
+        alt_placement, _, _h, _s = _rollout(seed, (step, teacher_action))
         if alt_placement is None:
             continue
         # Negative = taking the teacher's action once improved placement.
         rows.append((kind, round_id, alt_placement - base_placement,
                      len(trace), base_placement))
-    return rows
+    return rows, held, stuck, len(trace)
+
+
+# Declared in 160.99 and **not** loosened: still 5%, now applied to the rate it
+# was always meant to police -- a replanned teacher that is still illegal. The
+# mid-SELECT rate it was mistakenly applied to is a separate, declared blind
+# spot (doc 99 entry 160.100).
+MAX_UNDEFINED_RATE = 0.05
+
+
+def check_substitutable(search_kwargs: dict | None) -> None:
+    """Refuse teachers whose decision is not a single action.
+
+    A positional search decides a SELECT *and* its PLACE, so substituting only
+    the SELECT executes half a decision -- which is why doc 99 entry 79.3
+    refused the whole search class. Buy search (``mode="none"``) emits one BUY
+    and nothing queued, so it is exempt on the merits rather than by loosening
+    the rule (doc 99 entry 160.97).
+    """
+    if search_kwargs is not None and search_kwargs.get("mode") != "none":
+        raise SystemExit(
+            "this run's teacher uses positional search, which is not a "
+            "function of a single action substitution -- see doc 99 79.3"
+        )
 
 
 def paired_stats(values: list[float]) -> tuple[float, float]:
@@ -171,31 +268,54 @@ def main() -> None:
     from scripts.teacher_gap import teacher_config
 
     expert_kwargs, env_kwargs, search_kwargs = teacher_config(args.run)
-    if search_kwargs is not None:
-        raise SystemExit(
-            "this run's teacher uses positional search, which is not a "
-            "function of a single action substitution -- see doc 99 79.3"
-        )
+    check_substitutable(search_kwargs)
     before = source_fingerprint()
     print(f"source fingerprint: {before}")
-    print(f"teacher: econ={expert_kwargs['econ'] and expert_kwargs['econ'].name}")
+    print(f"teacher: base={expert_kwargs.get('expert_base', 'scripted')} "
+          f"econ={expert_kwargs['econ'] and expert_kwargs['econ'].name} "
+          f"search={search_kwargs}")
 
     context = mp.get_context("spawn")
     rows = []
+    held = stuck = disagreed = 0
     with timed("disagreement_cost", episodes=args.episodes,
                arms=1, workers=args.workers):
         with context.Pool(
             processes=args.workers, initializer=_init,
             initargs=(str(args.run / "model"), env_kwargs, expert_kwargs,
-                      args.kind, args.per_episode),
+                      args.kind, args.per_episode, search_kwargs),
         ) as pool:
-            for batch in pool.imap_unordered(_episode, range(args.episodes)):
+            for batch, ep_held, ep_stuck, ep_disagreed in pool.imap_unordered(
+                    _episode, range(args.episodes)):
                 rows.extend(batch)
+                held += ep_held
+                stuck += ep_stuck
+                disagreed += ep_disagreed
 
     if source_fingerprint() != before:
         print("!! SOURCE CHANGED MID-RUN -- discard (doc 99 entry 68.4)")
     if not rows:
         raise SystemExit("no disagreements sampled -- nothing to report")
+
+    # Two rates, because they mean different things. `held` is the declared
+    # SELECT/PLACE blind spot and is descriptive only -- skipping it removes
+    # PLACE decisions from scope but cannot corrupt what remains, since no buy,
+    # roll or sell happens while a unit is in hand. `stuck` is a *replanned*
+    # teacher still emitting an illegal action, which is the failure that would
+    # make the attribution untrustworthy. The threshold applies to it alone
+    # (doc 99 entry 160.100).
+    observed = held + stuck + disagreed
+    print(f"\nteacher mid-SELECT (declared blind spot): {held}/{observed} "
+          f"= {held / observed:.1%} of opinionated steps")
+    stuck_rate = stuck / observed if observed else 0.0
+    print(f"replanned teacher still illegal:          {stuck}/{observed} "
+          f"= {stuck_rate:.1%}")
+    if stuck_rate > MAX_UNDEFINED_RATE:
+        raise SystemExit(
+            f"stuck rate {stuck_rate:.1%} exceeds the "
+            f"{MAX_UNDEFINED_RATE:.0%} threshold -- the attribution is "
+            "not reportable (doc 99 entry 160.100)"
+        )
 
     by_kind: dict[str, list[float]] = defaultdict(list)
     by_stage: dict[int, list[float]] = defaultdict(list)
