@@ -92,12 +92,10 @@ class StackedSearchPolicy(SearchBuyPolicy):
     def _score_with_item(self, player, match, panel, seeds, own_hex, item):
         """Score the board as if `item` were on the unit at `own_hex`.
 
-        **Equipped on the clone, never on the real unit.** `UnitInstance.equip`
-        auto-combines two components into the finished item exactly as TFT
-        does, and that is not reversible by `unequip` -- so trialling an
-        assignment on the live unit could permanently alter it. `clone_board`
-        emits units in `sorted(board)` order, which is what indexes the clone
-        back to the hex.
+        **Equipped on the clone, never on the real unit.**
+        `UnitInstance.equip_or_combine` shares the live action's component
+        transition without touching the item bag. `clone_board` emits units in
+        `sorted(board)` order, which is what indexes the clone back to the hex.
         """
         order = sorted(player.board)
         index = order.index(own_hex)
@@ -105,7 +103,7 @@ class StackedSearchPolicy(SearchBuyPolicy):
         for other, trial_seeds in zip(panel, seeds[:len(panel)], strict=True):
             for seed in trial_seeds:
                 team0 = clone_board(match, player, 0)
-                team0[index].equip(item)
+                team0[index].equip_or_combine(item)
                 total += fight_value(player.data, player.hex_board, team0,
                                      clone_board(match, other, 1), seed)
         return total / max(len(seeds[0]), 1)

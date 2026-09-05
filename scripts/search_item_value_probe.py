@@ -34,7 +34,7 @@ def _candidate_board(match, player, item, own_hex=None):
     """Clone a board and, optionally, equip an item on the clone at ``own_hex``."""
     team = clone_board(match, player, 0)
     if own_hex is not None:
-        team[sorted(player.board).index(own_hex)].equip(item)
+        team[sorted(player.board).index(own_hex)].equip_or_combine(item)
     return team
 
 
