@@ -92,6 +92,74 @@ def test_scout_tokens_record_position_items_and_identity_without_global_leak():
     )
 
 
+def test_own_item_tokens_preserve_bag_unit_slot_and_held_order():
+    encoder, player, opponents, hexes, first, _second = _scout_state()
+    sword = encoder.data.items["TFT_Item_BFSword"]
+    gloves = encoder.data.items["TFT_Item_SparringGloves"]
+    vest = encoder.data.items["TFT_Item_ChainVest"]
+    player.item_bag[:] = [sword, gloves]
+    player.board[first] = UnitInstance(
+        encoder.data.champions["TFT17_Milio"],
+        1,
+        [sword, gloves],
+        registry=player.registry,
+    )
+    player.bench[2] = UnitInstance(
+        encoder.data.champions["TFT17_Jax"],
+        1,
+        [vest],
+        registry=player.registry,
+    )
+
+    baseline = _encode(encoder, player, opponents, hexes)
+    item_index = encoder._item_index
+    assert baseline["item_bag"][:3].tolist() == [
+        item_index[sword.id],
+        item_index[gloves.id],
+        0,
+    ]
+    assert baseline["own_items"][0].tolist() == [
+        item_index[sword.id],
+        item_index[gloves.id],
+        0,
+    ]
+    assert baseline["own_items"][len(hexes) + 2].tolist() == [
+        item_index[vest.id],
+        0,
+        0,
+    ]
+
+    player.item_bag[:] = [gloves, sword]
+    player.board[first]._items[:] = [gloves, sword]
+    player.board[first]._invalidate()
+    reordered = _encode(encoder, player, opponents, hexes)
+    # The legacy scalar branch sees counts only, while both semantic orderings
+    # are retained in the new categorical tensors.
+    assert np.array_equal(baseline["global"], reordered["global"])
+    assert reordered["item_bag"][:2].tolist() == [
+        item_index[gloves.id],
+        item_index[sword.id],
+    ]
+    assert reordered["own_items"][0, :2].tolist() == [
+        item_index[gloves.id],
+        item_index[sword.id],
+    ]
+    assert not np.array_equal(baseline["item_bag"], reordered["item_bag"])
+    assert not np.array_equal(baseline["own_items"], reordered["own_items"])
+
+    extractor = ScoutSetExtractor(encoder.observation_space)
+
+    def tensorize(observation):
+        return {
+            name: torch.as_tensor(value).unsqueeze(0)
+            for name, value in observation.items()
+        }
+
+    assert not torch.allclose(
+        extractor(tensorize(baseline)), extractor(tensorize(reordered))
+    )
+
+
 def test_opponent_panel_tie_break_is_stable_when_hidden_ids_swap():
     """The search panel must not introduce an absent player-id feature."""
     _encoder, player, opponents, hexes, _first, _second = _scout_state()

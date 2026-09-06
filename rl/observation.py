@@ -708,12 +708,14 @@ class ScoutedObservationEncoder:
 
     UNIT_TOKEN_WIDTH = 8
     BOARD_TOKEN_WIDTH = 5
+    ITEM_BAG_SLOTS = 10
 
     def __init__(
         self,
         data: GameData,
         board_slots: int,
         n_opponents: int,
+        item_bag_slots: int = ITEM_BAG_SLOTS,
         **layout_options,
     ) -> None:
         # Keep every existing self-facing layout option, but remove scouting:
@@ -729,7 +731,9 @@ class ScoutedObservationEncoder:
         self.data = data
         self.spec = self.base.spec
         self.board_slots = board_slots
+        self.unit_slots = board_slots + data.config.bench_size
         self.n_opponents = n_opponents
+        self.item_bag_slots = item_bag_slots
         self.champion_ids = tuple(sorted(data.champions))
         self.item_ids = tuple(sorted(data.items))
         self.augment_ids = tuple(sorted(data.augments))
@@ -777,6 +781,22 @@ class ScoutedObservationEncoder:
         )
         self.observation_space = spaces.Dict({
             "global": spaces.Box(-1.0, 1.0, shape=(self.base.size,), dtype=np.float32),
+            # These arrays are ordered because their axes name actions. Bag row
+            # i is EQUIP's item operand i; own row j is its board/bench operand
+            # j. Held-item order is also rules-visible when a component consumes
+            # the first eligible component (doc 99 entry 160.115).
+            "item_bag": spaces.Box(
+                0,
+                len(self.item_ids),
+                shape=(self.item_bag_slots,),
+                dtype=np.int32,
+            ),
+            "own_items": spaces.Box(
+                0,
+                len(self.item_ids),
+                shape=(self.unit_slots, self._max_items),
+                dtype=np.int32,
+            ),
             "opponent_units": spaces.Box(
                 0,
                 token_high,
@@ -823,6 +843,27 @@ class ScoutedObservationEncoder:
         augments = np.zeros(
             (self.n_opponents, self.max_opponent_augments), dtype=np.int32
         )
+        item_bag = np.zeros(self.item_bag_slots, dtype=np.int32)
+        for item_index, item in enumerate(player.item_bag[:self.item_bag_slots]):
+            item_bag[item_index] = self._item_index[item.id]
+
+        own_items = np.zeros(
+            (self.unit_slots, self._max_items), dtype=np.int32
+        )
+        for slot, hex_ in enumerate(self.board_hexes):
+            unit = player.board.get(hex_)
+            if unit is None:
+                continue
+            for item_index, item in enumerate(unit.items[:self._max_items]):
+                own_items[slot, item_index] = self._item_index[item.id]
+        bench_offset = self.board_slots
+        for bench_index, unit in enumerate(player.bench):
+            if unit is None:
+                continue
+            for item_index, item in enumerate(unit.items[:self._max_items]):
+                own_items[bench_offset + bench_index, item_index] = self._item_index[
+                    item.id
+                ]
         for opponent_index, opponent in enumerate(opponents[:self.n_opponents]):
             boards[opponent_index] = (
                 opponent.hp / self._max_hp,
@@ -849,6 +890,8 @@ class ScoutedObservationEncoder:
                 token[7] = hex_.r - self._r_min
         return {
             "global": global_obs,
+            "item_bag": item_bag,
+            "own_items": own_items,
             "opponent_units": units,
             "opponent_board": boards,
             "opponent_augments": augments,

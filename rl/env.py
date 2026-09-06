@@ -161,6 +161,7 @@ class TFTEnv(gym.Env):
                 self.data,
                 len(self._board_hexes),
                 self.n_players - 1,
+                item_bag_slots=self.action_space_helper.item_bag_slots,
                 **encoder_kwargs,
             )
             self.encoder.bind_board_hexes(self._board_hexes)
