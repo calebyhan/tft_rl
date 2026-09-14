@@ -240,6 +240,18 @@ has incompatible labels. Before cloning a search teacher, audit whether every
 fact it reads is represented to the student; a single collision refutes exact
 imitation. (§160)
 
+**29. Against the composed search teacher, a single n=300 block understates its
+own uncertainty.** Three blocks of the *same* paired contrast read −0.450
+(n=300), −0.033 (n=300) and −0.362 (n=600). Each was internally stable across
+its own halves, so within-block diagnostics gave no warning. The within-block
+SE is about 0.124 at n=300, but the between-block SD is **τ ≈ 0.170** — larger
+than the interval each block reports. Consequences, all paid for in this arc:
+a 0.3–0.45 effect can reverse sign-of-significance between blocks; two blocks
+agreeing is weak evidence and two blocks disagreeing is not yet a refutation;
+and a tiebreak has to *raise n*, not merely add a third block of the same size.
+Quote the random-effects estimate, not the fixed-effect pool, whenever the
+heterogeneity test rejects. (§160: 160.140, 160.142, 160.144)
+
 ---
 
 ## Index
@@ -403,7 +415,7 @@ imitation. (§160)
 | 146 | 08-21 | **The surrogate can choose: 56% of random's regret against the teacher rule's 13%. Not oracle-grade, so it shortlists rather than replaces simulation** | ✅ |
 | 147 | 08-21 | **Real challenger data predicts placement from composition (+0.198 R² over level and gold), with no engine involved. A first control was the label in disguise and inverted the finding** | ✅ |
 | 148 | 08-21 | **A composition advisor with no engine in the loop: your units' real placement association, and what the top-four boards like yours held** | ✅ |
-| 149 | 08-21 | **Search stacks across decisions: teacher reaches 2.665 from 4.360. Items add nothing. And 8 workers deliver 1.76x, not 8x — which explains every runtime underestimate** | ✅ |
+| 149 | 08-21 | **Search stacks across decisions: teacher reaches 2.665 from 4.360. The item conclusion was invalidated by 160.108. And 8 workers deliver 1.76x, not 8x — which explains every runtime underestimate** | ⚠️ 160.108 |
 | 150 | 08-22 | **The search teacher ported into the action space retains only 11% of its −1.355. Two wiring bugs found and fixed; the dilution explanation was wrong** | ⚠️ |
 | 151 | 08-22 | **150's dilution is withdrawn: it counted gross buys, which `sell_bench` churn inflates 4.8x. By net retained units the two harnesses are comparable. `scripted_policy` and `GreedyPolicy` are structurally different agents with near-disjoint option sets** | ✅ |
 | 152 | 08-22 | **No engine bug or data gap behind the RL failures (mask clean over 2,505 probes). Two latent guards-that-guarded-nothing fixed. The real gap: 14 augments shipped against 274 in CDragon — which 17.1 wrongly called unexposed** | ✅ |
@@ -14961,6 +14973,12 @@ increment is *larger* than the 0.243 the board search was worth on its own
 
 ### 149.2 Item search adds nothing, and the cause was predicted
 
+> **WITHDRAWN by entry 160.108.** The ordering defect below was real, but a
+> deeper defect invalidates the result: hypothetical boards used
+> `UnitInstance.equip`, which never combines components, while the live action
+> uses `PlayerState.equip_from_bag`, which does. The search ranked a different
+> item transition from the one it executed.
+
 +0.025 at t = +0.15. The design weakness was named before the run: **item
 search runs before the parent fills the board**, because `GreedyPolicy.plan`
 ends by calling the module-level `_equip_phase` and TFT items cannot be moved
@@ -17044,6 +17062,11 @@ not a reason to start BC/PPO.
 
 ### 160.59 Item result: stable values, but insufficient shortlist transmission
 
+> **WITHDRAWN by entry 160.108.** Component candidates were labelled with two
+> loose components instead of the completed item the live action creates. The
+> reported MSE and regret are valid for those incorrect labels, not for item
+> allocation in the engine.
+
 The frozen 12/4 item corpus contains 148 train and 41 held-out item-action
 states (710 and 194 candidate rows), each with one unchanged board and up to
 four legal first-bag-item targets, labelled by three matched fights. The
@@ -17208,3 +17231,4506 @@ reroll ranker yet. The next required judgement is a predeclared, deployable
 short-horizon rollout utility whose components do not smuggle in the greedy
 policy; until that is specified and validated, the snapshot is infrastructure
 only.
+
+### 160.67 Reroll target calibration design: one planning phase, sampled shops, no invented reward
+
+The blocker named in 160.66 is a *target*, not infrastructure. Before any
+reroll ranker or PPO, run a calibration study that asks one question: **can a
+short-horizon, deployable reroll utility be defined at all, and is it estimable
+at a feasible sampling budget?** This entry freezes the design; nothing here
+fits a model, and no scalar reward is invented in advance.
+
+**State and candidates.** Baseline states are the first action in each episode
+where the frozen greedy action policy emits a legal REROLL and END_PLANNING is
+also legal — the same selection rule as 160.61, so the state distribution is
+unchanged from the pilot. At that state, capture a `PlanningSnapshot`
+(160.64) and hold a reference to the live `Match` purely as a read-only source
+of the opponent panel and the engine's board-cloning geometry. Two branches:
+
+- **END** — do not reroll. Run the frozen buy finaliser on the shop that was
+  actually observed. Deterministic given the combat seeds: exactly one outcome.
+- **REROLL** — pay the reroll cost once, draw a new shop from an independent
+  replacement RNG stream, then run the same finaliser. Sampled `K` times.
+
+Exactly one reroll per branch. Repeated rerolls are a different decision
+(how far to roll down) and are out of scope for this entry.
+
+**Horizon.** One planning phase. No round is resolved, no future round is
+simulated, and no opponent acts. This is chosen because the snapshot forks the
+player, pool and RNG only; stepping a round would require replay, which
+re-fixes the very shop draw the study is sampling over. The horizon is a
+declared limitation, not an approximation to be quietly widened later.
+
+**Held fixed vs sampled.** Fixed across both branches and all replicas: the
+restored player state, shared pool, item bag, augments, level, the opponent
+panel (`opponent_panel`, size 2, visible-signature ordering), the combat seed
+matrix (common random numbers), and every finaliser parameter. Sampled: the
+shop RNG stream only, `K = 64` independent seeds, matching the budget already
+shown feasible in 160.66.
+
+**Frozen continuation.** The only actor inside a branch is the validated exact
+buy finaliser — `buy_candidates` enumeration scored by `fight_value` against
+the panel, the same rule frozen as control behaviour in 160.53. Exactly **one**
+buy decision per branch, and the branch's terminal board is the candidate board
+that decision selects (or the unchanged board when no candidate clears the
+margin). One buy rather than a loop because a second buy would require a
+fielding rule, and every available fielding rule is either the greedy policy's
+or a new invented heuristic; the candidate contract already states exactly what
+board a purchase becomes. `_strength`, cost/star heuristics, the learned buy
+shortlist, and the greedy action policy are all excluded: the shortlist is a
+speed optimisation whose ranking would become part of the label if used here.
+
+One deviation from the `best_buy` *wrapper* is forced and is declared here in
+advance. Probing the pilot's state selection shows these reroll states have a
+**full bench** (seeds 0 and 5 of the first six: level 6, board 6, zero free
+bench slots, 52 and 63 gold). `best_buy` returns `None` outright when
+`free_bench_slots` is empty, so reusing the wrapper unchanged would force
+Δmargin ≡ 0 for a harness reason rather than a game reason. The calibration
+therefore calls the same scoring at context level and takes legality from
+`player.can_buy`, which correctly permits a bench-full purchase that combines
+away. This strictly widens legality and invents nothing. It also flags a
+separate suspicion — that `best_buy`'s bench guard declines legal
+pair-completing buys — which is **not** acted on here: the buy search stays
+frozen as validated control until its own scoped experiment.
+
+**Terminal measurements** (a vector, deliberately not collapsed):
+
+| Measurement | Deployable because |
+|---|---|
+| exact combat margin of the final board vs the frozen panel, mean over matched seeds | the panel is built from scout-visible board signatures only (160.25); a real advisor sees the same boards |
+| gold remaining after reroll cost and purchases | own gold is on screen |
+| units bought, star-ups completed, final board size | own board and bench are on screen |
+| shop `legal_buys` and pair-completing offers | on screen — recorded as **descriptive facts only**, never as utility (160.66) |
+| shared-pool copies consumed | **diagnostic only, flagged non-deployable**; a real player cannot read the pool exactly |
+
+HP is deliberately absent: no round resolves, and 160.62 already showed
+next-round HP uninformative in this regime.
+
+**No leakage.** No heuristic unit-strength score, no target-cost preference, no
+greedy-policy score, no hidden future shop, and no aggregate final placement
+enters any measurement. Nothing in this entry defines a training label; a
+utility may only be proposed *after* the observed trade-offs are in hand, and
+only in a subsequent numbered entry.
+
+**Analysis.** Per state, report the distribution of REROLL-minus-END margin
+over the `K` sampled shops (mean, sd, standard error, quantiles, `P(Δ>0)`,
+`P(Δ=0)`) and the paired gold delta. Reroll can never dominate on gold, so the
+object of interest is the empirical **margin-per-gold exchange rate** and
+whether its estimate is sharp relative to how much it varies *between* states.
+
+**Named outcomes and stopping criteria.** Budget is fixed in advance: 40
+episode seeds (the pilot reached a baseline reroll in 5 of 12), `K = 64`, 3
+matched combat trials per panel opponent, panel size 2. One analysis pass; λ is
+not tuned on this data after seeing it.
+
+- **(A) Sharp.** Within-state standard error of E[Δmargin] at `K = 64` is small
+  relative to the between-state spread, and both clearly positive and clearly
+  negative states exist at a fixed gold price. Licenses proposing a calibrated
+  `margin − λ·gold` utility and collecting reroll-vs-END candidate data — still
+  not PPO.
+- **(B) Noisy.** Within-state SE is comparable to or larger than the
+  between-state spread. Then no deployable short-horizon reroll target exists
+  in this simulator at a feasible budget; stop and pivot strategic decisions
+  elsewhere rather than tuning PPO.
+- **(C) Degenerate.** Δmargin is ~0 in nearly all states. This is a live
+  possibility: 160.66 measured a mean of only **0.188** affordable buy slots
+  per sampled shop, so most rerolls may change nothing purchasable within one
+  planning phase. That would say the one-phase horizon cannot price reroll at
+  all — record it and stop. Extending the horizon requires a new predeclared
+  entry, not an in-flight adjustment.
+- **(D) Mechanical failure.** Restored branches disagree where they must match,
+  or a branch executes an illegal action. That is a defect in the harness, not
+  a result.
+
+Still open after this study regardless of outcome: multi-reroll roll-down
+depth, the delayed opportunity cost of gold across rounds, level-versus-reroll
+economy, and whether any of positioning, items, or reroll can be learned rather
+than searched.
+
+### 160.68 Reroll calibration result: sharp, one-sided, and still not a decision rule
+
+> **SCOPE NARROWED by entry 160.70.**
+> The measurements below stand, but the one-sidedness is now known to be an
+> artefact of this entry's state selection, not a property of rerolling. It
+> reproduces exactly inside 160.70's `end_had_no_legal_buy` stratum and
+> nowhere else.
+
+The 160.67 study ran at its predeclared budget — 40 episode seeds, `K = 64`
+sampled shops, 3 matched combat trials, panel size 2
+(`scripts/reroll_target_calibration.py`, saved to
+`/private/tmp/reroll_calibration_40x64.json`). **30 of 40 episodes never
+reached a baseline reroll with a legal END**, leaving `n = 10` states.
+
+Per state, mean REROLL-minus-END combat margin over the 64 sampled shops:
+
+| seed | mean Δmargin | se | t | Δmargin = 0 | mean Δgold | margin/gold |
+|---|---|---|---|---|---|---|
+| 0 | +0.396 | 0.133 | 2.97 | 0.83 | −2.42 | 0.163 |
+| 5 | +0.583 | 0.133 | 4.39 | 0.73 | −2.59 | 0.225 |
+| 6 | +0.875 | 0.312 | 2.80 | 0.89 | −2.22 | 0.394 |
+| 9 | +0.000 | 0.000 | — | 1.00 | −2.00 | 0.000 |
+| 11 | +1.198 | 0.315 | 3.80 | 0.73 | −2.39 | 0.501 |
+| 19 | +0.260 | 0.076 | 3.44 | 0.84 | −2.31 | 0.113 |
+| 21 | +0.448 | 0.131 | 3.42 | 0.84 | −2.47 | 0.181 |
+| 25 | +0.104 | 0.050 | 2.07 | 0.94 | −2.06 | 0.051 |
+| 34 | +0.073 | 0.026 | 2.80 | 0.89 | −2.22 | 0.033 |
+| 37 | +0.547 | 0.151 | 3.63 | 0.80 | −2.38 | 0.230 |
+
+Pooled: mean Δmargin **+0.448**, mean Δgold **−2.306**, mean zero fraction
+**0.85**. Between-state sd of the per-state mean is **0.356** against a mean
+within-state se of **0.133**, so `se/spread = 0.372`, inside the predeclared
+0.5. The exchange rate spans **0.033 to 0.501** margin per gold, a 15× spread
+across states, itself estimated at se 0.048.
+
+**This is not outcome A.** Outcome A was declared as a conjunction: sharp *and*
+clearly positive and clearly negative states at a fixed gold price. The
+sharpness half passes. The sign half fails completely — **0 of 10 states and 0
+of 640 sampled shops produced a negative Δmargin.** The classifier initially
+reported "A" because it tested only the numeric half; that was a criterion bug,
+now fixed, and the corrected label is **A-partial: sharp but one-sided**. The
+correction is re-derived from the saved run via `--from-json`, not by
+resampling, and `test_outcome_a_requires_sharpness_and_disagreement_in_sign`
+pins the conjunction.
+
+**Why it is one-sided is structural, not luck.** Every one of the ten states
+has a **full bench**, and `legal_buys` in the *observed* shop was **0 at all
+ten** — so the END branch bought nothing in any state. With a full bench the
+only legal purchase is one that combines away, so within one planning phase a
+reroll can do exactly one thing: hit a 2-star upgrade. It did so in 0–27% of
+sampled shops (`reroll_bought_fraction` mean ≈ 0.15). A finaliser that acts
+only on an improvement, compared against a baseline that can never act, yields
+Δmargin ≥ 0 by construction. The quantity measured is the reroll's **option
+value**, with its entire cost sitting in gold.
+
+**So the horizon cannot close the decision.** Even a perfectly estimated
++0.448 margin for 2.31 gold does not say whether to reroll, because the value
+of gold at this state is delayed by construction and the one-phase horizon was
+declared to exclude it. Sharpening the margin estimate further would not help;
+the missing half of the trade-off is not noisy, it is absent. This is the
+concrete, measured form of what 160.62 saw and 160.66 suspected.
+
+**Two limitations that bound what this licenses.** First, the state selection
+inherited from 160.61 — the first action where the greedy policy itself rerolls
+— samples only 52–63 gold, level 5–8, full-bench states. Real reroll decisions
+at low gold or with an open bench are not represented at all, and the ten
+states are what one scripted policy's habit happens to visit. Second, `n = 10`
+supports the structural claim (a censored measurement, seen at every state) far
+better than any magnitude; the per-state `t` values are estimates of a
+one-sided quantity, not evidence for a policy.
+
+**What changes.** No reroll ranker, no economy policy, and no PPO. A scalar
+`margin − λ·gold` utility is **not** licensed: λ is precisely the delayed
+quantity this horizon excluded, and choosing it now would be inventing the
+answer. `margin_per_gold` is reported as an observed exchange rate, not adopted
+as a target. Nothing in the frozen buy control changed; the bench-guard
+suspicion raised in 160.67 is still merely noted.
+
+**Still open.** Whether a state distribution that is *not* the greedy policy's
+reroll habit (open bench, low gold, early stage) shows two-sided Δmargin;
+whether gold can be priced from anything short-horizon and deployable, which
+this study says it cannot and which is now the gate on the whole reroll family;
+multi-reroll roll-down depth; and whether strategic decisions should move to
+real-game data or explicit priors instead of this simulator, as 160.67's
+outcome-B branch anticipated. The mechanical infrastructure (160.66) remains
+sound and reusable — it was never the blocker.
+
+### 160.69 Reroll calibration design II: is the zero floor the game, or the state selection?
+
+160.68 measured a sharp but strictly one-sided reroll advantage and identified
+a structural cause: all ten states had a full bench and **zero legal buys in
+the observed shop**, so the END branch could never act and Δmargin ≥ 0 followed
+by construction. That is a property of the state selection inherited from
+160.61 — the first action where the greedy policy *itself* rerolls — and not
+necessarily a property of rerolling.
+
+More seeds or a larger `K` would only re-measure the same censored quantity
+more precisely; CLAUDE.md's replication lesson says to change the axis that
+discriminates. Here that axis is the **state distribution**.
+
+**The one change.** The greedy policy still drives the episode, so states stay
+realistic, but the state is selected by *legality alone*: REROLL and
+END_PLANNING both legal, board non-empty, opponent panel non-empty. Among all
+such decision points in an episode, one is chosen by reservoir sampling with a
+fixed per-episode RNG — never by reference to what the policy chose there.
+This decouples selection from the policy's reroll habit and should also raise
+`n` from 10 toward one state per episode.
+
+**Everything else is held frozen from 160.67** so the comparison is on the
+selection axis only: the same `PlanningSnapshot` fork, the same single buy
+decision by `buy_candidates` + `fight_value` with legality from
+`player.can_buy`, the same common-random-number combat seed matrix, `K = 64`
+sampled shop streams, 3 trials, panel size 2, the same terminal measurement
+vector, and the same A/B/C/D criteria with the sign conjunct as corrected in
+160.68.
+
+**The selection trap, named in advance.** Selection must **not** condition on
+`end_legal_buys > 0`. That would condition on the very quantity that determines
+the sign of Δmargin and would manufacture two-sidedness out of the sampling
+rule. States are sampled by legality; free bench slots and `end_legal_buys` are
+recorded as covariates and the result is stratified by them *after* the fact.
+
+**Named outcomes.**
+
+- **Two-sided in some stratum.** 160.68's one-sidedness was a selection
+  artefact, and Δmargin becomes a genuine comparison rather than an option
+  value. This still does **not** yield λ: the gold half of the trade-off
+  remains outside the declared horizon, so it licenses discussion of a utility,
+  not adoption of one.
+- **One-sided everywhere, including states where END can buy.** The zero floor
+  is a real feature of a one-planning-phase horizon. Gold-pricing is then
+  confirmed as the single gate on the entire reroll family, which closes
+  reroll-from-this-simulator and sends strategic decisions to real-game data or
+  explicit priors, as 160.67's outcome-B branch anticipated.
+- **Too few qualifying states, or a legality/mechanical mismatch.** A harness
+  defect, not a result.
+
+No policy changes on any outcome, and no learner is trained from this study.
+
+### 160.70 The zero floor was the state selection, not the game
+
+The 160.69 study ran at its predeclared budget — 40 episode seeds, `K = 64`
+sampled shops, 3 matched trials, panel size 2, legality-uniform selection
+(`--selection legal-uniform`, saved to
+`/private/tmp/reroll_calibration_lu_40x64.json`). **All 40 episodes yielded a
+state**, against 10 of 40 under the old rule.
+
+The distribution is far wider than the one 160.68 was confined to: gold 2–48
+(median 11) rather than 52–63, levels 3–9 rather than 5–8, free bench slots
+0–8 rather than 0 everywhere, and `end_legal_buys` 0–5 (mean **2.33**) rather
+than 0 at every state.
+
+**Outcome A, on both halves of the predeclared conjunction.** Between-state sd
+of the per-state mean is **2.007** against a mean within-state se of **0.164**,
+so `se/spread = 0.082` (predeclared ≤ 0.5). And the sign half now passes:
+**7 of 40 states have a negative mean Δmargin**, spanning **−5.776 to +8.083**.
+Six of the seven carry `|t|` from 5.2 to 14.8; the seventh is −1.83.
+
+**The stratification is the finding.** 160.69 named the suspected cause, and
+the strata reproduce it exactly:
+
+| stratum | states | negative | positive | mean Δmargin |
+|---|---|---|---|---|
+| `end_had_no_legal_buy` | 18 | **0** | 12 | +0.479 |
+| `end_could_buy` | 22 | **7** | 11 | −0.030 |
+| `full_bench` | 17 | **0** | 12 | +0.507 |
+| `open_bench` | 23 | **7** | 11 | −0.029 |
+
+Every negative state is one where END bought something; not one state in the
+`end_had_no_legal_buy` stratum is negative. That stratum *is* 160.68's slice,
+and inside it 160.68's one-sided result reproduces. **The zero floor was an
+artefact of selecting states by the greedy policy's own reroll habit**, which
+only ever visited full-bench states whose observed shop offered nothing legal,
+leaving the baseline unable to act. It was never a property of rerolling.
+
+**The trade-off is now real and visibly two-dimensional.** Δgold is no longer
+uniformly negative: at seeds 2, 14 and 24 the reroll branch ends with *more*
+gold than END (+1.22, +0.19, +1.03) while losing margin (−4.17, −1.59, −1.97),
+because END spent on a purchase the rerolled shop no longer offered. Those
+three states are genuine sign conflicts, where the answer depends entirely on
+what a gold is worth. Note also that `margin_per_gold` has stopped being a
+usable statistic: its denominator changes sign across states, so the reported
+mean 0.314 with sd 1.85 and range −5.37 to +8.47 should be read as evidence
+that the ratio is ill-defined here, not as an exchange rate.
+
+**What this does and does not license.** Outcome A was declared to license
+*proposing* a calibrated `margin − λ·gold` utility and collecting reroll-vs-END
+candidate data — explicitly not PPO, and explicitly not λ itself. That
+restriction now has teeth rather than being a formality: with three sign
+conflicts on record, the decision provably cannot be made without λ, and λ is
+still the delayed quantity this one-phase horizon was declared to exclude. So
+the gate on the reroll family has moved, but not lifted — from "is there any
+signal here" to "can a gold be priced from something deployable". No ranker, no
+economy policy, no PPO, and the frozen buy control is untouched.
+
+**Three limitations that bound the claim.** First, the finaliser is still
+**one** buy per branch (160.67), and open-bench states are exactly where a real
+planning phase would buy several times — so the open-bench stratum, which
+carries every negative state, is the stratum where the one-buy restriction
+distorts most. Second, selection is uniform over qualifying *action steps*
+(92–234 per episode, median 142), not over planning phases, so states inside a
+long planning phase are over-weighted. Third, `n = 40` with one state per
+episode supports the stratified structural claim well; the individual
+magnitudes are one sampled state's, not a stage's.
+
+**Still open.** Whether λ can be derived from anything short-horizon and
+deployable — now the single gate on this family; whether a multi-buy finaliser
+changes the open-bench stratum, which needs a fielding rule that is neither the
+greedy policy's nor invented; multi-reroll roll-down depth; and the `best_buy`
+full-bench guard first noted in 160.67, still frozen and unmeasured.
+
+### 160.71 Design: can a gold be priced? A dose-response probe for λ
+
+160.70 moved the reroll gate from "is there signal" to "can a gold be priced".
+Three states there are genuine sign conflicts — the reroll branch ends with more
+gold and less combat margin — so the decision provably needs λ, the marginal
+combat margin a gold converts into. This entry specifies how to *measure* λ
+rather than assume it. Nothing here trains anything, and λ is a constant of the
+environment being estimated, never an input to a model.
+
+**Why this cannot be a one-phase study.** Within a single planning phase gold
+converts to margin only through an immediate purchase, which is the quantity
+160.70 already measured. Gold's actual worth is interest, levelling and future
+shops, all of which are realised over rounds. So the horizon must be multi-round,
+and this is the first entry in the reroll arc to say so deliberately rather than
+inherit a short horizon by default.
+
+**Intervention.** At a legality-uniform sampled state (the 160.69 selection, so
+λ is measured on the same state distribution where the reroll decision lives),
+replay the episode prefix from its seed and grant the agent seat `+G` gold for
+`G ∈ {0, 2, 5, 10}`. `G = 0` is the paired control. Then let the frozen greedy
+action policy continue for **R = 3 resolved rounds** (`match.rounds_played`),
+or to episode end, whichever comes first.
+
+The grant is an intervention, not a feature: no policy ever observes it, and it
+appears in no label. It is the only way to obtain a dose-response curve, since a
+real player cannot be given gold on request.
+
+**What is held fixed and what is not.** The episode seed, the sampled state
+index, the frozen policy, the terminal combat seeds and the panel construction
+are fixed. Common random numbers hold only up to the intervention: extra gold
+changes what the policy buys, which consumes the RNG stream differently, so the
+arms genuinely diverge afterwards. That divergence is the effect being measured,
+not a defect — it is why the study needs many paired seeds rather than a few.
+
+**Terminal measurements at the horizon**, each deployable from what a real
+player sees: exact combat margin of the board against the then-visible opponent
+panel under fixed seeds; HP; gold remaining; and level. Gold remaining is a
+required diagnostic, not decoration — if the policy simply hoards the grant, the
+study measures hoarding rather than conversion, and the result must be read that
+way.
+
+**No leakage.** No `_strength`, no cost or star heuristic, no hidden future
+shop, no aggregate placement. The greedy policy is the *spending* mechanism, so
+λ is explicitly conditional on it; that is a declared conditioning of a measured
+constant, not an expert score entering a learner. λ measured under one spending
+policy is not claimed to be λ under another.
+
+**Named outcomes.**
+
+- **A — a scalar price exists.** Margin at the horizon rises monotonically with
+  `G`, with a slope sharp against its standard error at the budgeted `n`. Report
+  λ in margin per gold with `n` and `t`. Only then may a `margin − λ·gold`
+  reroll rule be *tested* — tested, not adopted, and still not by PPO.
+- **B — no detectable slope.** Gold cannot be priced at this horizon and budget.
+  That closes the reroll family from this simulator and sends strategic
+  decisions to real-game data or explicit priors, as 160.67 anticipated.
+- **C — non-scalar.** The response is non-monotone or threshold-shaped. This is
+  a live prediction, not a hedge: TFT pays interest per 10 gold banked, so the
+  marginal value of a gold should depend sharply on where the total sits
+  relative to the next breakpoint, and on whether the grant buys a level. Under
+  C a linear `margin − λ·gold` utility is simply the wrong functional form, and
+  **it must not be fitted anyway** — the correct response is to record that the
+  reroll decision needs a state-dependent price, not a constant.
+- **D — mechanical failure.** Arms diverge before the intervention, or a replay
+  does not reach its state. A defect, not a result.
+
+**Budget, fixed in advance.** 40 episode seeds × 4 doses × R = 3 rounds, one
+sampled state per episode, paired within seed. Analysis is a single pass; λ is
+not re-fitted after inspecting the curve, and no dose is added afterwards to
+rescue a null.
+
+### 160.72 Gold is not priceable at three rounds — because the grant is never spent
+
+The 160.71 probe ran at its predeclared budget — 40 episode seeds × doses
+{0, 2, 5, 10} × R = 3 resolved rounds, paired within seed
+(`scripts/gold_value_probe.py`, saved to `/private/tmp/gold_value_40x4.json`).
+Every episode produced a state; 37 of 40 had a scoreable board at the horizon.
+
+| grant | n | mean Δmargin | se | t | mean Δgold **kept** | Δmargin = 0 |
+|---|---|---|---|---|---|---|
+| 0 | 37 | 0.000 | — | — | 0.00 | 37/37 |
+| 2 | 37 | +0.135 | 0.094 | 1.44 | **+1.51** | 33/37 |
+| 5 | 37 | +0.081 | 0.105 | 0.77 | **+3.68** | 32/37 |
+| 10 | 37 | +0.216 | 0.217 | 0.99 | **+6.92** | 28/37 |
+
+**Outcome B on the numbers.** No dose reaches |t| = 1.5, the response is
+non-monotone (G = 5 sits below G = 2), and the fitted slope is λ = **0.018**
+margin per gold — indistinguishable from zero at this budget.
+
+**But the diagnostic declared in 160.71 fired, and it explains the null.** That
+entry required gold-remaining to be read as a check on whether conversion
+happened at all: *"if the policy simply hoards the grant, the study measures
+hoarding rather than conversion, and the result must be read that way."* It
+hoards. Roughly **70% of every grant is still in hand three rounds later**
+(1.51 of 2, 3.68 of 5, 6.92 of 10). The frozen greedy policy banks toward its
+econ thresholds instead of converting marginal gold into board strength.
+
+The consequence is a diluted estimate rather than a small effect. The grant
+leaves the terminal margin **exactly unchanged** in 33, 32 and 28 of 37 arms;
+level moves in 1, 1 and 4 arms. Among the arms where anything changed at all,
+the mean Δmargin is **+1.25, +0.60 and +0.89** — large, not small. The estimate
+is an average of roughly 85% exact zeros against a minority of substantial
+effects, which is precisely how a real effect produces `t < 1.5`.
+
+**So B's declared consequence is not taken.** 160.71 said outcome B would close
+the reroll family from this simulator. That conclusion assumed the null meant
+gold *cannot* be priced. It does not: the null is explained by the spending
+mechanism and the horizon, both of which are choices this study made. What is
+established is narrower and should be stated as such — **λ cannot be measured
+this way at this budget, and a constant scalar λ has no support.** Declining to
+take a predeclared consequence when its premise is refuted by the study's own
+diagnostic is the point of having declared the diagnostic.
+
+**A trap, named so it is not walked into later.** The obvious "fix" is to
+restrict the estimate to arms where the gold was actually spent. That is
+conditioning on a post-treatment variable — spending is downstream of the
+grant — and it would bias the estimate rather than sharpen it. It must not be
+done, and no such conditioned number appears above.
+
+**What this says about the teacher, not about gold.** The measurement is
+conditional on the frozen greedy policy as the spending mechanism, as declared.
+Read that way, the finding is partly a statement about the *teacher's economy
+behaviour*: given surplus gold at an arbitrary planning state, it mostly banks
+it. That is a fact about the scripted policy worth having on record, and it is
+also why λ-under-this-policy may not be λ under any policy that spends.
+
+**Still open, and the discriminating axis.** Gold banked at three rounds may
+convert at eight — the horizon, not the budget, is the axis that discriminates
+here (more seeds would only re-measure the same dilution more precisely). That
+is a new predeclared entry, not an extension of this one, and per 160.71 no
+dose is being added to rescue this null. Also still open: whether any spending
+mechanism other than the frozen teacher is legitimate to condition on;
+multi-reroll roll-down depth; the multi-buy finaliser for 160.70's open-bench
+stratum; and the `best_buy` full-bench guard, still frozen and unmeasured since
+160.67.
+
+### 160.73 Design: does banked gold convert at a longer horizon?
+
+160.72's null is confounded by its own diagnostic — roughly 70% of every grant
+was still banked three rounds later, and the terminal margin was *exactly*
+unchanged in about 85% of arms. The axis that discriminates is therefore the
+**horizon**, not the budget: more seeds would only re-measure the same dilution
+more precisely. This entry extends the horizon and nothing else.
+
+**Held identical to 160.71** so the comparison is on one axis: the same
+legality-uniform state selection, the same doses {0, 2, 5, 10}, the same frozen
+greedy policy as the spending mechanism, the same paired-within-seed design,
+the same exact-simulation terminal margin against the visible panel, and the
+same 40 episode seeds. **No dose is added**, per 160.71's standing rule against
+rescuing a null by widening the treatment.
+
+**The one change.** The horizon runs to **R = 8** resolved rounds, and the
+terminal vector — margin, HP, gold, level — is recorded at *every* round
+boundary rather than only at the end, giving the whole trajectory for one
+replay's cost.
+
+**Multiplicity, settled in advance.** The primary endpoint is **R = 8**.
+Intermediate horizons are reported as a trajectory, not as candidate endpoints,
+and the smallest-p horizon is explicitly not the result. **R = 3 must reproduce
+160.72's null**; if it does not, the harness is wrong and nothing else in the
+run may be read.
+
+**The mechanism check is the point.** At each horizon, record the fraction of
+the grant still banked. 160.72 explained its null by hoarding; this study tests
+that explanation directly. A banked fraction that falls with R means the gold
+was eventually spent and any remaining null is about conversion; a banked
+fraction that stays flat means the teacher never spends surplus gold at all.
+
+**The post-treatment trap still holds.** Restricting to arms where the gold was
+spent conditions on a downstream consequence of the treatment and is forbidden
+here as it was in 160.72. Banked fraction is reported as a marginal diagnostic
+across all arms, never as a filter on the estimate.
+
+**Named outcomes.**
+
+- **A — a price emerges.** Δmargin at R = 8 rises with dose, monotonically and
+  sharply against its standard error. Report λ with `n` and `t`. Licenses
+  *testing* a `margin − λ·gold` reroll rule; still not PPO.
+- **B — null, and the gold was spent.** No slope at R = 8 while the banked
+  fraction has fallen substantially. This is the strong closure 160.72 could
+  not claim: gold does not convert into board strength in this simulator under
+  this policy, and the reroll family closes from this simulator.
+- **C — null, and the gold is still banked.** The teacher never spends surplus
+  gold at any horizon. Then the blocker is the *spending policy*, not the price
+  of a gold, no further horizon extension can help, and the question moves to
+  whether any spending mechanism other than the frozen teacher is legitimate to
+  condition on.
+- **D — variance defeats the horizon.** The standard error grows at least as
+  fast as the effect across R, so longer rollouts cannot resolve λ however many
+  seeds are spent. Report the variance-versus-horizon curve, which is itself
+  the finding.
+
+No learner is trained on any outcome, and λ is not fitted if the response is
+non-monotone — that remains 160.71's outcome C and the same prohibition applies.
+
+### 160.74 Outcome C: the teacher banks surplus gold at every horizon, and it compounds
+
+The 160.73 study ran at its predeclared budget — 40 seeds × doses {0, 2, 5, 10}
+× R = 8 resolved rounds, trajectory recorded at every boundary
+(`/private/tmp/gold_value_40x4_r8.json`).
+
+**The gate condition passes: R = 3 reproduces 160.72 exactly** — n = 37,
+Δmargin +0.135 / +0.081 / +0.216, se 0.094 / 0.105 / 0.217, t 1.44 / 0.77 /
+0.99. The harness is sound and the rest of the run may be read.
+
+**Primary endpoint R = 8** (n = 28): Δmargin **+1.321** (t = 1.85), **+0.298**
+(t = 0.29), **+0.840** (t = 0.93) for grants of 2, 5 and 10. Non-monotone, no
+dose significant, fitted λ = **0.037**. No price emerges.
+
+**The mechanism check answers the question, and refutes 160.73's hopeful
+reading.** That entry expected the banked fraction might fall as the horizon
+grew. It does not — it *rises*:
+
+| R | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| banked, G=2 | 1.01 | 0.66 | 0.76 | 0.88 | 1.03 | 1.26 | 1.10 | **1.46** |
+| banked, G=10 | 1.01 | 0.72 | 0.69 | 0.68 | 0.66 | 0.82 | 0.80 | **0.88** |
+
+A banked fraction **above 1.0** means the granted arm holds *more* extra gold
+than it was given: TFT pays interest per 10 banked, so an unspent grant
+compounds. Two gold handed over at the sampled state is 2.93 gold eight rounds
+later, still unspent. This is **outcome C** — the teacher never converts
+surplus gold into board strength at any horizon tested, so no further horizon
+extension can help.
+
+**Outcome D holds simultaneously.** Across R = 1→8 the standard error at
+G = 10 grows 0.164 → 0.901, roughly 5.5×, while the effect shows no trend
+(0.263, 0.211, 0.216, 0.083, 0.000, 0.333, 0.149, 0.840). The arms *do* diverge
+more with time — unchanged arms at G = 10 fall from 35 of 38 to 7 of 27 — but
+the divergence is symmetric noise, not directed effect. Longer rollouts buy
+variance, not resolution.
+
+**A survivorship caveat that the horizon axis cannot escape.** Pairing requires
+both the control and the treated arm to reach the horizon, and n falls 38 → 28
+by R = 8. Since a grant could plausibly change survival, that requirement is
+itself a mild post-treatment conditioning — the same family of error as the
+spending filter forbidden in 160.72, arriving through the back door. It is
+unavoidable in a paired long-horizon design, which is a further argument
+against extending R rather than for it.
+
+**What this establishes.** λ ≈ 0 under this policy is **not** a statement that
+gold is worthless in TFT. It is a statement about the *teacher*: given surplus
+gold at an arbitrary planning state, the frozen greedy policy banks it and
+collects interest rather than converting it into board strength, at every
+horizon from one to eight rounds. That is a concrete, measured fact about the
+scripted economy, and it is the reason the reroll decision cannot be priced
+against gold while this policy is the evaluation mechanism.
+
+**The reroll arc stops here, and it stops for a reportable reason.** The chain
+is now complete and each link is measured: reroll has real two-sided value
+(160.70), that value can only be traded against gold, gold has no measurable
+price under the frozen teacher because the teacher does not spend it (this
+entry). Continuing to tune a reroll target would be optimising against a
+trade-off whose other side is inert by construction.
+
+**Corrected reading, against entry 71.2.** The sentence above — "the teacher
+never converts surplus gold into board strength" — overreaches, and entry 71.2
+already contains the counter-evidence. Every archetype spends down hard at its
+roll-down breakpoint: `standard` goes 47 → **19** at 4-5, `fast8` 47 → **10.8**
+at 4-1, and `hyperroll` reaches 12.4 by 3-2. Entry 71.1 also records that the
+one-purchase-per-round execution bug behind 66.3's "gold has no sink" was fixed
+long ago. The teacher does convert gold — at the rounds its plan says to.
+
+What this study actually sampled is the complement of those rounds. Selection
+was legality-uniform across the episode (160.69) and the sampled states had
+median gold **11**, so a grant of 2–10 lands mostly *away* from any breakpoint,
+where the plan's floor says save. The banked-fraction curve reads that way too:
+it dips to 0.66–0.72 at R = 2–5, which is the plan reaching a breakpoint and
+spending, then climbs back above 1.0 as interest re-accumulates.
+
+So the defensible claim is narrower than the heading: **marginal gold granted
+away from a plan's breakpoint is banked, and does not convert into board
+strength within eight rounds.** That is the plan working as specified, not a
+defect discovered. The measurements above stand; this paragraph replaces the
+interpretation, and the "reroll arc stops here" conclusion survives it, since a
+trade-off whose other side is inert *at the states where the decision is made*
+is still not priceable.
+
+**Still open.** Whether any spending mechanism other than the frozen teacher is
+legitimate to condition on — the natural candidate is a policy that spends to a
+declared rule, but choosing one is a judgement call about what λ even means and
+needs its own entry. Whether the teacher's banking behaviour is itself the
+larger lever, which would redirect attention from reroll tactics to economy
+policy. And, unchanged from 160.70: the multi-buy finaliser for the open-bench
+stratum, multi-reroll roll-down depth, and the `best_buy` full-bench guard,
+frozen and unmeasured since 160.67.
+
+### 160.75 Design: run 120.5's late surplus roll-down, five entries and forty later
+
+160.74 concluded that marginal gold away from a plan's breakpoint is banked and
+does not convert. Entry **120.4** reached the same place from the opposite
+direction — *"the cause was that the plan declines to spend gold it has"* — and
+**120.5** left a concrete unrun item: a roll floor that *decays late* rather
+than a level cap, shape `{"2-3": 0, "3-2": 50, "5-1": 0}`, rolling the surplus
+that already exists once the level curve is paid for. A grep confirms that
+shape appears nowhere in `rl/opponents.py`; it has never been run. This entry
+runs it rather than inventing a new question.
+
+**Why it is not simply re-measurable against 120's numbers.** Baselines in this
+project have been invalidated eight times. Control and treatment are therefore
+measured together, in one run, on shared seeds — never against a figure from an
+older commit.
+
+**Arms.** Seat 0 carries the arm; the other seven are `DEFAULT_FIELD`. Four
+arms, all in the same run, paired on identical seeds:
+
+| arm | roll floors |
+|---|---|
+| `hyperroll` (control) | `{"2-3": 0, "3-2": 50}` |
+| `hyperroll+5-1` | `{"2-3": 0, "3-2": 50, "5-1": 0}` — literal 120.5 |
+| `standard` (control) | `{"4-5": 20, "4-6": 50}` |
+| `standard+5-1` | `{"4-5": 20, "4-6": 50, "5-1": 0}` |
+
+`hyperroll+5-1` is the recorded open item. `standard+5-1` is the same
+modification on the *teacher's* archetype, which is what 160.74 motivates; it
+is reported as a second arm, not as confirmation of the first. Nothing shipped
+in `rl/opponents.py` changes — the treatments are constructed locally.
+
+**Measurements per game**, for the carrying seat: placement; the maximum number
+of 3-star units held at any point (any cost, not only cost-3 as in the older
+`cost3_seat_ab` instrumentation); whether any 3-star was reached; rerolls
+executed; end level; end gold. Placement is the primary endpoint. n = 300
+shared seeds per arm, paired.
+
+**The reachability diagnostic, which decides whether a null means anything.**
+Record how many games reach round 5-1 alive, the seat's gold on arriving there,
+and rerolls executed from 5-1 onward. 160.72's banked-gold diagnostic is the
+precedent: without it, a null cannot be told apart from a treatment that never
+fired. If the floor does not bind, the null is uninformative and must be
+reported as such rather than as evidence against the idea.
+
+**Named outcomes.**
+
+- **A — placement improves** (paired t ≤ −2 on either base). 120.5's "placement
+  genuinely unknown" resolves positive and the late surplus roll is a real
+  improvement to the archetype.
+- **B — placement neutral, 3-stars up.** 120.5's fidelity prediction confirmed
+  at no placement cost. For a simulator meant to model real TFT, where 3-stars
+  are routine by stage 4-5 (66.3) and this engine produces almost none, a free
+  fidelity gain is a genuine result.
+- **C — placement worsens.** The bank is worth more than the roll; the item
+  closes, negatively and usefully.
+- **D — nothing moves, and the floor never bound.** Uninformative by
+  construction; report the reachability numbers and say so.
+
+**Prediction on record.** I expect **B**. 126.1 showed the level curve dominates
+placement and this arm caps no level, so slots are not given up (114 priced
+those); the surplus being rolled is by construction gold the curve did not
+need. 120.5 predicted the same shape — fidelity up, placement unknown — from
+different reasoning. If placement moves sharply either way, both lines of
+reasoning were wrong about what the surplus is worth.
+
+### 160.76 Outcome B: the late surplus roll nearly doubles 3-stars, and costs no placement
+
+The 160.75 arms ran at the predeclared budget — 4 arms, 300 shared seeds each,
+paired, seat 0 against `DEFAULT_FIELD`
+(`scripts/surplus_roll_ab.py`, saved to `/private/tmp/surplus_roll_300.json`).
+
+| arm | place | 1st | top4 | 8th | 3-star games | rolls | level | end gold |
+|---|---|---|---|---|---|---|---|---|
+| `hyperroll` | 5.003 | 8.0% | 40.0% | 19.7% | **29/300 (9.7%)** | 14.3 | 8.10 | 21.9 |
+| `hyperroll+5-1` | 5.053 | 7.7% | 40.0% | 18.0% | **54/300 (18.0%)** | 24.1 | 7.86 | 8.7 |
+| `standard` | 4.270 | 15.0% | 53.7% | 10.0% | 1/300 (0.3%) | 12.6 | 8.58 | 18.7 |
+| `standard+5-1` | 4.370 | 9.0% | 56.3% | 12.0% | 0/300 (0.0%) | 27.7 | 8.09 | 8.8 |
+
+Paired: `hyperroll+5-1` place **+0.050 (t = +0.91)**, 3-star count **+0.100
+(t = +4.80)**. `standard+5-1` place **+0.100 (t = +1.46)**, 3-star count −0.003.
+
+**The floor bound, so the null on placement is readable.** 84.7% and 90.7% of
+games reach 5-1, holding 16.3 and 21.4 gold, and rolls after 5-1 go 2.7 → 14.3
+and 0.9 → 17.6. This is not a treatment that failed to fire — it is 120.5's
+outcome D ruled out by its own diagnostic.
+
+**This is outcome B on the primary arm.** 3-star incidence on the archetype that
+targets them nearly doubles, 9.7% → 18.0%, at a placement cost of +0.050 that
+does not clear noise (t = 0.91). For an engine that produces almost no 3-stars
+against a real game where they are routine by stage 4-5 (66.3), a fidelity gain
+this size for no measurable placement is the result 120.5 hoped for, five years
+of entries after it was written down. 120.5's prediction — fidelity up,
+placement unknown — is confirmed in both halves.
+
+**Report the distribution, because the mean hides the interesting arm.**
+`standard+5-1` looks like a flat +0.100, but its shape changed: **1st falls
+15.0% → 9.0% while top-4 *rises* 53.7% → 56.3%**, with 8th up 10.0% → 12.0%.
+Rolling the late surplus on the strong archetype trades wins for consistency —
+fewer firsts, more top-fours. That is a genuine distributional effect the
+average placement conceals, and it is the third time in this log a mean has done
+so.
+
+**My prediction was right on the outcome and wrong on the mechanism.** I
+predicted B, and B is what happened. I also argued the surplus was "by
+construction gold the curve did not need", so no levels would be given up. That
+is wrong: end level drops **8.10 → 7.86** and **8.58 → 8.09**. The literal
+120.5 shape `{"5-1": 0}` is a *standing* floor with no restore round after it,
+so from 5-1 onward the plan rolls to zero forever and competes with XP for every
+gold. The fidelity gain is therefore bought partly with levels, not purely from
+surplus — and given 126.1 priced the level curve at 0.96 placement, it is
+somewhat surprising placement held up at all.
+
+**Nothing shipped changed.** The treatments are built locally with
+`dataclasses.replace`; `rl/opponents.py` is untouched, and
+`test_building_the_arms_does_not_touch_the_shipped_strategies` fails if anyone
+implements them by mutating the module-level archetypes.
+
+**Still open.** A *decaying* floor rather than a standing one — roll the surplus
+once at 5-1 and restore the save floor after, the way `standard`/`fast8` treat
+their own breakpoints (71.2) — which would test whether the level cost can be
+avoided while keeping the 3-stars. That is a new arm and deliberately **not**
+run here: adding it after seeing these numbers would be exactly the post-hoc arm
+selection this log has avoided elsewhere. Also open: whether the 18.0% figure
+means anything on real TFT's basis, which 126.2 warns it does not without
+converting denominators; and whether `standard+5-1`'s wins-for-consistency trade
+is worth taking, which is a question about what the teacher is *for*.
+
+### 160.77 Design: a decaying surplus floor, and a replication of 160.76
+
+160.76 bought a near-doubling of 3-stars with a *standing* floor — `{"5-1": 0}`
+with no restore — which rolls to zero every round from 5-1 onward and cost
+0.24-0.49 levels. `EconStrategy`'s own docstring names the alternative idiom:
+"an entry restoring `save_floor` on the next round", which is how
+`standard`/`fast8` already treat their breakpoints (71.2). This entry tests
+whether one roll-down at 5-1 keeps the fidelity without the level bill.
+
+**Six arms, one run, 300 shared seeds each, paired.** The standing arms are
+re-measured here rather than quoted from 160.76 — baselines in this project have
+been invalidated eight times, and including them makes the three-way comparison
+internally paired *and* replicates the previous result.
+
+| arm | roll floors |
+|---|---|
+| `hyperroll` | `{"2-3": 0, "3-2": 50}` |
+| `hyperroll+5-1` | `+ {"5-1": 0}` (standing) |
+| `hyperroll+5-1r` | `+ {"5-1": 0, "5-2": 50}` (decaying) |
+| `standard` | `{"4-5": 20, "4-6": 50}` |
+| `standard+5-1` | `+ {"5-1": 0}` (standing) |
+| `standard+5-1r` | `+ {"5-1": 0, "5-2": 50}` (decaying) |
+
+**Primary comparisons, fixed in advance** so the six arms do not become six
+chances to find something: `hyperroll+5-1r` vs `hyperroll` on **placement**, and
+`hyperroll+5-1r` vs `hyperroll+5-1` on **3-star count** and **end level**. The
+`standard` triple is reported as a second base, not as confirmation.
+
+**Measurements** are unchanged from 160.75, including the reachability
+diagnostic — games reaching 5-1, gold on arrival, and rolls after 5-1. Rolls
+after 5-1 is now the arm-separating quantity: the decaying floor should show
+clearly fewer than the standing one, and if it does not, the restore entry is
+not working and nothing else may be read.
+
+**Named outcomes.**
+
+- **A — the decaying floor dominates.** Most of the 3-star gain kept, end level
+  recovered toward control, placement no worse. The archetype's floor should
+  then be recommended in that shape.
+- **B — fidelity tracks sustained rolling.** Level recovers but the 3-star gain
+  goes with it, roughly in proportion. Then the level cost is intrinsic to the
+  3-stars and 160.76's trade is the real one on offer.
+- **C — the extra rounds did nothing.** Decaying matches standing on both
+  fidelity and level, meaning the single 5-1 roll-down was the whole effect and
+  the standing floor's extra rolling was waste.
+- **D — 160.76 does not replicate** in the standing arms. Then the earlier
+  result was seed-dependent and nothing in this run is readable until that is
+  understood.
+
+**Prediction on record.** I expect **B**, weakly. The standing floor rolls each
+round's income as well as the bank, so it buys many more shop looks than one
+roll-down at ~16 gold can; 3-stars need repeated looks, so most of the gain
+should follow the rolling rather than the single breakpoint. I was wrong last
+time about where the gold came from, so this prediction is held loosely — and
+outcome C would say the opposite, that shop looks past the first roll-down are
+nearly worthless.
+
+### 160.78 Outcome B: the 3-stars are bought by sustained rolling, not by the breakpoint
+
+Six arms, 300 shared seeds, paired
+(`/private/tmp/surplus_roll_decay_300.json`).
+
+| arm | place | 1st | top4 | 8th | 3-star games | rolls>5-1 | level | end gold |
+|---|---|---|---|---|---|---|---|---|
+| `hyperroll` | 5.003 | 8.0% | 40.0% | 19.7% | 29/300 | 2.7 | 8.10 | 21.9 |
+| `hyperroll+5-1` | 5.053 | 7.7% | 40.0% | 18.0% | **54/300** | 14.3 | 7.86 | 8.7 |
+| `hyperroll+5-1r` | 5.077 | 8.3% | 38.7% | 18.0% | 35/300 | 4.9 | 8.00 | 15.8 |
+| `standard` | 4.270 | 15.0% | 53.7% | 10.0% | 1/300 | 0.9 | 8.58 | 18.7 |
+| `standard+5-1` | 4.370 | 9.0% | 56.3% | 12.0% | 0/300 | 17.6 | 8.09 | 8.8 |
+| `standard+5-1r` | 4.283 | 12.0% | **57.7%** | 11.0% | 0/300 | 6.3 | 8.30 | 11.6 |
+
+Primary comparisons: `hyperroll+5-1r` vs `hyperroll` place **+0.073
+(t = 1.32)**, 3-star count +0.017 (t = 1.51) — neither clears noise. Against the
+standing arm: 3-star count **−0.083 (t = −4.81)**, level 7.86 → 8.00, rolls
+after 5-1 14.3 → 4.9, place +0.023 (t = 0.51).
+
+**Outcome B, as predicted.** The decaying floor keeps roughly a quarter of the
+3-star gain (29 → 35 games against the standing arm's 54) while recovering about
+58% of the level (0.14 of 0.24). Fidelity tracks *sustained rolling*, not the
+breakpoint: the standing floor rolls each round's income as well as the bank and
+buys 14.3 rolls after 5-1 against the decaying floor's 4.9. Repeated shop looks
+are what produce 3-stars, so the level cost in 160.76 is intrinsic to the
+fidelity gain rather than an avoidable side effect. 160.76's trade — +8.3
+points of 3-star hit rate for 0.24 levels and a placement change that does not
+clear noise — is the real one on offer.
+
+**Outcome D is ruled out only in the weak sense, and the word "replication" would
+be wrong.** The four repeated arms reproduce **bit-identically** — every
+placement in `hyperroll`, `hyperroll+5-1`, `standard` and `standard+5-1` matches
+the 160.76 run exactly. That is determinism, not independent confirmation: the
+seeds, the field and the seven other seats are the same, and the arms differ
+only in seat 0's econ, so the control games are literally the same games.
+Whether the effect survives a different seed block is untested and remains open.
+
+**A result on the second base that the primary comparison would have missed.**
+`standard+5-1r` places 4.283 against the control's 4.270 (t = 0.20 — as close to
+neutral as this log gets) while posting **the highest top-4 rate of all six arms
+at 57.7%**, against the control's 53.7%, with firsts at 12.0% against 15.0%. The
+milder decaying floor keeps most of `standard+5-1`'s wins-for-consistency shift
+without its placement cost. Under average placement it is a tie; under a top-4
+objective it is the best arm in the run. Which of those is the right objective
+is a question about what the teacher is for, and this log has never settled it.
+
+**Caveat on the small counts.** The 3-star games are 29, 35 and 54 out of 300,
+so "a quarter of the gain retained" is a ratio of small integers and should be
+read as a direction, not a coefficient. The `t = −4.81` on the count against the
+standing arm is the number that carries weight.
+
+**Still open.** Whether any of this survives a different seed block — the one
+thing this run cannot tell us. Whether a floor between the two shapes (restoring
+after two or three rounds rather than one) recovers more of the fidelity per
+level spent; that is a real parameter sweep and would need its own entry rather
+than being appended here. And whether top-4 rate or average placement is the
+teacher's objective, which `standard+5-1r` now makes a live question rather than
+an academic one.
+
+### 160.79 Design: is the surplus-roll gain an artefact of the field it was measured in?
+
+160.78 left one thing untested and said so: the four repeated arms reproduced
+bit-identically, which is determinism rather than confirmation. The tempting
+follow-up is a fresh seed block, but CLAUDE.md's own lesson argues against
+making that the point — replication tests precision, and a `t = −4.81` across
+300 paired games is already poor evidence for noise. The axis that
+*discriminates* is the one the setup held fixed.
+
+**The confound, found by reading the field definition.** `DEFAULT_FIELD` is
+`(STANDARD, STANDARD, STANDARD, FAST8, FAST8, SLOWROLL6, SLOWROLL6, HYPERROLL)`.
+The arm is carried on seat 0, which replaces a `STANDARD` seat — so **seat 7 is
+still `HYPERROLL` in every measurement so far**. The whole 3-star result was
+obtained with exactly one rival contesting the same 1-cost pool, and the
+treatment increases how hard seat 0 rolls into that shared pool. 120.5 flagged
+this in advance — *"the arithmetic assumes an uncontested pool"* — and it has
+never been varied.
+
+**Three field conditions**, arm carried on seat 0 throughout:
+
+| field | seat 7 | seats 5-6 | 1-cost rollers besides the arm |
+|---|---|---|---|
+| `default` | `HYPERROLL` | `SLOWROLL6` | 1 |
+| `uncontested` | `STANDARD` | `SLOWROLL6` | 0 |
+| `contested` | `HYPERROLL` | `HYPERROLL` | 3 |
+
+**Arms**: `hyperroll` control, `hyperroll+5-1` standing, `hyperroll+5-1r`
+decaying — the base that actually produced an effect. `standard` is dropped;
+it has no 3-stars to gain and carrying it would triple the run for nothing.
+9 conditions × 300 games, paired within field.
+
+**Fresh seeds, as a free second axis.** Seeds 300-599 rather than 0-299. The
+`default` field is therefore also an honest out-of-sample check on 160.76/160.78
+without making replication the purpose of the run.
+
+**Primary comparison**: standing-minus-control 3-star count, under each field.
+The question is whether that delta survives when contention changes, not whether
+it is large in any one field.
+
+**Named outcomes.**
+
+- **A — the gain is real and contention-graded.** The standing arm beats control
+  on 3-stars in all three fields, shrinking as rivals are added. The effect is a
+  property of rolling, and the earlier number was a point on a curve.
+- **B — the gain is an artefact of the shared pool.** It appears only in
+  `default`, vanishing or reversing when contention changes in either direction.
+  Then 160.76 and 160.78 describe one field, not the game, and both entries need
+  their scope narrowed.
+- **C — contention does not matter.** The delta is flat across all three fields.
+  Given 30 copies per 1-cost champion, this is plausible and would say the pool
+  is deep enough that rival rollers are irrelevant at this scale.
+- **D — the `default` field does not reproduce out-of-sample.** Then the seed
+  block *was* carrying the result, and 160.76's conclusion is withdrawn.
+
+**Prediction on record: C, weakly.** The 1-cost pool holds 30 copies per
+champion and a 3-star needs 9, so three rivals cannot exhaust it the way they
+could at cost 4 (10 copies). I expect the delta to shrink slightly under
+`contested` and not to vanish. If B appears instead, the honest reading is that
+this arc measured a two-hyperroll lobby rather than a game mechanic.
+
+### 160.80 Outcome C: the gain survives every field, and the seed block was not carrying it
+
+Three fields × three arms × 300 games on seeds **300-599**
+(`/private/tmp/surplus_contention_300.json`).
+
+| field | arm | place | 3-star | hit | rolls>5-1 | level |
+|---|---|---|---|---|---|---|
+| `default` | control | 4.940 | 0.17 | 14.0% | 2.2 | 8.12 |
+| `default` | standing | 4.970 | 0.25 | **19.7%** | 14.2 | 7.82 |
+| `default` | decaying | 4.917 | 0.19 | 15.7% | 4.9 | 8.01 |
+| `uncontested` | control | 5.143 | 0.16 | 12.7% | 1.5 | 8.06 |
+| `uncontested` | standing | 5.227 | 0.22 | **17.7%** | 12.8 | 7.86 |
+| `uncontested` | decaying | 5.177 | 0.19 | 15.7% | 4.2 | 7.99 |
+| `contested` | control | 4.873 | 0.14 | 10.7% | 2.2 | 8.11 |
+| `contested` | standing | 4.927 | 0.20 | **16.3%** | 14.3 | 7.87 |
+| `contested` | decaying | 4.857 | 0.17 | 13.0% | 5.0 | 8.03 |
+
+Standing minus control on 3-star count: **+0.077 (t = 3.67)**, **+0.063
+(t = 3.89)**, **+0.060 (t = 3.23)**. As hit rate the deltas are **+5.7, +5.0 and
++5.6 points** — flat to within noise. Placement is +0.030, +0.083, +0.053, none
+of them significant, in every field.
+
+**Outcome C, as predicted.** Rival rollers do not meaningfully erode the gain.
+The reasoning on record holds: 30 copies per 1-cost champion against 9 needed
+for a 3-star is a pool three rivals cannot exhaust, unlike cost 4 at 10 copies.
+
+**Outcome D is now properly ruled out, which 160.78 could not do.** These are
+seeds 300-599, disjoint from the 0-299 block. The `default` field reproduces
+out of sample at a somewhat smaller magnitude — count delta **+0.077 (t = 3.67)**
+here against **+0.100 (t = 4.80)** before, hit rate +5.7 points against +8.3.
+The effect is real and the earlier block was not carrying it, though the first
+measurement was on the generous side of the truth.
+
+**A design flaw in my own field variants, which the placements expose.** I built
+`uncontested` by replacing seat 7's `HYPERROLL` with `STANDARD`, and `contested`
+by replacing two `SLOWROLL6` seats with `HYPERROLL`. Those substitutions change
+lobby *strength* as well as contention — `standard` places 4.270 and `hyperroll`
+5.003 (160.78), so `uncontested` is a stronger lobby and `contested` a weaker
+one. The arm's placement tracks exactly that: **5.143, 4.940, 4.873** ordered by
+how strong the other seven seats are, not by how many rivals share its pool.
+
+So the axis I declared is not the axis I varied, and the clean claim is weaker
+and different from the one 160.79 set out to make: **the effect is stable across
+three different lobby compositions**, which is a generalisation result rather
+than a contention result. It is arguably the more useful of the two, but it is
+not what was predeclared, and calling it a contention finding would be fitting
+the story to the run. A genuine contention axis would hold archetype strength
+fixed while varying only how many seats target cost 1 — which the current
+archetype set cannot express, since target cost and plan strength are bundled
+into the same objects.
+
+**What stands after this arc.** A standing `{"5-1": 0}` floor on `hyperroll`
+raises 3-star incidence by roughly 5-6 points of hit rate for about 0.25 levels
+and no measurable placement, and that holds on fresh seeds and across three
+lobbies. Nothing is recommended for `rl/opponents.py` here: the archetypes are
+shipped defaults that other experiments depend on, and changing one is a
+separate decision from measuring it.
+
+**Still open.** A contention axis that separates target cost from plan strength.
+Whether the 5-6 point gain closes any of the fidelity distance to real TFT on a
+converted basis, which 126.2 warns needs care with denominators. And the
+objective question 160.78 raised, untouched: `standard+5-1r`'s best-in-run 57.7%
+top-4 at neutral placement is only interesting if top-4 is what the teacher is
+for.
+
+### 160.81 Design: a contention axis that holds plan strength fixed
+
+160.80 answered a different question than it asked. Its `uncontested` and
+`contested` fields swapped whole archetypes, so lobby *strength* moved with
+contention and the arm's placement tracked strength (5.143 / 4.940 / 4.873)
+rather than rivals. This entry builds the axis that was intended.
+
+**The clean lever.** `target_cost` alone decides which pool a seat contests:
+`reroll_targets` returns nothing without it, and `hits` counts 3-stars only at
+that cost. Two seats running the *same* `level_targets` and `roll_floors` but
+different `target_cost` are equally strong plans aimed at different pools. So
+the rival seats are held at three `HYPERROLL`-plan seats throughout, and only
+how many of them target cost 1 changes.
+
+| field | seats 1-4 | seats 5-7 | cost-1 rivals |
+|---|---|---|---|
+| `rivals0` | unchanged | 3 × hyperroll-plan, `target_cost=2` | 0 |
+| `rivals1` | unchanged | 1 × cost 1, 2 × cost 2 | 1 |
+| `rivals3` | unchanged | 3 × cost 1 | 3 |
+
+Seats 1-4 stay `STANDARD, STANDARD, FAST8, FAST8`. Arms are the same three:
+control, standing `{"5-1": 0}`, decaying `{"5-1": 0, "5-2": 50}`. 300 games per
+cell, seeds 600-899 — a third disjoint block, so this is also a second
+out-of-sample check.
+
+**Two questions, and the first one is the honest test.** *Does contention bite
+at all?* — read off the **control** arm's 3-star hit rate across the three
+fields, with no treatment involved. If three rivals cannot move it, contention
+is irrelevant to this result and 160.80's flat deltas were flat for a real
+reason. *Then* the standing-minus-control delta across fields says whether
+rolling harder helps more or less when the pool is being drained.
+
+**The design's own diagnostic.** The arm's **placement** must be roughly equal
+across the three fields. If it is not, plan strength moved again and the axis is
+still confounded — the same failure as 160.80, and it must be reported as such
+rather than explained away.
+
+**Named outcomes.**
+
+- **A — contention bites and the delta shrinks.** Control hit rate falls with
+  rivals and the treatment's advantage narrows. 160.80's flatness was the
+  strength confound masking a real erosion.
+- **B — contention does not bite.** Control hit rate is flat across fields. The
+  1-cost pool is deep enough that rivals are irrelevant at this scale, and
+  160.80's outcome C is confirmed on a clean axis.
+- **C — contention bites but the delta holds.** Rolling harder is worth the same
+  whether or not the pool is being drained, which would be the more interesting
+  result: it would say the binding constraint is shop looks, not copies.
+- **D — placement moves across fields.** The axis is still confounded; report
+  the failure and do not read the deltas.
+
+**Prediction on record: between B and C.** Pool depth says 30 copies per 1-cost
+champion against 9 for a 3-star, so one or three rivals should not exhaust it —
+except that four contesting seats wanting 9 copies each is 36 > 30, so if their
+targeting converges on the same champion the pool *can* run dry. I therefore
+expect a mild fall in control hit rate at `rivals3` and a delta that survives.
+If the control's hit rate is genuinely flat, the convergence never happens and
+targeting is more spread out than the arithmetic assumes.
+
+### 160.82 Outcome C: contention bites the control, and makes rolling worth *more*
+
+> **PARTLY WITHDRAWN by entry 160.85.** The per-field deltas stand. The
+> *gradient* across them does not: difference-in-differences is t = 1.78 at
+> best, and a free-look probe designed to test the gradient's prediction
+> found it exactly absent (t = 0.00). The heading's claim and the
+> "looks rather than copies" reading drawn from the gradient are withdrawn;
+> the looks conclusion itself is confirmed by 160.85 on other evidence.
+
+Three rival-count fields × three arms × 300 games, seeds **600-899**
+(`/private/tmp/surplus_rivals_300.json`).
+
+**The design diagnostic passes, unlike 160.80's.** The control arm places 5.223,
+5.160 and 5.077 across `rivals0/1/3`; paired on the extreme pair that is
+**−0.147, t = −1.14** — not significant. Holding the rival *plan* fixed and
+varying only `target_cost` did what swapping archetypes could not: the lobbies
+are equally strong and differ only in which pool they drain.
+
+**Does contention bite? Weakly, and only at three rivals.** Control arm, no
+treatment involved:
+
+| comparison | 3-star count | t | hit rate |
+|---|---|---|---|
+| `rivals1` vs `rivals0` | +0.013 | +0.46 | 13.3% → 15.0% |
+| `rivals3` vs `rivals0` | −0.053 | −1.95 | 13.3% → 9.7% |
+| `rivals3` vs `rivals1` | −0.067 | **−2.52** | 15.0% → 9.7% |
+
+One rival is worth nothing; three cost about a third of the hit rate. That
+matches the arithmetic on record — 30 copies per 1-cost champion against 9 for a
+3-star is fine for two seats and starts to bind at four.
+
+**And the treatment's advantage grows as the pool drains.** Standing minus
+control on 3-star count: **+0.040 (t = 2.47)**, **+0.070 (t = 3.86)**, **+0.087
+(t = 4.22)** at 0, 1 and 3 rivals.
+
+This is **outcome C**, and it is the outcome that entry named as the more
+interesting one: rolling harder is worth *more* when the pool is being drained,
+not less. The natural reading is that the binding constraint is **shop looks
+rather than copies** — when rivals are removing copies, the seat that takes more
+looks per round captures a larger share of what remains. Contention does not
+erode the surplus roll's value; it raises it.
+
+**Prediction: right on the shape, short on the direction.** I predicted "between
+B and C — a mild fall in control hit rate at `rivals3` and a delta that
+survives". The fall arrived at exactly that place and the delta survived. I did
+not predict it would *grow*, and nothing in the pool arithmetic I reasoned from
+implies it.
+
+**A third disjoint seed block, agreeing with the second.** `rivals1` is the
+closest cell to 160.80's `default` — one cost-1 rival — and gives **+0.070
+(t = 3.86)** against that entry's **+0.077 (t = 3.67)** on seeds 300-599. Three
+blocks now: +0.100, +0.077, +0.070. The first was the generous one.
+
+**One caution on the placement column.** `rivals1` shows the standing arm
+costing **+0.113 placement (t = 2.26)**, the only significant placement result in
+this whole arc — but it sits among nine comparisons in this run alone, and the
+same contrast is +0.020 and +0.090 in the other two fields. It is not evidence of
+a placement cost; it is what nine comparisons look like. Treated as such.
+
+**Where the surplus-roll arc ends.** A standing `{"5-1": 0}` floor on
+`hyperroll` raises 3-star incidence by roughly 4-9 points of hit rate for about
+0.2-0.3 levels and no placement cost that survives multiplicity. It holds across
+three disjoint seed blocks, three lobby compositions, and three levels of pool
+contention — where it gets *stronger*. Nothing is changed in `rl/opponents.py`;
+this is a measurement, and adopting it is a separate decision.
+
+**Still open.** The fidelity question on a converted basis, which 126.2 warns
+needs denominator care before any claim of closing distance to real TFT. Whether
+the shop-looks reading generalises — it predicts that *any* intervention raising
+looks per round should behave the same way under contention, which is testable
+and unmeasured. And the objective question from 160.78, still untouched.
+
+### 160.83 `free_rerolls` is written by a trait and read by nothing
+
+Designing the shop-looks test from 160.82 required an intervention that raises
+looks per round *without* spending gold, to separate "more looks" from "less
+banked gold". `PlayerState.free_rerolls` looked like exactly that lever. It is
+not a lever, because nothing consumes it.
+
+**Runtime evidence, not a reading of the code.** A player with 10 gold and
+`free_rerolls = 3`:
+
+```
+reroll_cost: 2
+gold/free before: (10, 3) -> after: (8, 3)
+reroll with 0 gold + 3 free -> IllegalAction: t has 0 gold, a reroll costs 2
+```
+
+The reroll charged full price and left the counter untouched; with the gold
+removed it was refused outright despite three free rerolls in hand.
+`PlayerState.reroll` reads `config.reroll_cost` and never looks at the field.
+
+**Where it comes from.** `trait_effects.timebreaker_economy` (TFT17_Timebreaker,
+tier 3+) does `player.free_rerolls += 1` on a loss streak. A grep for the name
+finds the write, the two `PlanningSnapshot` lines that faithfully carry it
+across a fork, and a test — and **no reader anywhere in `engine/` or `rl/`.**
+The trait's advertised "free rerolls on a loss" has never done anything.
+
+**The test that covers it asserts the accumulator, not the mechanic.**
+`tests/test_trait_effects.py:541` ends on `assert player.free_rerolls == 1`,
+which is true and useless: it passes whether or not a free reroll is ever
+honoured. This is the pattern CLAUDE.md names — a test that reads as coverage
+while asserting nothing about behaviour — and it is why the gap survived. The
+snapshot code is the same story from the other side: 160.64 correctly captured
+and restored a field that does nothing, because faithfulness to state does not
+require the state to matter.
+
+**This is worse than an unimplemented effect.** The project's convention is that
+an unknown `effect_id` warns once and no-ops, which is loud and safe. This one
+is half-implemented: it mutates real state, has a passing test, and appears
+finished at every level a reader is likely to check.
+
+**The fix is small and is deliberately not applied here.** `reroll` would
+consume a free reroll before charging gold, plus a regression test that a seat
+with zero gold and one free reroll can roll exactly once. That changes engine
+behaviour on every seat carrying a tier-3 Timebreaker on a loss streak, so it
+**invalidates every baseline in this log** — the ninth time, if taken. Entries
+160.76 through 160.82 were all measured on the current behaviour and would need
+re-measuring if reroll economics change. That is a decision to take deliberately
+between arcs, not silently in the middle of one, so it is recorded here and left
+for a call.
+
+**What it blocks.** The 160.82 shop-looks reading — that the binding constraint
+is looks rather than copies — predicted that any intervention raising looks per
+round should strengthen under contention. `free_rerolls` was the clean way to
+test it at zero gold cost. Until it is implemented, testing that prediction
+needs either a harness-level forced-roll intervention in the style of 160.71's
+gold grant, or the fix above. The prediction remains untested.
+
+### 160.84 Design: free looks, to test the shop-looks reading directly
+
+160.82 read its result as *the binding constraint is shop looks, not copies* —
+the surplus roll's advantage grew from +0.040 to +0.087 as rivals drained the
+pool. That reading predicts something specific and falsifiable: **any**
+intervention raising looks per round should behave the same way, including one
+that costs no gold. 160.83 established that `free_rerolls` cannot supply that
+lever, so this uses a harness intervention in the style of 160.71's gold grant.
+
+**Intervention.** For the carrying seat only, the first `K` rerolls of each
+round are free: the roll happens, the shop refreshes, and no gold is charged.
+`K ∈ {0, 2, 5}`, reset every round. This is not deployable and no policy
+observes it — it is a mechanism probe, declared as such, exactly as the gold
+grant was. Capping at `K` per round is what keeps a floor-driven policy from
+rolling without bound.
+
+**Arms and fields.** The `hyperroll` control econ only — no surplus floor, so
+looks are the single thing varying. Two fields from 160.81's clean axis,
+`rivals0` and `rivals3`, which is where the gradient was measured. 300 games per
+cell, seeds **900-1199**, a fourth disjoint block.
+
+**Prediction on record, and what falsifies it.** If shop looks are the binding
+constraint, 3-star incidence rises with `K`, and the gain from `K` is **larger
+at `rivals3` than at `rivals0`** — the same contention gradient the surplus roll
+showed. If incidence rises equally in both fields, looks matter but contention
+is irrelevant to them, and 160.82's gradient needs another explanation. If
+incidence does not rise with `K` at all, the shop-looks reading is simply wrong
+and the surplus roll's effect comes from something else it does — most likely
+denying gold to nothing, or an interaction with levelling.
+
+**Diagnostic, since a granted resource can go unused (160.72).** Record rolls
+per game. If rolls do not rise with `K`, the policy declined the free looks and
+the run measures nothing.
+
+This is one run and one result. The arc does not branch further here.
+
+### 160.85 Looks are the constraint; the contention gradient was never there
+
+Free-look probe, `hyperroll` control econ, seeds **900-1199**
+(`/private/tmp/free_look_300.json`).
+
+| field | K | place | 3-star | hit | rolls | level |
+|---|---|---|---|---|---|---|
+| `rivals0` | 0 | 4.943 | 0.18 | 14.0% | 14.3 | 8.09 |
+| `rivals0` | 2 | 4.607 | 0.43 | 35.3% | 24.0 | 8.24 |
+| `rivals0` | 5 | **3.913** | 1.04 | **64.0%** | 39.2 | 8.47 |
+| `rivals3` | 0 | 5.007 | 0.16 | 12.7% | 14.5 | 8.09 |
+| `rivals3` | 2 | 4.627 | 0.44 | 33.0% | 25.0 | 8.30 |
+| `rivals3` | 5 | **3.843** | 1.03 | **64.7%** | 40.4 | 8.43 |
+
+**Half the shop-looks reading is confirmed, emphatically.** Free looks raise
+3-star count by **+0.867 (t = 16.02)** at K = 5, taking hit rate from 14.0% to
+64.0%, and placement from 4.943 to **3.913 (t = −6.84)**. Looks are the binding
+constraint on 3-stars, and the effect dwarfs anything the surplus roll produced.
+The diagnostic confirms the grant was consumed: rolls rise 14.3 → 39.2.
+
+**The other half is refuted. There is no contention gradient.** The K = 5 gain
+is +0.867 in *both* fields; difference-in-differences **+0.000 (t = 0.00)**.
+Zero rivals and three rivals give identical returns to a free look. Per
+160.84's named outcomes, this is the middle case: looks matter, contention is
+irrelevant to them, and 160.82's gradient needs another explanation.
+
+**The other explanation is that I over-read it.** 160.82 reported deltas of
++0.040, +0.070 and +0.087 across rivals and called it a gradient. I never tested
+whether those differed from each other. They do not:
+
+| difference-in-differences | value | t |
+|---|---|---|
+| `rivals1` − `rivals0` | +0.030 | +1.15 |
+| `rivals3` − `rivals0` | +0.047 | +1.78 |
+| `rivals3` − `rivals1` | +0.017 | +0.62 |
+
+Not one clears noise. Each individual delta is solid — t = 2.47, 3.86, 4.22 —
+and the *trend across them* was read off three point estimates without a test.
+That is the error CLAUDE.md warns about in a form I had not seen: not a mean
+concealing a distribution, but three well-measured means arranged into a story
+none of them supports. The free-look probe was designed to test a prediction of
+that story and instead exposed the story.
+
+**What stands.** Shop looks are the binding constraint on 3-star incidence, and
+the relationship is strong and monotone in K. Contention at the levels tested
+does not change the return on a look. The surplus roll's advantage over control
+is real in every field measured, and flat across them.
+
+**What is withdrawn.** 160.82's claim that "rolling harder is worth *more* when
+the pool is being drained", and the accompanying reading that this shows looks
+rather than copies bind. The looks conclusion survives on this entry's evidence;
+the contention half does not, and 160.82 is banner-marked accordingly.
+
+**A note on the free-look magnitude.** K = 5 free rerolls per round is an
+enormous grant — worth 10 gold a round, roughly a round's entire income — and it
+moves placement by more than a full position. It is a mechanism probe, not a
+proposal; nothing about it is deployable and no policy observes it.
+
+### 160.86 `free_rerolls` implemented, and the mask made to ask the engine
+
+160.83 established that `free_rerolls` was written by Timebreaker and read by
+nothing. Applied now, deliberately, between arcs rather than inside one.
+
+**Three changes.**
+
+1. `PlayerState.reroll` spends a free reroll before gold, which is what the
+   field's own declaration always said: *"Rerolls owed by a trait, spent before
+   gold is (Timebreaker)."* The specification was correct and unimplemented.
+2. `PlayerState.can_reroll()` added, so there is one place that answers "is a
+   reroll legal".
+3. `rl/action.py` asks `player.can_reroll()` instead of testing
+   `gold >= reroll_cost` itself.
+
+**The third change is the one worth dwelling on.** The mask had reimplemented
+the engine's rule, which CLAUDE.md names as a bug class in advance — *"if the
+action mask and the executor ever disagree, the mask is the bug; it must ask the
+engine, not reimplement its rules."* While free rerolls did nothing the two
+agreed by accident. Implementing the trait would have split them silently: an
+agent holding a free reroll and no gold would have been told REROLL was illegal
+by the mask while the executor would have allowed it. Fixing the engine without
+fixing the mask would have shipped exactly the defect the convention exists to
+prevent.
+
+**Tests, both mutation-checked.**
+`test_timebreaker_grants_free_rerolls_on_a_loss_streak` no longer stops at the
+counter: it spends the granted reroll at zero gold, asserts gold is untouched
+and the counter decremented, then asserts the *next* reroll is refused. Reverting
+`reroll` to its old body fails it. `tests/test_reroll_legality.py` asserts mask
+and engine agree across five gold/free combinations and that free rerolls are
+spent before gold; reverting the mask line fails three of its cases. Under the
+old code neither test could have been written to pass.
+
+**Baselines are invalidated — the ninth time.** Any seat fielding a tier-3
+Timebreaker on a loss streak now gets rerolls it did not previously get, so
+reroll counts, gold curves and placements can all shift. Everything measured
+before this entry — 160.76 through 160.85 included — was measured on the old
+behaviour. Nothing from before may be quoted against anything measured after,
+and re-measuring is a fresh pairing, not a comparison against these tables.
+
+**What is not claimed.** The size of the effect on any of those results is
+unknown and unmeasured. Timebreaker is one trait among many and a tier-3 loss
+streak is not a common state, so the shift may well be small — but "may well be
+small" is a guess, and the standing rule is that engine changes shift every
+number until shown otherwise.
+
+### 160.87 Design: the same value as gold or as looks, at one endpoint
+
+This session produced a contrast it could not legitimately quote: granted gold
+converted into nothing (160.72, 160.74) while granted shop looks moved placement
+by more than a full position (160.85). The two are not comparable — a one-time
+grant measured as combat margin over 3-8 rounds against a per-round grant
+measured as whole-game placement — and reading a ratio off them would repeat
+160.82's error. This entry makes them comparable by construction.
+
+**Matching.** A reroll costs 2 gold, so `K` free rerolls per round is worth
+`2K` gold per round. Arms, all granted **per round** and all measured on
+**whole-game placement**:
+
+| arm | grant per round |
+|---|---|
+| `control` | nothing |
+| `gold+4` | +4 gold |
+| `looks+2` | 2 free rerolls (worth 4 gold) |
+| `gold+10` | +10 gold |
+| `looks+5` | 5 free rerolls (worth 10 gold) |
+
+`hyperroll` on the carrying seat, `rivals1` field, 300 games, seeds
+**1200-1499** — a fresh block on the post-160.86 engine, since that fix
+invalidated every earlier baseline. Control is re-measured here rather than
+quoted.
+
+**The question, stated so it cannot be fudged.** At equal value, does the form
+of the grant matter? If `looks+K` beats `gold+2K` on placement, the teacher's
+**allocation** is the headroom — it holds resources it cannot convert, which is
+what 120.4 and 160.74 each concluded separately. If they are equal, gold is
+fine and the earlier λ ≈ 0 was an artefact of the one-time grant and short
+horizon rather than a fact about the teacher.
+
+**Diagnostics, because both grants can go unspent.** Record end gold, rolls, and
+level for every arm. A gold arm that banks its grant is the 160.74 result
+reproducing at a per-round cadence, and must be reported as that rather than as
+gold being worthless.
+
+**Named outcomes.**
+
+- **A — looks beat gold at matched value.** Allocation is the binding
+  constraint, and the placement difference is a first direct measurement of the
+  teacher-to-competent gap 74.3 named but never sized.
+- **B — equal.** Gold is convertible after all when it arrives steadily; 160.74
+  measured the cadence, not the currency, and its interpretation narrows again.
+- **C — neither beats control.** Contradicts 160.85 and means something in this
+  harness is wrong; a defect, not a result.
+- **D — gold beats looks.** Unexpected; would say the surplus roll's value is in
+  the spending, not the looking.
+
+**Prediction: A**, on the strength of 160.74's banked-fraction curve — but the
+per-round cadence is exactly the thing that entry did not test, so B is a live
+possibility and the prediction is held loosely. One run, one result.
+
+**Amended before running: the matching above is wrong, and a smoke run caught
+it.** `2K` gold per round is not the value of `K` free rolls per round, because
+a free roll is only free *when the policy chooses to roll at all*. `hyperroll`
+holds a floor of 50 from 3-2, so it declines most of the offer: 160.85's
+`looks+5` arm consumed about **25 extra rolls across a whole game** — roughly 50
+gold — while `gold+10` per round hands over some **400 gold** across ~40 rounds.
+At n = 4 the gold arms placed 1.25 and 2.00 against the looks arms' 4.00 and
+4.75, which is not gold beating looks; it is a grant an order of magnitude
+larger beating a smaller one. Offered value is not delivered value, and only
+delivered value can be matched.
+
+**Revised design: two dose-responses, one endpoint, and an exchange rate read by
+interpolation.** Gold at `{0, 1, 2, 4}` per round and looks at `{0, 2, 5}` per
+round, same field, same seeds, same whole-game placement endpoint. The claim to
+be made is not "equal value, which wins" but "how much gold per round buys the
+placement that `K` free looks per round buys" — an interpolation between
+measured points, stated as such, with the realized-rolls diagnostic reported so
+the conversion is visible rather than assumed. The gold ladder brackets the
+~0.5-1.25 gold per round the looks arms actually deliver.
+
+The named outcomes survive the amendment with A restated: **A** is now "looks
+buy more placement per gold of delivered value than gold does", read off the two
+curves rather than from a single matched pair.
+
+### 160.88 Outcome B: gold and looks are worth the same; 160.74 measured cadence, not currency
+
+Two dose-responses, one endpoint, `rivals1`, 300 games, seeds **1200-1499**,
+post-160.86 engine (`/private/tmp/currency_300.json`).
+
+| arm | place | Δplace | t | extra rolls | Δlevel | 3-star hit |
+|---|---|---|---|---|---|---|
+| control | 5.140 | — | — | — | — | 12.3% |
+| `looks+2` | 4.803 | −0.337 | −2.32 | +11.5 | +0.19 | 29.3% |
+| `looks+5` | 4.053 | −1.087 | −7.58 | +23.4 | +0.35 | 64.0% |
+| `gold+1` | 4.497 | −0.643 | −4.05 | +12.1 | +0.49 | 35.3% |
+| `gold+2` | 3.627 | −1.513 | −9.28 | +31.1 | +0.71 | 72.0% |
+| `gold+4` | 2.437 | −2.703 | −17.73 | +72.8 | +0.90 | 98.7% |
+
+**The exchange rate, by interpolation on the gold curve.** `looks+2` matches
+**0.52 gold per round**; `looks+5` matches **1.51 gold per round**. Against
+delivered value estimated independently from the diagnostics — extra rolls
+priced at 2 plus the change in end gold — those arms delivered roughly 28 and 55
+gold, and 1.51 gold/round over the ~35 rounds a mid-placing seat survives is
+about 53. **The two currencies land on top of each other.** This is outcome B:
+at equal delivered value, the form of the grant does not matter.
+
+**My prediction was A and it was wrong.** I expected looks to beat gold because
+160.74 found granted gold converting into nothing. The reason that entry saw no
+conversion was its **cadence and its state**, not the currency: it granted 2-10
+gold once, at a legality-sampled state with median gold 11, away from any
+breakpoint, where the plan's floor says save. Gold arriving *every round*
+accumulates past the floor and is spent hard — rolls rise by 12 to 73, level by
+0.49 to 0.90. 160.74's own corrected reading already said "marginal gold granted
+away from a plan's breakpoint is banked"; this narrows it further to a statement
+about when gold arrives, and removes any suggestion that the teacher cannot use
+gold at all.
+
+**The session's most quotable contrast is therefore retired.** "Gold converts to
+nothing while looks are worth a full placement" compared a one-time grant
+measured as combat margin against a per-round grant measured as placement. Put
+on one endpoint with one cadence, the gap disappears. That is the second time in
+two entries that a striking contrast has dissolved once measured properly —
+160.85 did the same to 160.82's gradient.
+
+**What this does *not* show.** It does not show the teacher is inefficient.
+Every arm here adds resources, and more resources helping is not a finding.
+Reallocating *existing* resources is the policy question, and the surplus-roll
+arc already answered it unfavourably: rolling the late surplus bought 3-stars
+but no placement. Nothing measured in this session demonstrates headroom
+available to a better policy at fixed resources — which is precisely the
+quantity the project needs and still does not have.
+
+**One number worth keeping.** `gold+1` per round — about 37 gold across a game —
+is worth **−0.643 placement (t = −4.05)**, larger than the entire economy effect
+of 0.610 that entry 74.2 measured. The engine is steeply sensitive to marginal
+resources at this margin. That is a statement about the environment's reward
+surface, not about any policy, and it bears on how much noise a resource-shifting
+intervention has to clear before it can be seen.
+
+### 160.89 Design: re-establish the post-fix baseline, and size fixed-resource headroom
+
+160.88 closed the resource question and named what is missing: **nothing
+measured in this session shows headroom available to a better policy at fixed
+resources.** Every grant arm added resources, and more resources helping is not
+a finding. This entry measures the fixed-resource quantity directly, and does
+the housekeeping that 160.86's engine change made compulsory.
+
+**Two things at once, honestly, because they are the same run.** The
+`free_rerolls` fix invalidated every baseline (160.86, invalidation nine), so
+the greedy teacher's placement has to be re-measured before anything can be
+compared to it again. Measuring the search-buy teacher in the same run, on the
+same seeds, turns that obligation into the headroom number.
+
+**Arms**, both in the action environment so the comparison is between policies
+that can actually be emitted as actions (the 75/156 constraint), both on
+`FAST8`, both on shared seeds:
+
+| arm | buy decisions |
+|---|---|
+| `greedy` | `greedy_action_policy` — the standing scripted teacher |
+| `search` | `search_buy_greedy_policy` — exact-simulation buy, frozen control (160.53) |
+
+Identical in every other respect: same econ, same field, same seeds, same
+resources. The only difference is *which unit gets bought*, which makes the
+placement gap a fixed-resource quantity by construction.
+
+**n = 200 paired seeds**, block **43_000-43_199**, post-fix engine. Report the
+full distribution, not the mean alone — three times in this log a mean has hidden
+the finding, twice in this session.
+
+**What the number means, stated before it exists.** A large gap says the
+scripted teacher leaves substantial placement on the table at fixed resources,
+and that better *decisions* — not more gold — are where the remaining value is.
+A small gap says the teacher is close to what one-ply exact search can extract,
+and the project's target problem is harder than "beat the teacher".
+
+**Named outcomes.**
+
+- **A — the gap survives the engine change at roughly its historical size.**
+  Entry 144 measured −1.355 for search buying on the direct policy. If the
+  action-environment gap is of that order, fixed-resource headroom is real and
+  large, and the transmission problem — getting a learner to absorb it — is
+  where the project's difficulty actually lives.
+- **B — the gap has shrunk.** The engine has changed a great deal since 144;
+  a smaller gap would say the teacher has caught up or the search's advantage
+  was engine-specific. Either way the historical figure must stop being quoted.
+- **C — no gap.** Then one-ply exact search buys nothing here, and the validated
+  buy control (160.53) needs re-examining on the current engine.
+
+**Prediction: A, but smaller than −1.355.** The engine has moved repeatedly since
+144 and every intervening re-measurement in this log has come in under its
+predecessor. I am explicitly not predicting the historical number — quoting it
+as a baseline is the error CLAUDE.md names, and this run exists partly to replace
+it.
+
+### 160.90 Outcome A: fixed-resource headroom is 1.095 placement, and it is one action family
+
+n = 200 paired seeds, block 43_000-43_199, action environment, `FAST8`,
+post-160.86 engine (`/private/tmp/teacher_headroom_200.json`).
+
+| arm | place | 1st | top4 | 8th | distribution |
+|---|---|---|---|---|---|
+| `greedy` | 4.435 | 13.0% | 53.5% | 15.5% | 26, 26, 22, 33, 27, 17, 18, 31 |
+| `search` | **3.340** | **27.0%** | **71.0%** | **5.5%** | 54, 35, 31, 22, 16, 22, 9, 11 |
+
+**search minus greedy: −1.095 placement (t = −6.06).**
+
+**The gap is the whole distribution, not a mean.** Win rate doubles, top-4 rises
+17.5 points, last place falls by nearly two thirds. After two entries in this
+session where a striking headline dissolved on inspection, this one does not:
+every summary statistic moves the same way and the effect is six standard errors
+from zero.
+
+**Prediction correct, including its caveat.** I predicted outcome A at less than
+the historical −1.355, and the measured figure is **−1.095**. The historical
+number should not be quoted again; **−1.095 on this engine and this block is the
+figure**, and greedy's **4.435** is the re-established post-fix baseline that
+160.86's invalidation required.
+
+**What it means for the project, which is the point of measuring it.** The two
+arms have identical gold, identical econ plan, identical field and identical
+seeds. The only difference is **which unit gets bought** — one action family,
+decided by one ply of exact simulation. That is worth 1.095 placement. So:
+
+- Fixed-resource headroom is real and large, and 160.88's honest complaint that
+  nothing in this session had demonstrated any is now answered.
+- It is not distributed across the whole action space. Buying alone carries this
+  much, while the position branch was rejected outright (160.57) and the item
+  branch fell short of deployment (160.59).
+- The project's difficulty is therefore **transmission**, not the absence of
+  something to transmit. There is a full placement of value sitting in a
+  decision a learner has so far only been able to imitate at parity with the
+  weaker teacher.
+
+**The 74.3 lesson, repeating exactly.** That entry found imitation cloning a
+below-parity policy and calling the remainder a gap worth closing, when the gap
+that mattered was teacher-to-competent. The same shape is here: a clone at
+parity with a 4.435 teacher is aimed at the wrong target when a 3.340 teacher
+exists in the same environment at the same resources. This is not a new finding
+so much as the old one, re-measured on the current engine and now attached to a
+number.
+
+**One comparison deliberately not made.** CLAUDE.md records the behaviour-cloned
+agent at 4.567 against its teacher's 4.620. Those are pre-fix figures on a
+different seed set and **cannot** be set against the 4.435 and 3.340 above.
+Sizing the clone-to-search-teacher gap needs both arms re-measured together,
+which is a separate run and not this one.
+
+**Still open.** Whether the search buyer's decisions can be transmitted to a
+learner at all — 160.53 showed a learned shortlist works as an accelerator
+inside the search, which is not the same as replacing it. Whether the gap
+compounds or overlaps with the item and position branches. And the objective
+question from 160.78, still untouched.
+
+### 160.91 The BC target sits where greedy does, and the pipeline cannot reach the better teacher
+
+Sizing the transmission gap needed three things checked first. Two are blockers
+and one nearly produced a wrong number.
+
+**Blocker 1: every saved clone is unloadable.** `runs/xmit-search-s0`,
+`xmit-nosearch-s0`, `xmit-swap-s0` and the rest record
+`observation_size: 418`; the current environment builds **1421** after the
+scouted-board work. No existing artifact can be evaluated here, so the gap
+cannot be read off past runs — it needs a fresh clone.
+
+**Blocker 2: `train_ppo.py` has no path to the search buyer.** Its expert is
+`scripted_policy(env, **expert_kwargs)`, optionally wrapped by
+`search_policy(env, base=policy, **search_kwargs)` — but `search_kwargs` is
+populated **only** by `--expert-reposition`, and nothing anywhere sets
+`buy_search=True`. `search_policy` already accepts the argument; no flag
+reaches it. **The 1.095 of headroom measured in 160.90 cannot currently be
+aimed at by any training run.**
+
+**The near-miss, recorded because it is the session's recurring error.** The
+first three-way run configured its `scripted` arm as `scripted_policy(env,
+econ=FAST8)` — default flags, all off. `train_ppo.py` defaults **both**
+`--expert-sell` and `--expert-flags` to on, so the cloned teacher carries
+`sell_bench`, `buy_synergy`, `match_items` and `corner_carry`. The flagless
+variant places **5.555**; the real one places **4.380**. Those four flags are
+worth **1.175 placement**, and reporting the first number would have inflated
+the headroom above the BC target from 1.040 to 2.215 — more than doubling it,
+by measuring a teacher nobody clones.
+
+**The corrected three-way**, 200 paired seeds, block 43_000-43_199, `FAST8`
+throughout so econ is held fixed and only the policy varies
+(`/private/tmp/teacher_headroom3_200.json`):
+
+| arm | place | 1st | top4 | 8th |
+|---|---|---|---|---|
+| `scripted` (the BC target) | 4.380 | 14.0% | 50.5% | 8.0% |
+| `greedy` (faithful port) | 4.435 | 13.0% | 53.5% | 15.5% |
+| `search` | **3.340** | 27.0% | 71.0% | 5.5% |
+
+- `greedy` − `scripted`: **+0.055 (t = 0.26)** — indistinguishable.
+- `search` − `scripted`: **−1.040 (t = −5.19)**.
+
+**The two scripted teachers coincide, which is what makes 160.90 usable.** That
+entry measured headroom against `greedy` while BC clones `scripted`, and the
+figure only transfers if the two sit in the same place. They do, to within a
+quarter of a standard error. So the transmission problem is now properly posed
+and sized: **behaviour cloning aims at a 4.380 teacher while a 3.340 teacher
+exists in the same environment on the same resources, and the gap is 1.040
+placement at t = −5.19.**
+
+They coincide on the mean but not in shape — `scripted` takes half as many last
+places as `greedy` (8.0% against 15.5%) and three fewer points of top-4. Equal
+targets, different risk profiles; worth knowing before either is called "the"
+teacher.
+
+**What has to happen next, in order.** Plumb `buy_search` through
+`train_ppo.py`'s `search_kwargs` so the search teacher is expressible as a
+cloning target; then clone it on the current observation; then measure the clone
+against both teachers in one run. Only the first is a code change, and it is
+small. None of it is licensed to skip straight to PPO — the question is whether
+one action family's exact-search decisions can be transmitted at all, and that
+is a cloning question first.
+
+### 160.92 Buy quality is one effect, and `scripted` already has it
+
+Before cloning the search teacher, the teacher `--expert-buy-search` actually
+builds was measured — `search_policy` wrapping `scripted_policy`, which is not
+what 160.90's `search` arm was. Same 200 seeds, same block, `FAST8` throughout
+(`/private/tmp/teacher_headroom4_200.json`):
+
+| arm | place | 1st | top4 | 8th |
+|---|---|---|---|---|
+| `scripted` | 4.380 | 14.0% | 50.5% | 8.0% |
+| `greedy` | 4.435 | 13.0% | 53.5% | 15.5% |
+| `search` (over `greedy`) | **3.340** | 27.0% | 71.0% | 5.5% |
+| `scripted+search` (over `scripted`) | 4.285 | 13.0% | 57.0% | 10.5% |
+
+- `search` − `greedy`: **−1.095 (t = −6.06)**
+- `scripted+search` − `scripted`: **−0.095 (t = −0.63)**
+
+**Exact-simulation buying is worth a full placement on one base and nothing on
+the other, and the bases are indistinguishable from each other** (t = 0.26).
+
+**It is not a broken wrapper.** The obvious explanation was that the search
+never fires on the scripted base. It fires: **10.4 search-buys per game on
+`greedy` against 11.0 on `scripted`**, counted through
+`last_search_buy_slot`. `register_external_policy` was also ruled out — it
+installs resolution-time hooks for component choice, not the buy path. The
+search is making the same number of decisions on both bases and only one of them
+improves.
+
+**The reading.** `scripted_policy` carries `buy_synergy`, `match_items`,
+`corner_carry` and `sell_bench`, and 160.91 measured those four flags at
+**1.175 placement**. One-ply exact search is worth **1.095** over the base that
+lacks them. Those two numbers are the same effect reached two ways: **buy
+quality is a single ~1.1 placement improvement, and it does not stack.** Both
+routes land at 4.28-4.38; taking both gains nothing.
+
+**This narrows 160.91, which I got wrong in one specific way.** That entry
+concluded the headroom figure transfers to the BC target because the two
+scripted teachers coincide on placement. They do coincide — but coinciding *in
+placement* does not mean coinciding *in which parts are good*. `greedy`'s
+weakness is buying, so search fixes it; `scripted`'s buying is already good, so
+search finds nothing to fix. Equal totals, different composition.
+
+**What survives, stated exactly.** A policy 1.040 placement better than the BC
+target does exist: `search` over `greedy`, at 3.340 against `scripted`'s 4.380
+(t = −5.19, 160.91). What is refuted is that `--expert-buy-search` reaches it.
+That flag wraps `scripted_policy`, and wrapping `scripted_policy` is worth
+−0.095. **The flag I plumbed in 160.91 does what it says and is nearly
+worthless, because the pipeline can only wrap the wrong base.**
+
+**The actual blocker, now visible.** `train_ppo.py` hardcodes
+`scripted_policy` as the expert. Reaching the 3.340 teacher requires cloning
+`search` over **`greedy_action_policy`** — a different base, which no flag
+selects. That is a second, larger plumbing gap than the one just closed, and it
+is the real reason the better teacher has never been a cloning target.
+
+**Not started, deliberately.** Cloning `scripted+search` would spend an hour
+aiming at 4.285 against an existing target of 4.380 — a difference of 0.095 at
+t = −0.63. The clone run is held until the base can be selected, and no BC or
+PPO figure from this session should be quoted as aimed at the 3.340 teacher.
+
+### 160.93 The teacher's base is now selectable, and recorded
+
+160.92 found the real blocker: `train_ppo.py` hardcoded `scripted_policy` as
+the cloning teacher, so the 3.340 policy — exact buy search over
+`greedy_action_policy` — could not be a target however the search flag was set.
+Wrapping search around `scripted` is worth −0.095; around `greedy` it is worth
+−1.095. The base is the whole difference, and it was not expressible.
+
+**One factory, three call sites.** `rl.evaluate.expert_base_policy(env, base,
+**kwargs)` now builds the teacher, and the collection path in `train_ppo.py`,
+the serial evaluation path and the parallel worker initialiser all go through
+it. `--expert-base {scripted,greedy}` selects it, defaulting to `scripted`
+because that is what every existing clone used.
+
+**`greedy` refuses the scripted-only flags rather than ignoring them.**
+`greedy_action_policy` takes no `sell_bench`, `buy_synergy`, `match_items` or
+`corner_carry`. Accepting and dropping them would let a run write
+`expert_flags: true` into its sidecar while the teacher ignored them — a
+sidecar that lies about the policy which produced the labels, which is the exact
+failure `teacher_gap` exists to prevent and which 74.4 records as the part that
+mattered. Passing one now raises.
+
+**Read back, like econ and the search budget before it.** `teacher_config`
+reconstructs `expert_base` from the sidecar, defaulting to `scripted` for runs
+predating the flag. Without it a greedy-based clone would be scored against a
+scripted-based teacher — two policies that place the same but differ by a full
+placement once search is involved, which is the most misleading possible pairing.
+
+**Tests.** `tests/test_expert_base.py` covers both bases building, the refusal
+of each scripted-only flag on `greedy`, rejection of an unknown base, and the
+sidecar round trip in both directions.
+
+**What this unblocks and what it does not.** The 3.340 teacher is now
+expressible as a cloning target for the first time. It does **not** show that a
+clone can absorb it — that is the open question, and 160.53's learned shortlist
+working as a search *accelerator* is not evidence that a network can replace the
+search. The next run is a clone of `--expert-base greedy --expert-buy-search`,
+measured against both teachers in one paired evaluation.
+
+### 160.94 A missed call site, and why it burned 75 minutes instead of crashing
+
+160.93 routed the teacher's construction through `expert_base_policy` at three
+call sites. There were **five**. The one missed was `rl/collect.py`'s parallel
+collection worker initialiser, which still called
+`scripted_policy(env, **expert_kwargs)` and therefore raised on the new
+`expert_base` key.
+
+**The failure mode is the finding.** A `TypeError` inside a
+`multiprocessing.Pool` *initialiser* does not fail the run. The pool respawns
+the worker, which raises again, forever. The smoke run sat at full CPU for 75
+minutes writing no artifacts and reached `SpawnPoolWorker-3504` before it was
+killed. Sampling the process showed only Python frames, which reads exactly like
+slow computation — and the run before it, on the `scripted` base, had completed
+the identical workload in 57 seconds, so the natural inference was that the
+greedy base was expensive rather than broken.
+
+What settled it was refusing to infer. A bounded probe collected one full
+episode on each base directly: **13.9s scripted, 22.8s greedy**. Two episodes
+could not take 75 minutes, so the cost was not in the policy, and the traceback
+appeared as soon as the run's output was captured unbuffered rather than through
+`tail`. Diagnosing from the artifact rather than from the timing is the whole
+lesson: *a hang at full CPU is not evidence of expensive work.*
+
+**Blast radius, which was larger than the bug.** Because `teacher_config` now
+returns `expert_base` inside its expert dict, every consumer that forwards that
+dict into `scripted_policy` would raise the same way on any run trained after
+160.93 — `disagreement_cost.py`, `gap_attribution.py`, `pick_probe.py` and
+`teacher_check.py`. None would have been exercised until someone analysed a
+new clone, at which point four tools break at once. All five call sites now go
+through the factory.
+
+**The general shape.** Adding a key to a dict that five call sites splat into
+different constructors is a fan-out change, and it was made without grepping the
+fan-out. `expert_kwargs` looks like configuration and behaves like an API.
+
+**Verified.** The same command now completes in **57 seconds**, writes its
+artifacts, and round-trips: the sidecar records `expert_base: greedy` and
+`teacher_config` rebuilds `greedy` with `{"mode": "none", "buy_search": True}`.
+
+### 160.95 Design: clone the 3.340 teacher, the first time it has been possible
+
+With 160.93's base selection and 160.94's fix, the search-over-greedy teacher is
+expressible as a cloning target. This is the run the whole 160.87-160.94 arc was
+clearing the way for, and it asks one question: **can a network absorb the buy
+decisions that exact simulation makes?**
+
+**Configuration.** `--expert-base greedy --expert-buy-search --expert-econ
+fast8`, with `--no-expert-sell --no-expert-flags` because `greedy` takes no
+scripted-only flags (160.93). Plain behaviour cloning: `--warm-start 300
+--warm-start-epochs 50 --timesteps 0`, seed 0, no PPO, no DAgger. Run dir
+`runs/xmit-greedysearch-s0`.
+
+**The comparison that matters is not against the run's own baselines.** The
+sidecar-driven `teacher_gap` path rebuilds the teacher from
+`expert_base: greedy` plus `{"mode": "none", "buy_search": True}`, so the clone
+can be scored against the policy that actually labelled it. The three reference
+points, all measured on block 43_000-43_199 (160.91, 160.92): `scripted`
+**4.380**, `greedy` **4.435**, `search` over greedy **3.340**.
+
+**Named outcomes.**
+
+- **A — the clone lands near 3.340.** Exact-search buy decisions are learnable
+  from the current observation, and the transmission problem is solved for this
+  action family. This would be the first time in this log that a clone beat the
+  standing scripted teacher.
+- **B — the clone lands near 4.4.** It reproduces the *base* policy's play and
+  drops the search's contribution, which is the 160.53 pattern repeating: the
+  learned model is useful inside the search and cannot replace it.
+- **C — the clone lands between.** Partial transmission; the interesting number
+  is then what fraction of 1.095 survives, and whether the residual concentrates
+  in the states where the search and the base disagree.
+- **D — floor effect.** 300 episodes is too few to leave the 8th-place floor at
+  all (18.5), in which case nothing is measurable and the budget was wrong.
+
+**Prediction: B or C, closer to B.** 160.57 rejected positional transmission,
+160.59 fell short on items, and 160.53's shortlist worked only as an accelerator
+inside the search rather than as a replacement for it. Every prior attempt to
+replace exact simulation with a network in this project has failed; the honest
+prior is that this one does too. A is the outcome that would overturn the arc.
+
+**What no outcome licenses.** PPO. This measures whether the target is
+learnable, not whether it can be improved on.
+
+### 160.96 Outcome B: 84.7% action match, and none of the search's value
+
+`runs/xmit-greedysearch-s0` — plain BC, 300 episodes, 50 epochs, seed 0,
+teacher `search` over `greedy` at `fast8`. Final training action match
+**84.7%**, critic held-out EV 0.283 with the value head rewound to epoch 27
+(59.2). No floor effect, so 160.95's outcome D is ruled out.
+
+Evaluated on block 43_000-43_199, paired against every teacher measured on the
+same block and at the same action cap:
+
+| policy | place | 1st | top4 | 8th |
+|---|---|---|---|---|
+| `search` (the teacher) | **3.350** | 27.0% | 71.0% | 5.5% |
+| `scripted+search` | 4.275 | 12.5% | 57.5% | 11.0% |
+| `scripted` | 4.340 | 14.5% | 51.5% | 8.0% |
+| `greedy` (the clone's base) | 4.430 | 13.0% | 53.5% | 15.5% |
+| **clone** | **5.040** | 10.5% | 39.0% | 18.0% |
+
+| comparison | delta | t |
+|---|---|---|
+| clone − `search` | **+1.690** | **+8.37** |
+| clone − `scripted+search` | +0.765 | +3.86 |
+| clone − `scripted` | +0.700 | +3.75 |
+| clone − `greedy` | +0.610 | +3.06 |
+
+**Outcome B, and the prediction held.** 160.95 predicted "B or C, closer to B"
+on the strength of 160.57, 160.59 and 160.53. The clone recovers **none** of the
+teacher's 1.080 advantage over its own base — it lands 0.610 *below* that base,
+and below the standing BC target as well.
+
+**84.7% action match is the whole point.** The clone reproduces the great
+majority of the teacher's actions and captures nothing of what makes the teacher
+good. Entry 22 recorded the same shape at 81.7% match and 1.29 placement worse;
+against a stronger teacher the gap is larger, not smaller. The search's value
+lives in a small minority of decisions — the buys where exact simulation departs
+from what the base would have done — and those are exactly the ones a
+cross-entropy fit on a mostly-agreeing action distribution has least pressure to
+get right. Aggregate match remains the wrong instrument, for the fourth time in
+this log.
+
+**A confound checked and dismissed before this was written.** The clone trains
+and evaluates at the environment's default cap of 50 actions per round, while
+the teacher arms had been measured at 600 — a 12x difference on the axis where
+long buy/place chains live. Re-measuring all four teachers at cap 50 moved every
+one of them by **≤0.04** (`scripted` 4.380 → 4.340, `greedy` 4.435 → 4.430,
+`search` 3.340 → 3.350, `scripted+search` 4.285 → 4.275). The cap does not bind
+for these policies. The gap is real and is not a harness artefact.
+
+**What this does and does not establish.** It establishes that *this*
+observation, at *this* cloning budget, does not transmit exact-search buying.
+It does not establish that the target is unlearnable: n = 1 training seed, 300
+episodes against entry 75's 400, and no DAgger. Those are the obvious knobs, and
+the honest expectation from 22 and 79 is that they narrow the gap without
+closing it, because the failure is distributional rather than budgetary — the
+clone never sees the states its own weaker buys lead to.
+
+**No PPO.** 160.95 predeclared that no outcome licenses it, and outcome B least
+of all: PPO from this clone would start 1.690 behind a teacher that already
+exists and can be run directly.
+
+**Still open.** Whether DAgger closes it, which is the one intervention this log
+already documents as aimed at exactly this failure. Whether the residual
+concentrates in the search-versus-base disagreement states, which is measurable
+directly and would confirm or refute the reading above. And the standing
+question of whether a learned model is ever the right shape for this decision,
+given 160.53 found it useful only as an accelerator inside the search.
+
+### 160.97 Design: where does the clone's 1.690 actually leak?
+
+160.96 read the transmission failure as concentrated: the search's value lives
+in the minority of buys where exact simulation departs from what `greedy` would
+have done, and cross-entropy on a mostly-agreeing action distribution has little
+pressure to get those right. That is a *reading*, offered as one, and it is
+directly measurable. Measuring it is also much cheaper than the alternative
+next step (DAgger), and it is what would tell a DAgger run what to look at.
+
+**The instrument.** `scripts/disagreement_cost.py`, built in 82 for exactly this
+question: at a state where clone and teacher disagree, play the rest of the game
+under the clone, versus take the *teacher's* action once and then continue under
+the clone. Branches are replayed from the seed, so every RNG draw is shared and
+the only difference is the one substituted action. Reported per `ActionKind`
+and per stage.
+
+**Two changes were needed to point it at this run, and both are on the merits.**
+
+*The 79.3 guard is now narrowed rather than loosened.* The script refused every
+search teacher, because a positional search decides a SELECT **and** its PLACE —
+substituting only the SELECT executes half a decision, and the counterfactual is
+undefined. Buy search (`mode="none"`) is different in kind: reading
+`search_policy` confirms it queues nothing and emits exactly one BUY, so the
+teacher's extra decision *is* a single action. The guard now rejects positional
+modes and admits buy search. `check_substitutable` is separated out and pinned
+by tests, including all three positional modes; both halves were
+mutation-checked.
+
+*The search stream is reseeded per rollout.* The wrapper carries its own
+`random.Random`, created once per worker. Left alone, the baseline and
+counterfactual branches would draw different candidate seeds *before* reaching
+the substitution point, silently breaking the one-difference property the whole
+method rests on. Reseeded with `seed + SEARCH_SEED_OFFSET`, matching
+`_parallel_episode`'s convention and its reasoning (54.1).
+
+**The run.** `runs/xmit-greedysearch-s0` against its own recorded teacher
+(`greedy` base, `fast8`, buy search), 200 episodes, 3 sampled disagreements per
+episode, seeds disjoint from the 43_000 evaluation block.
+
+**Named outcomes, before the numbers.**
+
+- **A — BUY dominates.** BUY carries a clearly negative mean delta and the other
+  kinds sit near zero. Confirms 160.96's reading: the untransmitted thing is buy
+  selection specifically, and that is where any fix must aim.
+- **B — diffuse.** Several kinds carry similar negative deltas with none
+  standing out. Refutes the reading: the clone is worse roughly everywhere,
+  which makes this general degradation of a `greedy`-shaped policy rather than a
+  failure to receive the search signal.
+- **C — the leak is elsewhere.** BUY near zero and some other kind (levelling,
+  rerolling, ending the phase) dominating. The strongest refutation: the search
+  buys would then never have been the transmitted thing at all, and 160.96's
+  closing paragraph is wrong about which decisions matter.
+- **D — nothing is attributable.** Overall delta near zero at adequate n. Single
+  substitutions recover nothing, so the gap is a property of the trajectory
+  rather than of any individual decision. This is a live possibility, not a null
+  outcome: 81 already established that state distribution, not label quality,
+  carries the residual, and D is what that looks like under this instrument.
+
+**A caveat stated in advance, so it is not deployed selectively afterwards.**
+This measures the *leverage of one decision*, not a decomposition of the 1.690.
+There is no requirement that per-kind deltas times their frequencies sum to the
+placement gap, and any arithmetic in that direction after the fact would be
+fitting a story to the output. Lesson 18 applies in both directions: a kind near
+zero does not matter however large its share of the mismatch, and a large share
+is not evidence of leverage.
+
+**What no outcome licenses.** Not PPO — 160.95 and 160.96 already settled that,
+and nothing here changes it. Not widening the observation on a guess either:
+outcome A would name a decision, not a feature, and this project has rejected
+the same champion encoding three times for want of a target.
+
+### 160.98 The counterfactual harness assumed a stateless teacher, and the only teacher with headroom is not one
+
+160.97's design ran for four seconds and died:
+
+```
+AssertionError: Greedy scheduler emitted masked action PLACE(2) in stage field;
+gold=0 level=3 xp=2
+```
+
+**The exemption argument in 160.97 was right about the wrapper and silent about
+the base.** I checked that `search_policy(mode="none")` queues nothing and emits
+one BUY, and concluded the teacher's decision is a single action. It is not: the
+*base* is `GreedyActionPolicy`, which is a scheduler. It commits to a plan —
+ranked shop candidates, a queued PLACE for the unit it just SELECTed — and
+emits it one action at a time across calls. The counterfactual harness drives
+the teacher's shadow env with the **clone's** executed actions, so the plan is
+stranded: greedy queues a PLACE for a unit the clone never selected, the mask
+refuses it, and the scheduler asserts.
+
+**Verified rather than inferred from the stack trace.** Driving each teacher in
+lockstep on a stream of random legal actions, one episode, seed 11:
+
+| base | result |
+|---|---|
+| `scripted` | survived 328 steps, to the episode's own end |
+| `greedy` | **desynced at step 16** |
+
+`scripted_policy` re-derives every decision from live player state on each call
+and holds nothing across them, which is the only reason the lockstep trick in 82
+ever worked. It was never a general method; it was a method that happened to
+suit the one teacher this project had.
+
+**This is bigger than one probe.** `disagreement_cost`, `gap_attribution` and
+`pick_probe` all query a teacher on a trajectory it did not choose. Every one of
+them is built for a stateless teacher, and `greedy` — the base under the only
+search teacher with real headroom (1.095, 160.90) — is outside all of them. The
+attribution toolkit and the teacher worth attributing do not currently meet.
+That is a plausible partial answer to why this arc keeps stalling at
+"the clone is worse, and we cannot say where".
+
+**The fix, and why it is a flag and not a softening.** `GreedyActionPolicy`
+gains `off_policy=False`. When set, a stranded plan is discarded and the phase
+is re-planned from live state, once per call, instead of asserting. The
+assertion is kept as the default because on-policy a stranded plan can only be
+a scheduler bug, and this project has four tests that passed against broken
+code. `_invalidate_plan` deliberately preserves `_rolls` and `_round`: the
+reroll count is the round's *budget*, not plan state, and clearing it would let
+an off-policy replan roll past `MAX_ROLLS_PER_ROUND` — a different policy, not
+a resynced one.
+
+**On-policy equivalence, measured before anything was built on it.** `greedy`
+with `off_policy=True` against `off_policy=False`, `fast8`, seeds
+43_000–43_059: the placement vectors are **identical, element by element**. The
+replan cannot fire on-policy, because on-policy the plan is never stranded. So
+the flag changes no number this log has ever recorded.
+
+**A semantic choice, stated rather than buried.** For a scheduler, "what would
+the teacher do at this state" is genuinely ambiguous mid-plan. Re-planning from
+live state is the answer taken here: it is what the direct policy does on
+arriving at a state fresh. It is *not* the same as asking what the stranded plan
+would have done next, and where the two differ this harness measures the former.
+Entry 153's warning about re-ranking is about re-ranking *within* an on-policy
+buy phase, which the equivalence check above shows never happens.
+
+**Tests.** Three, mutation-checked: the default must still refuse a foreign
+stream (the assertion is load-bearing), `off_policy=True` must survive one past
+100 steps, and `_invalidate_plan` must preserve `_rolls`. Plus the two guard
+tests from 160.97, covering all three positional modes.
+
+160.97's design is unchanged and its four named outcomes stand. It is now
+runnable.
+
+### 160.99 A second desync, a scope restriction, and a threshold declared in advance
+
+160.98's replan got the probe from 4 seconds to 42 — past every baseline
+rollout and into the counterfactuals — and then:
+
+```
+AssertionError: Greedy scheduler emitted masked action SELECT(30) in stage field
+```
+
+A replan is not enough, and the reason is in the mask, not the scheduler.
+`ActionExecutor` masks **every** SELECT while `selected` is set:
+
+```python
+if self.selected is None:
+    mask[space.select_offset + slot] = occupied   # nothing held: any unit
+else:
+    mask[space.place_offset + slot] = self._can_place(player, slot)
+```
+
+The clone can leave the shadow env holding a unit. A freshly replanned greedy,
+reaching its fielding stage, asks to SELECT a bench unit and is refused —
+correctly. **This is not a stale plan.** It is a state the teacher never enters,
+because it always PLACEs what it SELECTs, and no amount of replanning gives it
+an opinion there.
+
+**So the probe skips those steps rather than inventing an answer.** A step where
+the teacher has no defined action is not a disagreement; recording one would
+manufacture the thing being measured. The rarer case — a fresh plan that is
+still illegal — is caught and counted rather than crashing a nine-minute run on
+one state.
+
+**The scope restriction this forces, stated before any number is seen.** The
+skipped states are exactly the ones where the clone is mid-SELECT, and the
+decisions there are PLACEs. **This harness therefore cannot attribute SELECT or
+PLACE for a scheduler teacher.** That is 79.3's original objection resurfacing
+in a new place, and it is the same reason `gap_attribution` delegates SELECT and
+PLACE together: they are one two-step interaction. What remains attributable is
+BUY, REROLL, BUY_XP, SELL and END_PLANNING — enough to decide 160.97's outcome A
+(which is about BUY) and outcome C, but **partially blind for outcome B**: a
+diffuse leak that lived mostly in fielding would show here as a leak that lives
+nowhere. If B comes back, that caveat is load-bearing and must be quoted with
+it.
+
+**The threshold, declared now so it cannot be relaxed to fit an output.**
+`MAX_UNDEFINED_RATE = 0.05`. If more than 5% of *opinionated* steps have no
+defined teacher action, the probe refuses to report and the attribution is not
+usable. The denominator counts undefined steps plus recorded disagreements and
+excludes agreements, so the printed rate is deliberately conservative — the true
+share is lower than whatever it prints. A test pins the constant, for the
+obvious reason.
+
+160.97's four outcomes stand, now with the SELECT/PLACE blind spot attached to
+outcome B.
+
+### 160.100 The threshold fired, and the statistic behind it was wrong
+
+The run completed and refused to report:
+
+```
+no defined teacher action at 7572/33248 = 22.8% of opinionated steps
+undefined rate 22.8% exceeds the 5% threshold -- the attribution is not reportable
+```
+
+**The threshold is not being relaxed.** It stays at 5%. What changes is the rate
+it is applied to, and the reason is not that 22.8% was inconvenient.
+
+160.99 described **two** distinct reasons the teacher can be silent, in its own
+text, before this ran:
+
+1. **A unit is held.** The clone is mid-SELECT; every SELECT is masked. This is
+   the SELECT/PLACE blind spot that same entry declared out of scope in
+   advance.
+2. **A replanned teacher is still illegal.** Genuinely undefined, and the thing
+   that would make an attribution untrustworthy.
+
+The threshold then summed them into one counter and gated on the total. That is
+a conflation, and it is my error: the two were already separated in prose and
+should never have shared a denominator. Category 1 *cannot* corrupt what
+survives — no buy, roll, sell or XP purchase happens while a unit is in hand, so
+skipping those steps removes PLACE decisions from scope and touches nothing
+else. Category 2 can. The gate now applies to category 2 alone; category 1 is
+printed as descriptive.
+
+**The lesson I walked straight past.** *A rate is uninterpretable without its
+achievable maximum.* I set a 5% threshold on a rate whose floor I had never
+measured, on a probe whose declared design skips a whole class of steps by
+construction. Measuring the floor first would have cost one short run and would
+have caught the conflation before it gated anything. That lesson is in this
+document because of two previous entries, and it still cost a ten-minute run.
+
+**22.8% is itself informative, and it is not noise.** It is roughly the share of
+opinionated steps that are fielding steps — which says the blind spot declared
+in 160.99 is *large*, not marginal. Outcome B was already flagged as partially
+blind; this quantifies how blind. If B comes back, the honest reading is much
+weaker than "the leak lives nowhere".
+
+**What I do not yet know, stated before re-running.** The category-2 rate. It is
+unmeasured, the 5% gate applies to it, and I am committing to that gate now
+rather than after seeing it. If it exceeds 5%, the attribution is unreportable
+and 160.97's design fails for a third reason — which would itself be the
+finding: a scheduler teacher cannot be interrogated off-policy at all, and the
+whole attribution toolkit needs a different shape rather than a patch.
+
+160.97's four outcomes stand.
+
+### 160.101 The shadow env was a different game, and only for scheduler teachers
+
+The gate declared in 160.100 passed cleanly: **0 of 33393** opinionated steps
+had a replanned teacher still emitting an illegal action. 160.98's `off_policy`
+flag does its whole job. The mid-SELECT blind spot came in at 23.1%, as before.
+
+But the run returned **55 counterfactuals out of a possible 600** — 200 episodes
+at three samples each. I withheld the attribution table rather than report a
+91% attrition I could not explain, and the explanation turned out to matter more
+than the table would have.
+
+**The attrition was in the baseline, not the branches.** Instrumenting 20
+episodes: 19 had *no base placement at all*. Instrumenting the exit reason on
+10:
+
+| exit | n |
+|---|---|
+| teacher's shadow env terminated first | **8** |
+| clone's env terminated, placement recorded | 2 |
+
+`_rollout` returns `None` when the shadow env ends first, and `_episode` drops
+the whole episode. So the 55 survivors were the minority of games where the two
+envs happened to end together — **selection on a post-treatment variable**,
+which is the collider trap this log names explicitly. Reporting that table would
+have been reporting a collider.
+
+**The mechanism is one line, and it is teacher-specific.**
+
+```python
+rl/evaluate.py:723   env.register_external_policy(policy)   # greedy_action_policy
+rl/search.py:677     env.register_external_policy(policy)   # search_buy_greedy_policy
+```
+
+`greedy_action_policy` installs resolution-time hooks — anvil and component
+choices — on the seat it is built for. **`scripted_policy` does not.** That is
+the real reason entry 82's lockstep was ever sound: for a scripted teacher the
+shadow env is byte-identical to the clone's. For a greedy teacher it resolves
+items differently, diverges into a different game, and dies at a different time.
+Every off-policy harness in `scripts/` inherits this, and none of them had cause
+to notice, because until 160.93 there was only ever one teacher.
+
+**A check of mine that was real but underpowered.** Before this, I tested
+whether registering a policy makes two envs diverge, driving both with *random*
+legal actions: 0 divergences in 20 episodes, and I took that as clearing the
+hypothesis. Random agents die before item resolution accumulates. The test
+answered a question adjacent to the one I asked it. Driving with the clone —
+the actual driver — divergence appears in 8 of 10.
+
+**The fix, and why it is not a patch.** The shadow env exists only to give the
+teacher a consistent view of *the clone's* game, so it must not carry hooks the
+clone's env lacks. `_init` now clears them. The teacher's actions still come
+from `__call__`; only env-internal resolution changes, and the clone's env has
+no hooks either — dropping them is what makes the two the same game.
+
+**Measured, not assumed.** Same 10 seeds after the fix: **10 of 10** reach the
+clone's own termination and record a placement. Seeds 2 and 5 — the two that
+already worked — reproduce exactly (placement 1 at step 279, 8 at step 158),
+which is what a fix that changes only the diverging cases should look like. A
+regression test pins `_external_policy is None` after `_init`, mutation-checked
+by deleting the call.
+
+**Still open.** 160.97's four outcomes, still unmeasured, now for the fourth
+time. The attribution run is re-launched against a harness that is finally the
+same game as the policy it is attributing.
+
+### 160.102 Outcome D: no single decision carries the gap
+
+Fifth attempt, and the first valid one. **600 counterfactuals from a possible
+600** — full yield, which is the clearest confirmation that 160.101's fix was
+the whole attrition. Gate: **0 of 40229** opinionated steps had a replanned
+teacher still illegal, so 160.100's threshold passes on the rate it was meant
+to police.
+
+```
+overall  -0.105   t=-1.62   n=600   (negative = the teacher's action was better)
+```
+
+| action kind | n | mean delta | t |
+|---|---|---|---|
+| BUY | 285 | −0.189 | −1.79 |
+| BUY_XP | 71 | −0.183 | −1.20 |
+| SELL | 90 | −0.089 | −0.69 |
+| EQUIP | 34 | −0.029 | −0.10 |
+| SELECT | 80 | +0.037 | +0.22 |
+| END_PLANNING | 28 | +0.107 | +0.72 |
+| PICK_AUGMENT | 5 | +1.000 | +2.24 |
+
+**This is outcome D, as named in 160.97.** Substituting one teacher action into
+a clone trajectory is worth −0.105 placement and is not distinguishable from
+zero at n = 600. Per 160.97's predeclared caveat I am **not** multiplying these
+by frequencies and comparing to 1.690: this measures the leverage of one
+decision, and no decomposition of the gap is claimed. The statement that stands
+is the direct one — *no individual decision the clone gets wrong carries
+meaningful placement leverage*. 56% of counterfactuals moved placement not at
+all.
+
+**The residual is B-shaped inside a D-shaped total.** BUY is the most negative
+and by far the largest cell, and its sign is what 160.96's reading predicted —
+but t = −1.79 is suggestive, not established, and BUY_XP sits at −0.183 right
+beside it. Nothing stands out from the diffuse background. Under this project's
+own rule, that is enough to keep a direction in mind and not enough to assert
+one.
+
+**Power, since the question is settleable.** BUY's effect is −0.189 with
+sd 1.790, so |t| = 2 needs n ≈ 357 and |t| = 3 needs n ≈ 804 — one run at
+`--kind BUY --per-episode 3 --episodes 300` would do it. That is the cheapest
+remaining discriminator between "BUY specifically" and "diffuse", and it is the
+obvious next measurement rather than a training run.
+
+**PICK_AUGMENT at t = +2.24 on n = 5 is noise**, and is recorded here only so it
+is not quoted later as a finding. Same for stage 1 at −1.400 on n = 15.
+
+**The declared blind spot grew, and the reason is mechanical.** Mid-SELECT steps
+rose from 23.1% to 30.5% once episodes ran to completion — full games have more
+late-game fielding. **PLACE has zero rows in this table.** A leak concentrated
+in where units are placed would be entirely invisible here, and 160.99 declared
+that in advance precisely so it could not be quietly dropped now. Outcome D is
+therefore "no single *attributable* decision carries the gap".
+
+**What this supports, and how far.** It is consistent with 81's finding that the
+residual is distributional rather than per-label, and with 160.96's reading that
+the clone never sees the states its own weaker buys lead to. It does **not**
+prove that: this is one clone, one seed, one budget. What it does close off is
+the hope that a handful of high-leverage decisions could be found and fixed with
+a targeted feature — the leverage is not there to find.
+
+**The earlier +0.345 was the collider.** The contaminated run reported the
+opposite sign at t = +2.65. After 160.101's fix the sign inverts and the
+magnitude collapses. That is worth stating plainly: a selected-sample harness
+produced a significant result pointing the wrong way, and only the unexplained
+attrition rate gave it away.
+
+**Still open.** The BUY power run above. Whether DAgger closes a gap that no
+single decision explains — 81 says state distribution is where the residual
+lives, and outcome D is consistent with it. And PLACE, which no harness in this
+repo can currently attribute for a scheduler teacher.
+
+### 160.103 Design: is BUY separable from the diffuse background?
+
+160.102 left exactly one direction unresolved. BUY was the most negative cell
+and by far the largest (n = 285, −0.189, t = −1.79), and its sign is what
+160.96's reading predicted — but BUY_XP sat at −0.183 beside it and nothing
+separated from the background.
+
+**The run.** `--kind BUY --episodes 300 --per-episode 3` against
+`runs/xmit-greedysearch-s0`. The stratified sampler spends the entire budget in
+the BUY cell (the mechanism 82.1 added after a 4.7% cell came back at n = 42),
+giving n ≈ 900 where 160.102 had 285. Powered from 160.102's own dispersion:
+sd 1.790 means |t| = 2 at n ≈ 357 and |t| = 3 at n ≈ 804.
+
+**Named outcomes.**
+
+- **A — BUY separates.** |t| ≥ 3 at a magnitude near −0.19. Confirms the reading
+  in 160.96: the untransmitted thing is buy selection specifically. Does **not**
+  license a training run; it names a decision, and 160.97's closing paragraph
+  applies unchanged.
+- **B — BUY does not separate.** |t| < 2 at n ≈ 900. Outcome D of 160.102
+  hardens: the leverage is not in any attributable decision, BUY included, and
+  per-decision attribution as a research direction is finished.
+- **C — the effect shrinks with n.** The point estimate moves materially toward
+  zero as the sample grows, which would mark 160.102's −0.189 as the tail of a
+  noisy small cell rather than a real effect. Recorded separately from B because
+  the two say different things about 160.96's reading.
+
+**Stated in advance: what no outcome changes.** Not the 1.690 gap, which no
+per-decision result decomposes. Not the PLACE blind spot, which stays
+unmeasurable for a scheduler teacher. And not the standing bar against PPO or a
+new clone without a validated target.
+
+**Prediction.** B or C. 160.102's overall figure was −0.105 at t = −1.62 across
+every kind, and BUY's −0.189 sits inside a distribution where 56% of
+counterfactuals moved placement by exactly zero. Recorded now so it can be
+scored as failed if A comes back.
+
+### 160.104 Outcome C: BUY is real, small, and completely ordinary
+
+n = 900, the whole budget in the BUY cell. Gate clean again: 0 of 61568
+opinionated steps had a replanned teacher still illegal; blind spot 30.4%.
+
+```
+BUY   n=900   mean -0.113   sd 1.578   se 0.053   t=-2.15
+      95% CI [-0.216, -0.010]      54.6% of substitutions moved placement by 0
+```
+
+**Outcome C, and the prediction held.** 160.103 predicted "B or C" and named C
+as the point estimate moving materially toward zero with n. It did: −0.189 at
+n = 285 becomes **−0.113** at n = 900, a 40% shrink. The CI excludes zero and
+also contains the old −0.189, so the honest reading is that the small-cell
+estimate was inflated and the true effect is nearer −0.11.
+
+**A is refuted, and by the comparison that actually matters.** t = −2.15 says
+BUY differs from *zero*. Separation required BUY to differ from **the other
+kinds**, and it does not: 160.102's all-kind average was −0.105, and BUY at
+n = 900 is −0.113. BUY is not the special cell. It is the average cell, and it
+was only ever the most negative because it is the largest. **160.96's closing
+reading — that the untransmitted value lives in a minority of buys — is not
+supported.** I wrote that reading, and this is the measurement that was supposed
+to confirm it.
+
+**What survives.** Substituting one teacher buy is worth about a tenth of a
+placement. The clone is 1.690 behind. Per 160.97's standing caveat I do not
+multiply and subtract, but the qualitative statement stands unchanged from
+160.102: no attributable decision, BUY included, carries leverage of the right
+order.
+
+**A limitation of this as a replication, stated because it cuts against the
+tidiness.** This run used seeds 0–299 where 160.102 used 0–199, so two thirds of
+the seeds overlap. The sampled *steps* differ entirely — stratifying on BUY
+changes the pool the sampler draws from — but these are not independent samples,
+and part of the shrinkage is regression within an overlapping set rather than
+fresh evidence. A clean replication would use a disjoint seed block. I am not
+running one: the conclusion (BUY is ordinary) rests on the comparison to the
+all-kind average, which is unaffected by this.
+
+**Stage 3 at −0.239 (t = −2.21, n = 268) is not a finding.** Seven stages were
+tested; one clearing t = 2 is what multiple comparisons produce. Recorded so it
+is not cited later as a stage effect.
+
+**Still open, and now shorter.** Per-decision attribution is finished as a
+direction — three instruments (81, 160.102, 160.104) agree the residual is not
+in individual choices. PLACE remains unattributable for a scheduler teacher.
+And 160.53's question — whether a learned model belongs inside the search as an
+accelerator rather than outside it as a policy — is the only live architectural
+candidate this log has not closed.
+
+### 160.105 Design: can the buy search's savings be spent?
+
+160.53 validated a learned shortlist that cuts exact combat calls **32.8%** at
+no placement cost. That saving is currently banked as a saving. It is only
+worth something if it can be **spent**, and it can only be spent if placement
+responds to buy-search budget at all. Nobody has asked. `best_buy` ships
+`panel_size=2, trials=2, max_candidates=5, margin=0.25`, chosen in entry 150's
+port for a search firing across a whole training run, and carried since.
+
+**The prior evidence does not settle it and must not be cited as if it did.**
+54.3 found a trials null, but on *board* search against a 3.030 baseline that
+has been invalidated many times since; 47.8's panel result is marked WITHDRAWN
+at its own n. Neither speaks to buy search in the current regime.
+
+**Arms**, paired on shared seeds 47_000–47_199 (disjoint from the 43_000
+evaluation block, 160.53's 45_000, and this design's 49_000 pilot), teacher
+`search_buy_greedy` at `fast8`, `fight_value` wrapped to count cost:
+
+| arm | budget | measured cost |
+|---|---|---|
+| control | p2 t2 c5 | 1.00× |
+| panel4 | panel_size 4 | 1.96× |
+| trials6 | trials 6 | 3.24× |
+| oracle | p4 t6 c10 | 5.65× |
+
+`margin` is deliberately not an arm: 136.3 established it is not
+panel-invariant and `best_buy_from_scores` already scales it by `panel_size`,
+so varying both would confound the acceptance threshold with the panel. The
+oracle is a budget no training loop would pay, included because a budget curve
+is uninterpretable without the ceiling it approaches.
+
+**An arm was dropped before the run, on evidence.** `max_candidates=10` is
+structurally inert: `data/config.json` sets `shop_slots: 5`, so 5 already
+covers the whole shop. The pilot confirms it — 656.0 fight calls against
+control's 656.0 and identical placements on all six seeds. Recorded rather than
+silently removed, because "we tested candidate width" would otherwise become a
+citable fact about a no-op.
+
+**Priced, per 141.2.** The 6-seed pilot cost 6.1 min on 6 workers for 5 arms.
+Four arms at n = 200 is ~1125 worker-minutes, about **2 hours** on 10 workers.
+
+**A limitation stated in advance.** The seed-paired sd of placement differences
+is ~2.97, so n = 200 resolves ~0.42 at t = 2. **Effects smaller than that are
+invisible to this run** — including effects the size of 160.53's own 0.325. So
+a null here means "no *large* budget response", not "no budget response". The
+oracle at 5.65× is the arm that should show a large effect if one exists; a
+suggestive trend there licenses a bigger confirming run, nothing else.
+
+**Named outcomes.**
+
+- **A — flat.** No arm separates from control and oracle sits within noise. The
+  buy search is at its ceiling; 160.53's saving cannot be converted into
+  strength, and this direction closes for the cost of one afternoon.
+- **B — headroom, and cheap.** `panel4` or `trials6` lands materially closer to
+  oracle at ≤ 3.24×. The 32.8% saving becomes spendable and the next step is a
+  hybrid run at the better budget.
+- **C — headroom, but only at oracle cost.** Real but unreachable by this
+  route: a 32.8% saving cannot pay for a 5.65× budget.
+- **D — more search is worse.** Would echo 54.3's shape on a different search
+  and point at panel overfitting rather than estimate noise.
+
+**Prediction: A.** 54.3's null and the pilot's non-significant −0.33 to −0.50
+at n = 6 are what a flat response looks like through small-sample noise. B
+second. Recorded now so it can be scored as failed.
+
+### 160.106 Outcome A on the letter, with one arm at the resolution limit
+
+200 paired seeds, 47_000–47_199, 97 minutes.
+
+| arm | place | vs control | t | fights | × cost |
+|---|---|---|---|---|---|
+| control | 3.605 | — | — | 653.1 | 1.00 |
+| panel4 | 3.470 | −0.135 | −0.71 | 1250.6 | 1.91 |
+| trials6 | 3.750 | **+0.145** | +0.84 | 1938.4 | 2.97 |
+| oracle | **3.300** | −0.305 | −1.69 | 3798.1 | 5.82 |
+
+**Outcome A, as predicted.** No arm separates at |t| ≥ 2. The prediction in
+160.105 was A and it holds on the letter.
+
+**The single-axis arms are not merely flat, they disagree in sign.** `trials6`
+is *worse* by +0.145 while `panel4` is better by −0.135, neither significantly.
+Four times the fight budget on the trials axis buys nothing — which is 54.3's
+null reproduced on a different search, in the current regime, against a
+re-derived baseline. That null can now be cited without the caveat 160.105 had
+to attach to it.
+
+**One arm sits exactly where the declared limitation said it would.** `oracle`
+is −0.305 at t = −1.69, CI [−0.658, +0.048]. 160.105 declared n = 200 resolves
+~0.42 at t = 2 and that a suggestive oracle trend "licenses a bigger confirming
+run, nothing else". This is that case, and the licence is being used as
+written rather than reinterpreted: n = 280 reaches |t| = 2 at this effect and
+sd, n = 629 reaches |t| = 3.
+
+**The distribution says something the mean hides.** Per the standing rule:
+
+| arm | 1st | top4 | 8th | distribution |
+|---|---|---|---|---|
+| control | 23.0% | 67.0% | 7.5% | 46/37/25/26/20/15/16/15 |
+| oracle | 19.5% | **76.0%** | **4.0%** | 39/44/38/31/17/15/8/8 |
+
+The oracle trades **firsts for consistency** — fewer 8ths, fewer 1sts, a fat
+2nd-to-4th band. This is the same shape as the KL arm in this log that posted
+fewer last places *and* fewer top-fours at an identical mean. If the confirming
+run holds, the honest description is "a more reliable buyer", not "a stronger
+one", and average placement alone would have misreported it.
+
+**Even confirmed, this is outcome C for training — and not for the advisor.**
+A 5.82× budget cannot be paid for by 160.53's 32.8% saving, so the training
+teacher cannot reach it by that route. But entry 136 made exactly the opposite
+budget argument for `board_advice`: an advisor fires once, for a person already
+waiting, and a second of compute is free. **If the oracle effect is real it
+belongs to the advisor path, not the training path.** That reframing is why the
+confirm is worth two hours; it was not the reason the run was designed, and is
+recorded as a post-hoc reading.
+
+**Confirm run.** Control vs oracle only, n = 400, seeds 48_000–48_399 —
+disjoint, because oracle was selected as the best of three arms and re-running
+47_000 would re-confirm the luck that won here (142.2's method). Priced at
+~113 minutes from this run's measured per-unit cost. Named outcomes: it
+separates at |t| ≥ 2 with the same sign (real, and an advisor result); it
+shrinks toward zero (winner's curse, and the direction closes); or it separates
+with the *opposite* sign (this run was noise and 54.3's null generalises to the
+panel axis too).
+
+### 160.107 The oracle was the winner's curse. The buy search is at its ceiling.
+
+400 fresh paired seeds, 48_000–48_399, 111 minutes.
+
+| arm | place | vs control | t | fights | × cost |
+|---|---|---|---|---|---|
+| control | 3.385 | — | — | 661.1 | 1.00 |
+| oracle | 3.375 | **−0.010** | **−0.08** | 3769.6 | 5.70 |
+
+CI [−0.245, +0.225], and it **excludes** 160.106's −0.305. The second named
+outcome of the three: the effect shrank to nothing, and the direction closes.
+
+**5.82× the exact-simulation budget buys one hundredth of a placement.** That
+is now measured on 600 seeds across two disjoint blocks rather than argued from
+54.3's older regime. Combined with `trials6` going the wrong way and `panel4`
+failing to separate, the conclusion is flat: **the shipped `best_buy` budget is
+already at this search's ceiling.**
+
+**The consistency story collapsed with the mean, which is the right test of
+it.** 160.106 reported the oracle trading firsts for top-fours (76.0% vs 67.0%,
+8ths 4.0% vs 7.5%) and flagged it as the KL-arm shape. On fresh seeds:
+
+| arm | 1st | top4 | 8th |
+|---|---|---|---|
+| control | 24.2% | 72.8% | 5.8% |
+| oracle | 26.0% | 70.2% | 5.0% |
+
+The direction *reverses* on top-4 and on firsts. The distributional reading was
+a property of the selected block, not of the policy. Reporting the distribution
+was still right — it is what made the claim falsifiable, and it was falsified.
+
+**Both baselines moved again.** Control reads 3.605 on 47_000 and 3.385 on
+48_000 — a 0.220 shift from nothing but the seed block, larger than every effect
+this pair of runs was trying to resolve. 142.3 recorded the same thing at
+0.24–0.38. Only within-block paired contrasts are readable, and any comparison
+of these two tables across blocks would be meaningless.
+
+**What this closes.** 160.53's 32.8% saving cannot be converted into strength,
+because there is no strength to buy on this axis at any price. The saving
+remains exactly what 160.53 claimed — a cheaper way to reach the same
+placement — and nothing more. The advisor reframing in 160.106 is withdrawn
+with the effect that motivated it: there is no oracle effect to give the
+advisor.
+
+**Scoring the predictions.** 160.105 predicted A; A held. 160.106 named three
+confirm outcomes and the middle one landed. Two entries, two calls, no
+retrofitting — recorded because this log more often has the opposite to report.
+
+**Still open.** Nothing on the buy-search budget axis. The standing open item is
+unchanged and now stands alone: no learned component has been shown to help any
+decision family except buys (160.53), and no attributable decision carries the
+clone's gap (160.102, 160.104).
+
+### 160.108 Item search scored a different transition from the one it executed
+
+The next direction proposed after 160.107 was a post-board item-allocation
+headroom measurement. Auditing that path before writing another search exposed
+a stronger issue than the known ordering defect in 149.2.
+
+Both `search_stack_ab._score_with_item` and
+`search_item_value_probe._candidate_board` claimed that
+`UnitInstance.equip(item)` auto-combines components on a hypothetical board.
+It does not. Component recipes are resolved only by
+`PlayerState.equip_from_bag` on the live player. A B.F. Sword followed by a
+Sparring Glove therefore produced **two loose components in the search clone**
+and Infinity Edge in the action the search actually executed. The mismatch is
+reproduced directly, without combat or sampling.
+
+This withdraws two conclusions rather than changing their signs after the
+fact: 149.2's +0.025 does not measure a search ranking the actions it takes,
+and 160.59's stable candidate-value labels describe the wrong component state.
+Neither is evidence that item allocation is weak or unlearnable.
+
+**Repair.** The component transition now lives once on `UnitInstance` as
+`equip_or_combine`. `PlayerState.equip_from_bag` owns the bag transaction and
+delegates the unit mutation to it; search clones use the same transition.
+The regression test asserts both the completed item and that scoring a clone
+does not mutate the live board. Removing the combining call makes it fail.
+
+**Predeclared next measurement: ceiling before policy work.** Compare the
+unchanged `fast8` greedy policy, whose board is filled and then itemised by
+`_strength`, with a policy identical through board settlement that exact-
+simulates alternative assignments before equipping. The ceiling arm may vary
+both item order and target, jointly for at most the first two equips of a
+round; all remaining items follow the shipped rule. It includes the shipped
+assignment among its candidates, searches all legal fielded targets, uses a
+private combat RNG, and never consumes the match RNG.
+
+A tiny pilot is for wiring and wall-clock only; its placement is discarded.
+It must show component-completion candidates, different final loadouts, and
+stable worker processes before the real seed-paired run is sized. The real run
+will report placement, LP, first/top-four/last rates, the full histogram,
+paired t, search decisions, changed assignments, component completions, unique
+candidate boards, and fight calls.
+
+**Named outcomes.** A headroom gain of roughly 0.5 placement or more is the
+large missing capability this project can afford to resolve and licenses a
+deployable-budget arm. A corrected but small effect leaves item allocation
+real and below the current instrument's useful scale. A null, despite the
+branch firing and changing loadouts, closes this repaired allocation path.
+Worse placement means the combat-panel objective overfits and is not a teacher.
+No outcome licenses PPO or a new clone before the headroom transmits through
+the action space.
+
+### 160.109 The repaired item ceiling fires, changes boards, and is affordable
+
+> **INVALIDATED and repeated in 160.110.** The first shared transition helper
+> replaced a consumed component in place. The historical live action removes
+> it and appends the completed item, which can affect which held component a
+> later item combines with. The source fingerprint and timing below describe
+> that first implementation; no real run was allowed to complete on it.
+
+Two games on seeds 51_000–51_001, placement discarded as declared in 160.108.
+The source fingerprint stayed `ec17178ec757` and both worker PIDs were stable.
+
+| arm | search decisions/game | changed loadouts | completion candidates | completions chosen | candidate boards | fight calls | CPU sec/game |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| control | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 3.0 |
+| repaired, depth 1 / p2 t2 | 9.5 | 3.0 | 9.0 | 1.5 | 54.5 | 218 | 9.2 |
+| ceiling, depth 2 / p4 t6 | 10.5 | 8.0 | 17.0 | 4.5 | 99.5 | 2,307 | 86.0 |
+
+All gates pass. The repaired transition encounters component recipes; the
+search chooses them; both search budgets change final loadouts rather than
+merely scoring alternatives; and the fight-call ratio explains the measured
+cost. The n=2 placements (7.5 / 7.0 / 4.5) are written only so they cannot be
+rediscovered and mistaken for evidence. They have no inferential value.
+
+**Real run frozen before launch.** The same three arms, n=200 paired seeds
+52_000–52_199, six workers. Historical paired sd near 2.97 makes |t|=2 at an
+effect around 0.42, so this run can see the roughly 0.5 missing capability
+160.108 defined as useful and cannot adjudicate a 0.1 refinement. Six workers
+target the machine's six performance cores; 149.3 showed that filling the
+efficiency cores creates the illusion of parallelism while stretching wall
+time. Prediction: the semantic repair will make the direction better than the
+withdrawn +0.025, but the ceiling will remain below 0.5. That is the small-
+effect outcome, not a licence to call a noisy favourable row a breakthrough.
+
+### 160.110 Replacement pilot preserves the live item's ordering too
+
+The live transition was centralised without changing its list semantics:
+validate the final loadout, remove the consumed component, and append the
+completed item. Replacement-in-place is mutation-tested with a completed item
+after the consumed component; it produces a different order and fails. This is
+observable because a later component combines with the first eligible held
+component.
+
+The complete two-game pilot was repeated under fingerprint `05b32515f34a`.
+Every behavioural value reproduced exactly: repaired 9.5 searches / 3.0
+changed loadouts / 1.5 completions / 218 fights per game; ceiling 10.5 / 8.0 /
+4.5 / 2,307. Timing was 8.9 and 83.8 CPU seconds/game. The discarded placement
+rows also reproduced exactly. That agreement is evidence the ordering defect
+did not happen to bind in these two games, not permission to rehabilitate the
+first run.
+
+The real design remains the one frozen in 160.109: three arms, n=200 paired
+fresh seeds 52_000–52_199, six workers, and the same named outcomes and
+prediction. The second pilot, not the first, licenses launch.
+
+### 160.111 Correct item allocation is worth half a placement
+
+200 paired fresh seeds, 52_000–52_199, fingerprint `05b32515f34a`, 60.2
+minutes on six workers.
+
+| arm | place | LP | 1st | top4 | 8th | vs control | t | fights/game | CPU sec/game |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| control | 4.320 | +3.59 | 11.0% | 55.0% | 10.5% | — | — | 0 | 2.8 |
+| repaired, depth 1 / p2 t2 | **3.885** | **+8.18** | **17.0%** | **63.0%** | **7.5%** | **−0.435** | **−3.37** | 258 | 11.2 |
+| ceiling, depth 2 / p4 t6 | 3.830 | +8.76 | 18.5% | 60.5% | 11.0% | −0.490 | −3.69 | 2,406 | 92.1 |
+
+Full histograms are control 22/29/29/30/29/16/24/21, repaired
+34/24/38/30/28/16/15/15, and ceiling 37/40/28/16/27/20/10/22.
+
+**This clears the predeclared useful-effect bar.** The repaired arm's paired
+95% CI is [−0.688, −0.182]; LP improves +4.59 at t = +3.32, CI
+[+1.88, +7.30]. Every reported distribution direction improves: +6 points of
+firsts, +8 points top-four, and −3 points of eighths. This is not a favourable
+mean hiding a risk trade.
+
+**The deployable budget reaches the ceiling.** Ceiling minus repaired is only
+−0.055 at t = −0.43, CI [−0.307, +0.197], and LP differs +0.58 at t = +0.42.
+The repaired arm captures 88.8% of the ceiling point estimate with 10.7% of its
+fight calls and 12.1% of its CPU. The ceiling's top-four and eighth-place rates
+also move the wrong way relative to repaired, so there is no distributional
+case for paying 9.3× more simulation when the paired objective does not
+separate.
+
+**The prediction missed on the important side.** 160.109 predicted the
+semantic repair would improve on the withdrawn +0.025 but remain below the
+roughly 0.5 useful-capability bar. The ceiling lands −0.490 and the cheap arm
+−0.435, both with |t| > 3. Calling this "below 0.5" because one rounded point
+estimate is 0.010 short would fit the wording to the result; this is the large-
+capability outcome the design meant.
+
+Do not attribute the whole recovery to one bug. Relative to 149.2, this arm
+fixes component combination, runs after the board is settled, considers every
+fielded target, and may choose item order. The experiment establishes the
+combined capability and does not decompose those four changes. What it does
+settle is the project-level conclusion: **item allocation was not weak; the
+search had never scored the item action it executed.**
+
+### 160.112 Next gate: make the cheap item teacher emit real actions
+
+The −0.435 policy currently mutates a direct `PlayerState`; a clone cannot
+learn it until the same decision is expressible through `EQUIP`. Port only the
+repaired depth-1 / panel-2 / trials-2 planner, not the non-separating ceiling.
+The planner must be shared between direct and action paths, called once after
+fielding is settled, and return an item-id/hex prefix. `GreedyActionPolicy`
+then resolves the current bag index at execution time and falls back to its
+unchanged `_strength` equip loop for the rest. Search owns a private RNG and
+must not advance the scheduler's fielding/anvil stream.
+
+First require a mutation-sensitive conformance test for component completion,
+bag-index movement, post-board ordering, and an unchanged control scheduler.
+Then measure action control versus action+item on **fresh paired seeds
+53_000–53_199**. This is simultaneously the independent replication and the
+port validation; re-running the direct policy on the selected 52_000 block
+would only reconfirm the block that produced the result.
+
+Named outcomes: reproduction near −0.435 with the same distribution direction
+makes this a real action-space teacher and licenses a cloning-target audit;
+material direct/action divergence is a port defect, not an item result; a
+fresh-block shrink to noise makes 160.111 a one-block finding. No outcome
+licenses PPO, and cloning still waits for the teacher's item decision inputs
+to be audited against the observation.
+
+### 160.113 The item action port is exact on its pilot
+
+The candidate generator and simulator finaliser now live in `rl.search` and
+both experiment and action paths call the same `best_item_prefix`. The faithful
+scheduler accepts an optional planner only at its `equip` stage, after its
+field loop has settled; it resolves the item id back to the current bag index,
+emits a real `EQUIP`, and resumes the historical first-bag/strongest-unit loop.
+The default planner is `None`, so the control path is unchanged.
+
+Mutation-sensitive tests pin four failure modes: the planned second bag item
+must encode index 1; it must complete Infinity Edge on the live unit; the next
+unplanned item must move to index 0 without calling the planner twice; and the
+planner asserts that the stronger benched unit has already displaced the weak
+board unit when it is invoked. A separate control test still emits bag index 0.
+
+Two discarded pilot seeds, 51_000–51_001, fingerprint `34e31b2f632c`:
+
+| comparison | placements equal | searches | changed | completions | fights |
+|---|---:|---:|---:|---:|---:|
+| direct control vs action control | 2 / 2 | 0.0 / 0.0 | 0.0 / 0.0 | 0.0 / 0.0 | 0 / 0 |
+| direct item vs action item | **2 / 2** | **9.5 / 9.5** | **3.0 / 3.0** | **1.5 / 1.5** | **218 / 218** |
+
+Both within-interface item effects also reproduce the old discarded −0.500.
+This is a wiring result, not placement evidence. It licenses the n=200 four-
+arm run already frozen in 160.112 on seeds 53_000–53_199, six workers. Including
+both direct arms costs about eight extra minutes and turns action-port fidelity
+from an assumption into a measured per-seed comparison.
+
+### 160.114 The item teacher survives fresh seeds and the real action space exactly
+
+200 paired fresh seeds, 53_000–53_199, six workers, fingerprint
+`34e31b2f632c`, 22.2 minutes wall time. The four arms frozen in 160.112 and
+licensed by 160.113 completed without a source-fingerprint change.
+
+| arm | place | LP | 1st | top4 | 8th | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| direct control | 4.180 | +5.23 | 15.5% | 58.5% | 10.0% | 31/16/43/27/22/21/20/20 |
+| direct item | **3.835** | **+8.86** | **17.0%** | **63.5%** | **8.0%** | 34/39/32/22/19/18/20/16 |
+| action control | 4.180 | +5.23 | 15.5% | 58.5% | 10.0% | 31/16/43/27/22/21/20/20 |
+| action item | **3.835** | **+8.86** | **17.0%** | **63.5%** | **8.0%** | 34/39/32/22/19/18/20/16 |
+
+Within either interface, item search improves placement **−0.345** at
+t = −2.64, paired 95% CI [−0.601, −0.089]. LP improves **+3.63** at
+t = +2.59, CI [+0.89, +6.37]. The distribution moves in the same favourable
+direction as 160.111: +1.5 points of firsts, +5.0 points top-four, and −2.0
+points of eighths. The effect is smaller than 160.111's −0.435 point estimate
+but well inside its interval, independently significant, and therefore a
+replication rather than a selected-block result.
+
+**The port is exact, not merely close.** Action control equals direct control
+on all 200 individual seeds. Action item equals direct item on all 200. Their
+search diagnostics also match exactly: 10.28 decisions, 4.57 changed layouts,
+11.16 component candidates, 2.475 chosen component completions, 68.065
+candidate boards, and 263.02 fight calls per game. Both within-interface
+contrasts consequently have the same paired differences, including 100 seeds
+whose item and control placements happen to be equal. There is no residual
+port loss to explain.
+
+This clears every named positive outcome in 160.112. **The cheap item search is
+the first large, independently replicated teacher improvement that is emitted
+through the project's real action space without dilution.** It is now a valid
+cloning target. This does not license PPO: the next gate remains the one
+predeclared in 160.112—audit whether the planner's item choice is a function of
+the clone observation and mask. A collision there would require exposing the
+missing item/target relation before collection; no collision licenses an item-
+decision corpus and BC experiment.
+
+### 160.115 The clone cannot see which item it is assigning
+
+The predeclared observability gate fails immediately, even under the richest
+shipped `scouting="tokens"` observation. `scripts/search_item_observability_probe.py`
+reaches an ordinary equip state, replaces the first bagged component while
+leaving every other live fact fixed, and evaluates the same depth-1 / panel-2 /
+trials-2 teacher with an identical private RNG. It rejects any substitution
+that changes a byte of the observation or legal-action mask.
+
+Seed 0, round 2-4, scheduler step 52: all ten non-unique components preserve
+the observation and mask, but the teacher emits **three different real EQUIP
+labels**:
+
+| label | target hex | example components |
+|---:|---|---|
+| 121 | (−2, 7) | B.F. Sword, Chain Vest, Rod, Bow, Tear |
+| 117 | (−3, 7) | Frying Pan, Sparring Gloves, Spatula |
+| 125 | (−1, 7) | Giant's Belt, Negatron Cloak |
+
+The source explains the collision exactly. The self block encodes only bag
+length. Each owned unit encodes only held-item count. Item identities appear
+only for *opponent* units in the scouting-token branch. The teacher necessarily
+reads the candidate item id, every target's held item ids, component recipes,
+and the resulting combat effects. A clone receives none of those own-side
+facts. This is not a sample-size or architecture result: one pair of identical
+inputs with different labels proves that exact imitation is impossible.
+
+This does not weaken 160.114. The teacher's −0.345 action-space gain is real;
+it identifies what the current clone is unable to consume. It does withdraw
+the last sentence's optimistic branch: the collision exists, so collection
+must wait.
+
+**Predeclared repair gate.** Extend the token observation, not the flat scalar
+vector, with (1) ten ordered categorical bag-item ids aligned to the EQUIP item
+axis and (2) three ordered categorical held-item ids for every own board/bench
+slot aligned to the unit axis. Order is semantic in both places: action indices
+name bag positions, and component combination consumes the first eligible held
+component. Mutation tests must distinguish B.F. Sword from Sparring Gloves and
+two equal-count held loadouts while preserving zero padding and slot alignment.
+
+Then rerun this exact counterfactual. If the observation changes for all ten
+substitutions, audit held-loadout and opponent mutations before fitting. Only
+after those collision classes close should an action-conditioned shared EQUIP
+head be compared with the monolithic head on held-out teacher labels. Raw item
+ids alone do not license a full BC placement run: the project's repeated result
+is that a flat MLP does not reliably derive cross-slot relations.
+
+### 160.116 Own-item tokens close the demonstrated collision class
+
+The `scouting="tokens"` observation now carries two categorical tensors in
+addition to its existing opponent tokens:
+
+* `item_bag[10]`, in the exact order named by EQUIP's item operand;
+* `own_items[board+bench, 3]`, aligned to EQUIP's unit operand and preserving
+  each unit's held-item order.
+
+Zero is padding and real item ids begin at one. The action-space bag width is
+passed into the encoder rather than repeated at the environment call site.
+Mutation tests pin a second bag item, a nonzero bench slot, zero padding, and
+both orderings. They also require `ScoutSetExtractor`'s output to change, so an
+implementation that declares the tensors but ignores them cannot pass. The
+extractor embeds and flattens these own-side tensors because their row order is
+semantic; only opponent storage order remains permutation-invariant.
+
+The exact 160.115 counterfactual was rerun over two complete games. It audited
+26 reachable EQUIP states and all ten non-unique components at each. There were
+235 genuine substitutions relative to the live first item; every one changed
+the observation. Three also changed the mask, which is harmless because the
+observation had already separated them. The only identical-input candidates
+were the unchanged reference component itself, and no state carried more than
+one label. The seed-0 round-2-4 counterexample that previously produced labels
+117/121/125 now exposes nine observation changes and only its reference label
+121. **The demonstrated own-item collision is closed.**
+
+The other facts consumed by the search already have mutation gates: opponent
+position, champion identity, held items and augments each change the scouting
+tokens, and `opponent_panel` uses a visible board signature rather than hidden
+player id for ties. This licenses a learnability probe, not a placement run.
+
+**Predeclared EQUIP-head probe.** Collect only states where the item planner is
+invoked and emits the first real EQUIP action, with whole episodes split before
+fitting. Use 80 training games on seeds 54_000–54_079 and 40 untouched holdout
+games on 55_000–55_039. Compare three independently initialised fits of:
+
+1. a monolithic head over the complete `ScoutSetExtractor` context;
+2. a shared action-conditioned head that scores every legal bag-slot × unit-
+   slot pair from that same context plus the candidate bag embedding, target's
+   ordered held-item embeddings, and target unit slice;
+3. a widened monolithic control with at least as many trainable parameters as
+   the relational head.
+
+Report train/holdout exact match, the subset where search changed the shipped
+layout, the first-legal and shipped-heuristic baselines, row counts, class
+coverage and parameter counts. The relational claim requires a repeatable
+holdout advantage over the capacity-matched monolith, especially on changed
+rows. Failure to beat it sends the question back to supervision or remaining
+observability; success licenses a small item-only BC policy test. Neither
+outcome licenses PPO or a whole-policy placement run.
+
+### 160.117 Relational scoring helps, but the stream labels cap it
+
+The 160.116 probe ran as frozen: 80 training games on 54_000–54_079, 40
+holdout games on 55_000–55_039, three fits per head, fingerprint
+`28e01247b653`. It collected 816 training decisions (321 changed layouts, 25
+action classes) and 397 holdout decisions (175 changed, 21 classes).
+
+| head | params | train | holdout | holdout, changed layouts |
+|---|---:|---:|---:|---:|
+| monolithic | 552,282 | 100.0% | 30.9% ± 2.1% | 19.8% ± 2.9% |
+| monolithic wide | 632,538 | 100.0% | 30.4% ± 2.3% | 19.6% ± 2.3% |
+| **shared relational** | **528,105** | 95.7% | **38.6% ± 0.9%** | **24.0% ± 4.1%** |
+
+The smaller relational head beats both monoliths on every initialisation,
+overall and on changed rows. Widening the monolith makes its mean slightly
+worse after both capacities memorise training perfectly. This clears the
+architecture comparison named in 160.116: action-aligned item/target structure
+generalises better than more parameters.
+
+It is not yet a deployable classifier. First-legal scores 31.5% overall and
+22.9% on changed rows; the shipped assignment scores 47.6% overall and 0% on
+changed rows by construction. The relational head recovers signal where the
+shipped rule cannot, but replacing the rule unconditionally would reduce total
+agreement.
+
+More importantly, auditing that ceiling exposed another one-to-many label
+source before the licensed item-only BC run began. The result above remains
+valid evidence about inductive bias against the labels it was given, but those
+labels are superseded by 160.118 and must not be scaled or evaluated for
+placement.
+
+### 160.118 The private combat stream was another hidden label input
+
+At seed 0, round 2-4, scheduler step 52, hold the complete observation, mask,
+board, bag, panel and search budget fixed and vary only the `random.Random`
+passed to `best_item_prefix`. Across streams 0–63, the old teacher emits:
+
+| EQUIP label | streams |
+|---:|---:|
+| 121 | 46 |
+| 117 | 14 |
+| 118 | 4 |
+
+The clone never observes that RNG state. Thus even after item identities were
+added, the stream teacher was still not a function of its input. This is the
+same defect found and repaired for move search in entries 79 and 107; the item
+path had recreated it.
+
+**Repair.** `best_item_prefix` now defaults to a SHA-256-derived seed over the
+visible own board/loadouts/augments, ordered bag ids, and visible opponent
+panel boards/loadouts/augments. It never uses Python's process-randomised
+`hash`. `opponent_panel`'s visible final tie-break now includes augment ids too.
+At the counterexample above the state-seeded teacher emits label 118 on all 64
+supplied RNG streams, while the explicit legacy-stream arm preserves the
+46/14/4 split. Item ids still separate all real component substitutions.
+
+**Predeclared strength-preservation A/B.** Before recollecting a single label,
+run three direct policies on 200 paired fresh seeds 56_000–56_199: unchanged
+control, the validated cheap item teacher with `state_seeded=False`, and the
+same teacher with `state_seeded=True`. Same depth 1, panel 2, trials 2; six
+workers; report full distributions, LP, paired CIs and search diagnostics.
+
+Prediction: state seeding changes which finite Monte Carlo draw a state gets,
+not the sampling distribution, so stream and state should be indistinguishable
+and both should retain roughly the replicated −0.35 placement gain. A state
+arm significantly better than control licenses recollection on new seeds. A
+null state-vs-control result means determinism cost the useful teacher and the
+clone path stops. A state arm worse than control rejects it outright. No
+within-block row will rehabilitate the 160.117 labels.
+
+### 160.119 Determinism preserves the item teacher and improves this block
+
+200 paired fresh seeds, 56_000–56_199, six workers, fingerprint
+`bfe47d24c713`, 12.9 minutes wall time.
+
+| arm | place | LP | 1st | top4 | 8th | histogram 1–8 | vs control |
+|---|---:|---:|---:|---:|---:|---|---|
+| control | 4.265 | +4.35 | 16.0% | 56.0% | 12.0% | 32/23/25/32/25/18/21/24 | — |
+| legacy stream | 4.170 | +5.13 | 19.5% | 53.0% | 9.5% | 39/22/25/20/26/29/20/19 | −0.095, t=−0.86 |
+| **state seeded** | **3.975** | **+7.33** | **22.0%** | **58.5%** | **10.0%** | 44/21/27/25/27/19/17/20 | **−0.290, t=−2.40** |
+
+State seeded versus control has paired 95% CI **[−0.527, −0.053]**. LP
+improves **+2.98**, t=+2.33, CI [+0.48, +5.48]. Stream versus control is noise:
+placement CI [−0.313, +0.123], LP CI [−1.54, +3.10]. State beats stream
+by −0.195 at t=−1.83, CI [−0.404, +0.014]; its LP advantage is +2.20 at
+t=+1.96, CI [−0.01, +4.41]. That last contrast narrowly misses the bar, so
+this does not claim deterministic sampling is intrinsically stronger.
+
+**The predeclared gate clears.** State seeding retained a significant teacher
+gain and landed inside the prior repaired-arm intervals. It improves firsts by
+6 points, top-four by 2.5, and eighths by 2 relative to control. The old stream
+arm's selected-block shrink is another reason never to infer from one seed
+block, but it does not weaken the deterministic arm measured beside it.
+
+Search activity is comparable: stream/state evaluate 9.875/9.915 decisions,
+64.545/65.405 candidate boards and 248.46/252.47 fights per game; they choose
+3.990/4.125 changed layouts and 2.260/2.290 component completions. The result
+is not a branch that stopped firing.
+
+**Predeclared label rerun.** Repeat 160.117 unchanged except for the now-default
+state-seeded teacher and entirely unused episodes: 80 training games
+57_000–57_079, 40 holdout games 58_000–58_039, three initialisations, 100
+epochs. Same monolithic, wider-monolithic and shared-relational heads, same
+metrics and parameter accounting. Prediction: removing the one-to-many label
+source should raise generalisation, particularly changed-layout accuracy; the
+relational head should retain its every-seed advantage. A failure to improve
+means the prior ceiling was dominated by ordinary cross-episode generalisation,
+not stochastic labels. No placement policy is built from either outcome until
+the new holdout table exists.
+
+### 160.120 Deterministic labels unlock the relational head, not the monolith
+
+The exact 160.119 rerun completed under fingerprint `f4aaa3e6c955`: 80 new
+training games on 57_000–57_079 and 40 untouched holdout games on
+58_000–58_039. It produced 809 training decisions (375 changed layouts, 24
+classes) and 387 holdout decisions (153 changed, 20 classes).
+
+| head | params | train | holdout | holdout, changed layouts |
+|---|---:|---:|---:|---:|
+| monolithic | 552,282 | 100.0% | 30.4% ± 2.1% | 23.5% ± 2.3% |
+| monolithic wide | 632,538 | 100.0% | 29.7% ± 3.1% | 21.6% ± 2.3% |
+| **shared relational** | **528,105** | 95.2% | **41.9% ± 2.5%** | **32.7% ± 1.7%** |
+
+The relational head beats both monoliths in every one of the three
+initialisations and does it with fewer parameters. Relative to the superseded
+stream-label table, its mean rises 38.6% → 41.9% overall and 24.0% → 32.7%
+on changed layouts. Those are different episode blocks, so the size of that
+rise is descriptive rather than a paired effect; its direction is exactly the
+predeclared prediction. The monoliths remain near 30% overall while memorising
+every training row. **Removing stochastic labels helps the structured reader;
+capacity still does not rescue the flat action map.**
+
+The raw head still cannot replace the shipped rule unconditionally. On this
+holdout, first-legal scores 39.5% overall / 30.7% changed, while the shipped
+rule scores 51.9% overall / 0% changed. The relational head's 32.7% on changed
+rows is the first learned recovery on exactly the choices responsible for the
+teacher's placement gain, but its 41.9% total match would throw away too many
+easy fallback decisions.
+
+**Next gate is residual, not more width.** Preserve the shipped action by
+default and learn two action-conditioned quantities: whether this state merits
+an override, and which legal item×target action to use when it does. Split
+whole new episodes into fit/calibration/test; choose any confidence threshold
+on calibration only, and report override coverage and precision as well as
+total/changed exact match on untouched test episodes. Compare against shipped,
+first-legal and the unconditional relational head. Only a residual that beats
+the shipped 51.9% style baseline without collapsing changed-row recovery
+licenses item-only placement. Another full-policy clone or PPO run remains out
+of scope.
+
+### 160.121 Predeclared residual item-head gate
+
+The next offline test is frozen before collecting any of its episodes. Fit the
+shared relational EQUIP head from 160.120 on 80 games, seeds 59_000–59_079;
+calibrate on 40 separate games, seeds 60_000–60_039; and evaluate once on 40
+untouched games, seeds 61_000–61_039. Use the deterministic depth-1, panel-2,
+two-trial item teacher, three initialisations, 100 epochs and the same model and
+batch size as 160.120.
+
+For each legal action, obtain the relational head's masked softmax probability.
+Its proposed correction is the argmax. Define override confidence as
+`p(proposed) - p(shipped)` and override the shipped action only when the two
+actions differ and confidence meets a threshold. Select the threshold using
+calibration total exact match only from the fixed grid 0.00, 0.05, …, 0.95,
+1.01; ties choose the higher, more conservative threshold. Threshold 1.01 is
+the explicit no-override option. The test split cannot affect this choice.
+
+Report first-legal, shipped, unconditional-relational and residual total and
+changed-layout exact match, plus residual override coverage, changed-row
+coverage and precision. The gate clears only if the residual beats shipped on
+the untouched test split in all three fits and its mean gain is at least three
+percentage points, while retaining either at least 15% changed-row accuracy or
+greater than 50% override precision. That licenses an item-only placement A/B;
+it does not license broader cloning or PPO. If calibration chooses no override,
+or the test gain fails, stop this classifier branch and investigate dense
+candidate-value supervision instead.
+
+### 160.122 The confidence residual correctly refuses to override
+
+The frozen 160.121 run completed under fingerprint `eb57673a98c0`. The fit,
+calibration and untouched test splits contain 796/398/442 real EQUIP rows, of
+which 360/179/167 changed the shipped layout. Five calibration states searched
+multiple final loadouts but emitted no EQUIP; the collector excludes these by
+the predeclared "first real EQUIP" rule. Two earlier attempts stopped before
+producing any model result because the collector had incorrectly asserted that
+such a search must emit `END_PLANNING`; a pending augment can instead make the
+next action `PICK_AUGMENT`. The repaired collector filters on `EQUIP` itself,
+records the exclusion count, and the complete run restarted the same seed
+ranges from scratch.
+
+| fit seed | calibration threshold | unconditional test | changed | residual test | overrides |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 1.01 | 39.82% | 25.15% | 51.36% | 0 |
+| 1 | 1.01 | 41.40% | 31.14% | 51.36% | 0 |
+| 2 | 1.01 | 41.86% | 26.95% | 51.36% | 0 |
+
+The untouched test baselines are 33.26% overall / 25.15% changed for
+first-legal and 51.36% / 0% for shipped. Calibration selected the explicit
+no-override threshold in every fit, so each residual exactly equals shipped;
+changed-row accuracy, override coverage and override precision are all zero or
+undefined. This fails every predeclared success condition. The conservative
+gate did its job: model confidence does not identify corrections reliably
+enough to risk the strong fallback.
+
+**Stop the hard-label classifier branch.** More width, another confidence
+formula, or test-guided threshold tuning would launder the same sparse target.
+The next admissible experiment is dense candidate-value supervision. Search
+evaluates roughly 65 final loadouts per game—about six or seven per item
+decision—but the current loss keeps only each decision's winning action.
+Retaining the per-candidate combat values can multiply the ranking constraints
+per state and directly teach predicted advantage over the shipped layout.
+
+### 160.123 Predeclared dense candidate-value gate
+
+Freeze a new whole-episode fit/calibration/test split before inspecting any
+dense labels: 80 games on seeds 62_000–62_079, 40 on 63_000–63_039, and 40 on
+64_000–64_039. At each deterministic depth-1, panel-2, two-trial item search,
+retain every unique candidate prefix's mean combat value. Map its first equip
+to the ordinary item×target action; map the empty historical completion to the
+shipped action; and keep the maximum value if duplicate layouts map to the same
+action. Exclude searched states that emit no real EQUIP, as in 160.122.
+
+Train the same shared relational scorer for three initialisations and 100
+epochs, but replace one-hot cross entropy with masked MSE against each state's
+dense targets `(candidate_value - shipped_value) / max(candidate_std, 1)`.
+Only actions actually evaluated by search contribute to loss. This fixes the
+loss, normalization, architecture and compute before collection; no hard-label
+variant is added after seeing results.
+
+At inference, take the highest predicted score among the evaluated candidate
+actions. Also repeat the conservative residual protocol: calculate masked
+softmax advantage over shipped, choose 0.00, 0.05, …, 0.95, 1.01 by calibration
+total exact match with higher-threshold tie-break, then evaluate once on test.
+Report candidate targets per state, unconditional and changed exact match,
+residual coverage/precision, and the same baselines as 160.121. The placement
+license is unchanged: every fit must beat shipped on test, mean improvement at
+least three points, and either 15% changed accuracy or precision above 50%.
+Failure rejects dense imitation at this data scale and redirects work from
+action cloning to distilling a state/item value model with substantially more
+episodes.
+
+### 160.124 Dense values expose signal and an exact-label ceiling, but fail
+
+The frozen 160.123 run completed under fingerprint `cb34faed9e95`. It collected
+823/415/408 fit/calibration/test decisions and 5,475/2,825/2,702 candidate-value
+targets: 6.65/6.81/6.62 evaluated actions per state. The untouched test shipped
+baseline is 48.53% exact overall and 0% on its 186 changed rows; first-legal is
+30.15% / 22.04%.
+
+| fit seed | threshold | unconditional test | changed | residual test | coverage | precision |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 0.10 | 36.52% | 36.56% | **51.96%** | 12.75% | 57.69% |
+| 1 | 0.20 | 37.75% | 37.10% | 49.75% | 4.90% | 50.00% |
+| 2 | 0.20 | 36.03% | 35.48% | 47.30% | 4.17% | 23.53% |
+
+Residual gains over shipped are +3.43, +1.23 and −1.23 points, mean +1.14.
+Seed 0 independently meets the complete gate—15.05% changed accuracy as well as
+greater-than-50% precision—but the other fits do not, so the predeclared
+all-initialisation and mean-gain requirements fail. No placement claim follows.
+Dense supervision is materially better on changed rows than the hard-label
+residual, yet still too initialization-sensitive at 823 episodes' decisions.
+
+The retained values also reveal why exact action identity is a lossy primary
+metric for this target. In the test split, **215/408 states (52.7%) have more
+than one action tied for the best two-trial combat value**, with 2.80 tied
+winners per state on average. The deterministic teacher must emit only one of
+them, so an equally valued action is marked wrong. This fact is descriptive;
+it does not reopen the failed gate or permit choosing a new rule on the exposed
+test split.
+
+**Next experiment.** Honor 160.123's redirect with substantially more episodes,
+an ensemble to reduce initialization variance, and held-out calibration/test
+scored by the dense value target itself. Exact action match remains a reported
+secondary metric. This is not metric shopping: rollout value is the quantity
+the teacher optimizes, and the tie audit was frozen and reported before any new
+episodes are collected.
+
+### 160.125 Predeclared scaled value-distillation gate
+
+Scale dense supervision fourfold: fit three 160.123 relational scorers on 320
+whole games, seeds 65_000–65_319; calibrate on 80 games, 66_000–66_079; and
+evaluate once on 80 untouched games, 67_000–67_079. Keep 100 epochs, batch 128,
+depth 1, panel 2, trials 2, the per-state target normalization and all source
+fingerprinting unchanged. Average the three fitted scalar action scores before
+selection; this frozen ensemble, not the best individual seed, is the proposed
+distillation policy.
+
+For each threshold 0.00, 0.05, …, 0.95, 1.01, form the same shipped-default
+residual from the ensemble softmax advantage. Select the threshold maximizing
+mean calibration **true normalized candidate value relative to shipped**;
+ties choose the higher threshold. On test, report that value, exact action
+match, changed match, override coverage/precision, value-optimal action rate,
+and fraction of the teacher's available mean advantage captured. Report the
+three individual heads too, but do not select among them.
+
+Uncertainty is clustered by whole episode: average selected normalized value
+within each game, then form the ordinary two-sided 95% t interval across the 80
+game means. The gate clears only if the ensemble residual's lower confidence
+bound is above zero and it captures at least 25% of the teacher's available
+mean advantage on untouched test episodes. That licenses exactly one item-only
+placement A/B against shipped; placement, not exact tie identity, remains the
+ultimate result. Otherwise dense value distillation at this budget is rejected.
+
+### 160.126 Scaled dense value distillation clears the offline gate
+
+The frozen 160.125 run completed under fingerprint `80d2799fcb13`. The 320-game
+fit split yielded 3,195 decisions and 21,164 dense targets. Calibration/test
+contained 819/820 decisions and 5,508/5,384 targets. Search evaluated 6.62–6.73
+unique actions per state. Four fit and four calibration searches emitted no
+real EQUIP and were excluded by the frozen rule; test excluded none. Ties remain
+structural: 452/820 test states have multiple value-optimal actions.
+
+Calibration selected threshold **0.00** for the predeclared three-head ensemble,
+meaning use the ensemble's candidate argmax whenever it differs from shipped.
+On the 80 untouched test episodes:
+
+| policy | value gain | episode-clustered 95% CI | teacher value captured | value-optimal | exact / changed |
+|---|---:|---:|---:|---:|---:|
+| head 0 | +0.0714 | [+0.0361, +0.1059] | 22.72% | 64.88% | 34.51% / 38.94% |
+| head 1 | +0.0603 | [+0.0243, +0.0987] | 19.18% | 63.78% | 34.51% / 36.28% |
+| head 2 | +0.0621 | [+0.0290, +0.1110] | 19.74% | 65.12% | 34.27% / 38.64% |
+| **ensemble** | **+0.0923** | **[+0.0566, +0.1319]** | **29.34%** | **67.80%** | **37.80% / 43.95%** |
+
+The ensemble overrides on 73.41% of decisions and 82.89% of changed rows. Its
+exact override precision is only 28.90%, while changed-row precision is 53.02%;
+that apparent contradiction is the expected consequence of the 55.1% test tie
+rate. The value result is not marginal: all three independent heads have lower
+confidence bounds above zero, and averaging them raises captured teacher value
+by 6.6–10.2 points.
+
+**The predeclared gate clears.** The ensemble's clustered lower bound is above
+zero and 29.34% capture exceeds the required 25%. This licenses exactly the
+item-only placement A/B against shipped. The deployed policy must generate the
+same cheap candidate prefixes, average the three saved/reproduced relational
+scores, use the calibration-fixed zero threshold, and emit the chosen prefix
+through real EQUIP actions. No other policy component may change, and no PPO or
+full-policy claim is licensed yet.
+
+### 160.127 Predeclared distilled-item placement A/B
+
+Reproduce the frozen 160.125 ensemble from its original 320 fit games
+(65_000–65_319), 80 calibration games (66_000–66_079), three seeds and 100
+epochs, then save the weights and chosen threshold with a source fingerprint.
+The original run did not persist weights; deterministic reproduction is safer
+than inventing a smaller retraining set after seeing the gate. Abort unless
+calibration again selects threshold 0.00.
+
+Deploy it without combat search. At the ordinary post-board item phase,
+generate the same depth-1 unique prefixes with `item_candidate_layouts`, encode
+the live token observation, average the three relational scores, and emit the
+selected prefix through `GreedyActionPolicy` and real EQUIP actions. Candidate
+generation may clone/equip units but may not call `CombatSimulator`; everything
+outside item choice remains FAST8 unchanged.
+
+Run three paired action-environment arms on 400 fresh seeds 68_000–68_399:
+shipped control, distilled ensemble, and the state-seeded depth-1/panel-2/
+two-trial search teacher as a contemporaneous ceiling. Six workers; report
+placement, LP, first/top-four/eighth rates, full histograms, paired two-sided
+95% intervals, action-interface diagnostics and wall cost.
+
+The distilled policy becomes the new item default only if its placement CI
+versus shipped is wholly below zero. If its point estimate improves, the search
+ceiling is significant, and its upper CI excludes a practically relevant
++0.10 placement regression, retain it as a promising compressed policy but do
+not make it default. A non-negative point estimate or upper bound at/above
++0.10 rejects this deployment. If the search teacher itself is null on the
+fresh block, the transfer result is inconclusive rather than evidence about
+distillation. No second placement block or threshold adjustment is authorized
+from this result.
+
+### 160.128 Distilled item value transfers directionally, not significantly
+
+The frozen 160.127 run completed on 400 paired fresh seeds 68_000–68_399 under
+fingerprint `0005090031ea`. Retraining reproduced calibration threshold 0.00
+exactly. The persisted three-head checkpoint is
+`runs/item_dense_ensemble_160_127.pt`, SHA-256 prefix `5d30b6e11e15`.
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| shipped control | 4.3025 | +3.875 | 16.25% | 53.50% | 11.00% | 65/43/57/49/47/49/46/44 |
+| **distilled** | **4.1875** | **+4.965** | 15.25% | 55.25% | 9.00% | 61/56/53/51/54/42/47/36 |
+| search ceiling | 4.0575 | +6.385 | 19.50% | 56.50% | 9.75% | 78/52/49/47/55/41/39/39 |
+
+Distilled minus control is **−0.115 placement**, t=−1.10, 95% CI
+[−0.321, +0.091]. Its LP delta is +1.09, t=+0.98, CI [−1.10, +3.28].
+Search minus control is **−0.245 placement**, t=−2.74, CI
+[−0.420, −0.070], with LP +2.51, t=+2.60, CI [+0.62, +4.40].
+Distilled versus search is +0.130 placement, CI [−0.082, +0.342], and
+−1.42 LP, CI [−3.69, +0.85]. The distilled point estimate transfers 46.9%
+of the contemporaneous search placement gain and 43.4% of its LP gain.
+
+The distribution improves in the defensive tail: top-four +1.75 points and
+eighth −2.00 points, while firsts fall 1.00 point. This is not an artifact of
+an inactive branch. Distilled evaluates 9.95 decisions and 65.01 candidates per
+game, overriding 7.35 times; search evaluates 10.03/66.58 and changes 4.315
+layouts. Distilled calls **zero** rollout fights and averages 2.45 seconds per
+game versus search's 256.97 fights and 10.91 seconds. Control averages 2.90
+seconds; game duration confounds that small control/distilled timing contrast.
+
+**Apply the predeclared middle outcome.** Search is significantly strong,
+distilled points in the beneficial direction, and its upper placement bound
++0.091 excludes the +0.10 practical-regression boundary. Retain the checkpoint
+as a promising compressed policy, but do not make it the default because the
+CI includes zero. No second placement block or post-hoc threshold adjustment
+is allowed. The clearest remaining discrepancy is override rate: the distilled
+head changes 70% more layouts than its teacher. Any next compression attempt
+must learn calibrated *positive advantage over shipped* directly on fresh
+episodes, rather than retuning this ensemble on the exposed placement block.
+
+### 160.129 Predeclared proposed-action advantage gate
+
+Keep checkpoint `5d30b6e11e15` and its three action scorers completely frozen.
+Collect 320 new fit games on seeds 69_000–69_319, 80 calibration games on
+70_000–70_079 and 80 untouched test games on 71_000–71_079 with the same
+deterministic depth-1/panel-2/two-trial dense item search. For each state, let
+the frozen ensemble propose its candidate argmax. The new target is that exact
+proposal's normalized combat value relative to shipped, not the teacher's
+winning action and not an exact-match label.
+
+Train three small regression gates, seeds 0–2, on fixed relational summaries:
+each frozen head's proposed-minus-shipped raw margin, proposed-minus-shipped
+softmax probability, whether that head agrees with the ensemble argmax, the
+ensemble raw/probability margins, and candidate count. Standardize from fit
+only; use a 32/16 ReLU MLP, smooth-L1 loss, Adam 1e-3, batch 128, 100 epochs.
+Average the three gate predictions.
+
+Calibration chooses an override coverage from 0%, 5%, …, 100%: for each
+coverage, override the highest predicted-advantage rows and measure their true
+mean normalized value relative to shipped. Select maximum value, breaking ties
+toward lower coverage, and carry the resulting numeric score threshold to test.
+Report test coverage, positive-value precision, episode-clustered value CI,
+teacher-value capture, value-optimal rate and exact/changed agreement, beside
+the ungated frozen ensemble.
+
+The gate clears only if its untouched-test value CI is wholly above zero,
+captures at least 35% of available teacher value, overrides no more than 60%
+of rows, and at least half of overrides have strictly positive true value. This
+would license a new gated-policy placement test on fresh seeds because it is a
+new learned decision, not a threshold retrofit to 160.128. Otherwise keep the
+ungated ensemble as the sole promising artifact and move on from item-policy
+compression.
+
+### 160.130 Advantage gating is selective but destroys value
+
+The frozen 160.129 run completed under fingerprint `ed0e16cc4dff`, retaining
+action checkpoint SHA prefix `5d30b6e11e15`. It collected 3,198 fit decisions
+(20,831 candidate targets), 759 calibration decisions (4,775 targets), and 777
+untouched-test decisions (5,072 targets). Four fit episodes emitted no EQUIP
+and were excluded by the frozen collection rule; calibration and test excluded
+none. The persisted gate checkpoint is
+`runs/item_advantage_gate_160_129.pt`, SHA-256 prefix `af2b7a17f4cc`.
+
+Calibration selected the predeclared **60% nominal coverage** point, numeric
+gate threshold `-0.0102886`. It overrode 455/759 rows (59.95%), gained +0.1084
+normalized value with episode-clustered CI [+0.0656, +0.1409], and captured
+30.44% of available teacher value. This threshold was transferred untouched.
+
+| untouched test policy | value gain | episode-clustered 95% CI | teacher value captured | coverage | positive precision | value-optimal | exact / changed |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| ungated frozen ensemble | +0.0676 | [+0.0356, +0.1044] | 22.82% | 70.66% | 29.69% | 68.47% | 37.84% / 41.78% |
+| **advantage gated** | **+0.0564** | **[+0.0244, +0.0902]** | **19.03%** | **56.37%** | **31.05%** | **67.44%** | **41.70% / 35.86%** |
+
+The gate is statistically positive and meets the maximum-coverage condition,
+but it fails both substantive requirements: 19.03% capture is far below 35%,
+and 31.05% positive-value precision is far below 50%. More importantly, the
+gate removes 111 test overrides while lowering total captured value by 3.79
+percentage points and absolute normalized gain by 0.0112. Its higher exact
+match is shipped-default inflation: changed-row agreement and value optimality
+both fall. Fresh-test teacher availability was +0.2964 per decision; the
+ungated model's +0.0676 remains real but diffuse across many low-precision
+actions.
+
+**The predeclared gate fails.** Do not run a gated placement A/B and do not tune
+another cutoff on these exposed rows. Keep the ungated ensemble only as the
+promising artifact already established by 160.128, and close this item-policy
+compression branch. The failure localizes the remaining problem: action-head
+confidence does not identify the sparse positive causal effect well enough,
+even with direct fresh-episode supervision. The next breakthrough attempt
+should move to a different policy bottleneck rather than spend another block
+filtering these item proposals.
+
+### 160.131 Predeclared action-conditioned positional value gate
+
+Move next to positioning, not another item cutoff. Entry 160.57's positional
+value model was relational in name but almost action-blind in fact. Repositioning
+does not change team totals, traits, cast structure, stars, costs, or items, so
+all but the final four geometry aggregates in `candidate_opponent_features`
+are invariant within a candidate group. Six distinct source/target moves were
+therefore represented only by minimum/mean cross-team distance and two in-range
+counts. This is the positional analogue of 160.115's missing item identity.
+
+Expose the already-computed `best_move` candidate values as a read-only trace,
+without adding fights or changing its selection. On 320 fresh fit games
+(seeds 72_000–72_319), 80 calibration games (73_000–73_079), and 80 untouched
+test games (74_000–74_079), collect the unchanged layout and the exact six
+state-seeded source/target moves considered by the depth-1, panel-1,
+three-trial teacher. Normalize each move's combat-value delta from unchanged by
+the within-state candidate standard deviation, floored at 1.0.
+
+Fit three shared move scorers, seeds 0–2, for 100 epochs with Adam 1e-3 and
+batch 128. The global context remains `ScoutSetExtractor`; each scored action
+additionally receives the source unit row, target unit row (zero when empty),
+source and target board-slot one-hots, and an occupied-target flag. This is
+action-conditioned relational information visible in the observation, not an
+expert score. A fixed zero score represents leaving the layout unchanged.
+
+Average the three heads. Calibration may choose only a softmax-probability
+advantage threshold from 0.00, 0.05, …, 0.95, 1.01, maximizing true normalized
+value and breaking ties toward the higher threshold. Transfer it untouched to
+test. Also report a hybrid that retains unchanged plus the three highest-scored
+sampled moves and lets the exact simulator finalize within that shortlist;
+this is a separate compute-saving diagnostic, not a selectable deployment arm.
+
+Report direct selected value, episode-clustered 95% CI, fraction of teacher
+available value captured, value-optimal rate, override coverage, and the
+baseline-plus-top-three hybrid's regret relative to all six moves. The direct
+gate clears only if its test CI is wholly above zero and it captures at least
+25% of teacher value. The shortlist gate clears only if it removes at least 90%
+of random-pick regret, matching 160.54's original. Either gate licenses exactly
+one fresh placement experiment for that corresponding policy shape. If neither
+clears, close learned positioning under this candidate budget; do not widen
+again or start PPO from the exposed test rows.
+
+### 160.132 Position identity improves shortlisting but fails both gates
+
+The frozen 160.131 run completed under fingerprint `7adb41ed0b40`. It
+collected 9,774 fit states (58,644 move targets), 2,454 calibration states
+(14,724 targets), and 2,398 untouched-test states (14,388 targets). Positive
+moves are sparse but stable across splits at 20.64–21.43%; mean available
+teacher value is +0.5602/+0.5612/+0.5815 normalized units.
+
+Calibration rejects every deploying threshold. At softmax-advantage threshold
+0.00 the head overrides 81.01% of rows and loses **−0.2082** normalized value;
+every threshold through 0.35 remains negative. Thresholds 0.40 and above make
+no overrides, and the frozen higher-threshold tie break selects **1.01**. The
+untouched direct test therefore correctly retains shipped on every row, with
+zero gain and zero teacher-value capture. The persisted diagnostic checkpoint
+is `runs/position_dense_ensemble_160_131.pt`, SHA-256 prefix `9da3b61d1d4c`.
+
+The exact-finalizer diagnostic is better but insufficient:
+
+| test policy shape | normalized value | teacher capture | regret | random regret removed |
+|---|---:|---:|---:|---:|
+| direct, calibration threshold 1.01 | 0.0000 | 0.00% | — | — |
+| baseline + predicted top three + exact finalizer | +0.3983 | 68.50% | 0.1831 | **79.59%** |
+
+Explicit source/target identity thus raises the useful shortlist signal well
+above 160.57's failed aggregate representation, but it still misses the
+predeclared 90% random-regret-removal gate by 10.41 points. More damagingly,
+the model's top-ranked move is anti-correlated with value strongly enough that
+calibration refuses all direct actions. This is not a threshold problem: the
+entire permitted threshold grid was non-positive wherever it fired.
+
+**Neither gate clears.** Do not run a positional placement experiment, do not
+fit another threshold to the exposed test block, and close learned positioning
+at this candidate budget as 160.131 required. The useful remainder is narrow:
+action identity helps eliminate four fifths of random shortlist regret, but
+only the simulator can safely choose among those retained moves. That saving
+does not meet the bar required to reopen the already exhausted positional
+search branch.
+
+### 160.133 Predeclared corrected buy/item composition test
+
+The remaining high-value measurement is teacher composition. Entry 149's
+cumulative search appeared to reach 2.665 placement, but 160.108 invalidated
+its item increment: that arm neither combined components on its hypothetical
+board nor searched after final board settlement. Since then, buy search has
+been validated through real BUY actions and corrected item search has gained
+−0.435 through real EQUIP actions. Whether those two independent capabilities
+stack or repair the same games has never been re-measured.
+
+Add one combined action policy, not a new search: start from the faithful
+`GreedyActionPolicy`, run the existing default panel-2/trials-2 buy search at
+its existing first-in-phase point, and run the existing depth-1/panel-2/
+trials-2 item planner at its existing post-board item point. Preserve the buy
+teacher's resolution-time component hook and expose both policies' existing
+diagnostics. No candidate, margin, ordering, or budget changes are permitted.
+
+Run a paired four-arm factorial on 300 fresh seeds 75_000–75_299 with six
+workers in the action environment: shipped FAST8 control, buy search only,
+corrected item search only, and both. Report placement, LP, first/top-four/
+eighth rates, full histograms, paired 95% intervals, fight calls and wall cost.
+The primary contrast is combined minus buy-only: it asks whether corrected
+item allocation adds value after the better purchase. Also report both single
+effects against control and the difference-in-differences interaction.
+
+The combined policy becomes the stronger teacher only if its placement CI
+versus buy-only is wholly below zero. If its point estimate improves and the CI
+upper bound excludes a +0.10 practical regression, retain composition as
+promising but not established. A non-negative point estimate means the two
+searches overlap at this resolution. This experiment is about constructing a
+better runnable teacher; no outcome licenses another clone, PPO, or a change to
+the shipped default.
+
+### 160.134 Buy and item search work alone, and interfere when stacked
+
+The frozen 160.133 run completed under source fingerprint `2d820dfb26ee` on
+300 paired seeds 75_000–75_299. The four-arm action-environment run took
+3,254.5 wall seconds (54.2 minutes) with six workers.
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| shipped control | 4.273 | +4.25 | 16.0% | 56.0% | 12.3% | 48/31/40/49/37/31/27/37 |
+| buy search | **3.397** | **+13.27** | 24.7% | **69.3%** | **3.3%** | 74/45/49/40/41/24/17/10 |
+| corrected item search | 4.013 | +6.76 | 19.7% | 57.0% | 9.3% | 59/35/40/37/45/34/22/28 |
+| combined | 3.527 | +12.10 | **27.7%** | 66.0% | 6.3% | 83/40/43/32/35/25/23/19 |
+
+The contemporaneous single effects are both real. Buy minus control is
+**−0.877 placement**, t=−5.85, 95% CI [−1.170, −0.583]. Corrected item minus
+control is **−0.260**, t=−2.54, CI [−0.461, −0.059]. This independently
+reproduces the corrected item ceiling from 160.128 on a new seed block.
+
+They do not add. Combined minus buy is **+0.130 worse**, t=+1.17, CI
+[−0.089, +0.349]. The difference-in-differences interaction is **+0.390**,
+t=+2.51, CI [+0.085, +0.695]: stacking destroys a statistically resolved
+amount of the value expected from adding the two independent effects. The
+combined distribution has more firsts than buy alone, but also fewer top-fours
+and nearly twice as many eighths; its slightly lower LP agrees with the worse
+mean rather than rescuing it.
+
+This is not a dormant-branch result. Buy alone made 15.13 search decisions and
+660.4 fight calls per game. Item alone made 10.16 item decisions, changed 4.35
+layouts and used 258.2 calls. Combined made 14.62 buy decisions, 10.59 item
+decisions, changed 4.49 layouts and used 932.5 calls. Both mechanisms remain
+active and their costs nearly add; their placement gains do not. Mean worker
+game time rises from 2.48 seconds for control to 21.39 buy, 10.38 item and
+30.47 combined.
+
+**The predeclared composition gate fails.** Its primary point estimate is
+non-negative, so buy and item search overlap or interfere at this resolution. Keep buy-only
+as the strongest policy in this experiment; do not call combined a stronger
+teacher, do not clone it, and do not start PPO from this result. The useful
+finding is sharper than a generic null: exact purchase and exact item decisions
+each improve the shipped policy, but their measured joint effect is
+antagonistic. The factorial result does not distinguish plain game-level
+overlap from a causal feedback between their state changes across rounds.
+
+### 160.135 Predeclared conservative item acceptance inside buy search
+
+160.134 leaves one asymmetry that can create exactly its measured interaction.
+Buy search does not take every sampled improvement: `best_buy` requires
+`margin=0.25` per opponent above the unchanged board. Corrected item search
+includes shipped among its candidates but takes any strictly positive edge,
+however small, from the same panel-2/trials-2 estimator. Thus one component is
+protected against finite-trial near-ties and the other is not.
+
+Add an optional item margin, default zero so every measured policy remains
+unchanged. Item candidate scores average over opponents and trials, whereas
+buy scores average trials and sum opponents; the directly corresponding item
+threshold is therefore **0.25**. This number is transferred from the standing
+buy policy, not selected from 160.134 or a new threshold sweep.
+
+Run three paired action-environment arms on 300 fresh seeds 76_000–76_299 with
+six workers: buy-only, combined with the historical zero item margin, and
+combined with item margin 0.25. Keep FAST8, panel 2, trials 2, depth 1, action
+limit 600, search ordering and every other parameter fixed. A two-seed pilot is
+for wiring only and must show both search branches active plus fewer accepted
+item layout changes in the margin arm. Discard its placements.
+
+Report placement, LP, first/top-four/eighth rates, full histograms, paired 95%
+intervals, fight calls, accepted item changes and wall cost. The primary
+contrast is margin-combined minus buy-only. Margin-combined becomes a stronger
+teacher only if that CI is wholly below zero. A negative point whose upper CI
+excludes +0.10 remains promising but unestablished. The secondary contrast,
+margin-combined minus zero-margin combined, says whether conservative
+acceptance repairs the interaction; it cannot override a failed primary gate.
+A non-negative primary point rejects this repair. No threshold adjustment,
+clone, PPO, or shipped-default change follows from this experiment.
+
+### 160.136 Corrected composition clears the stronger-teacher gate
+
+The frozen 160.135 run completed under source fingerprint `a549379b1a86` on
+300 paired fresh seeds 76_000–76_299. The three-arm action-environment run took
+4,398.1 wall seconds (73.3 minutes) with six workers.
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| buy only | 3.603 | +11.09 | 20.3% | 66.7% | 5.7% | 61/48/48/43/41/27/15/17 |
+| zero-margin combined | 3.347 | +14.05 | 26.7% | 72.3% | 5.0% | 80/47/41/49/31/23/14/15 |
+| **0.25-margin combined** | **3.287** | **+14.67** | **27.0%** | **73.7%** | **5.0%** | 81/44/49/47/33/20/11/15 |
+
+The predeclared primary contrast clears: margin-combined minus buy-only is
+**−0.317 placement**, t=−3.16, 95% CI [−0.513, −0.120]. Corrected buy plus
+item search is therefore a significantly stronger runnable teacher than buy
+search alone on untouched seeds.
+
+The proposed mechanism is not established. Zero-margin combined also beats
+buy-only by **−0.257**, t=−2.34, CI [−0.472, −0.042]. Margin-combined improves
+only another **−0.060** versus zero-margin combined, t=−0.81, CI
+[−0.206, +0.086]. The 0.25 rule reduces accepted item layout changes from
+4.51 to 3.12 per game (30.8%) while leaving item decisions and total simulator
+cost almost fixed, but that selection change has no resolved placement effect.
+Do not claim that the margin repaired the stack.
+
+This also changes the reading of 160.134. Its combined-minus-buy point was
++0.130, CI [−0.089, +0.349]; here the same zero-margin contrast is −0.257,
+CI [−0.472, −0.042]. The intervals barely overlap and the direction reverses.
+The earlier within-block antagonistic factorial interaction remains the result
+of that block, but it is not a stable policy property. Only paired contrasts
+inside each block are readable; comparing either arm's absolute placement
+across blocks would repeat the baseline error this log prohibits.
+
+All branches are active. Buy-only averages 14.85 searched buys and 653.9
+fight calls per game. Zero-margin combined averages 14.47 searched buys,
+10.75 item decisions and 942.8 calls; margin-combined averages 14.71, 10.71
+and 944.1. Mean worker game time is 22.49/32.39/32.83 seconds. The stronger
+result is not an inactive-arm or compute-budget artifact.
+
+**Apply the gate exactly.** Retain the 0.25-margin combined policy as the
+stronger teacher established by the primary fresh-seed contrast. The margin
+is part of that frozen policy shape but is not independently justified over
+zero margin. Per 160.135, do not tune the threshold, clone this teacher, start
+PPO, or change the shipped default from this result. The next question must
+address how to exploit a stronger runnable teacher without reopening the
+already-refuted ordinary BC/PPO transmission path.
+
+### 160.137 Predeclared learned-item hybrid inside the stronger teacher
+
+160.136 establishes exact buy-plus-item search as a stronger runnable policy,
+but spends about 290 extra combat calls per game on item allocation. Entry
+160.128's frozen three-head item-value ensemble captured 46.9% of exact item's
+placement gain while making zero rollout fights, with a promising but
+non-significant −0.115 point against shipped. It has never been evaluated after
+the stronger search buyer has changed the roster and state distribution.
+
+Use checkpoint `runs/item_dense_ensemble_160_127.pt`, expected SHA-256 prefix
+`5d30b6e11e15`, without retraining or changing its calibration-fixed threshold
+0.00. Wrap its ordinary post-board real-EQUIP scheduler in the existing exact
+buy search, preserving the buy teacher's search stream and resolution-time
+component hook. This is a learned component inside search, not a clone of the
+search policy.
+
+Run three paired action-environment arms on 300 fresh seeds 77_000–77_299 with
+six workers: buy-only, buy plus the frozen distilled item ensemble, and the
+160.136 buy plus exact item search at margin 0.25. Keep FAST8, panel 2, trials
+2, depth 1, action limit 600 and all ordering fixed. A two-seed pilot is wiring
+only: both hybrid item branches must fire, the distilled arm must make zero
+item combat calls, and the checkpoint hash must match. Discard placements.
+
+Report placement, LP, first/top-four/eighth rates, full histograms, paired 95%
+intervals, search/action diagnostics, fight calls and wall cost. The primary
+contrast is distilled hybrid minus buy-only. It becomes a stronger learned
+hybrid only if its CI is wholly below zero. If its point improves, the exact
+ceiling is significant, and its upper CI excludes a +0.10 practical regression,
+retain it as promising but not established. A non-negative point or upper CI
+at/above +0.10 rejects it. The exact arm is a contemporaneous ceiling, not a
+selectable threshold. No outcome licenses retraining on these seeds, ordinary
+BC/PPO, or a shipped-default change.
+
+### 160.138 The learned hybrid fails; the exact combined teacher replicates
+
+The frozen 160.137 run completed under source fingerprint `27bcdd546e63` and
+checkpoint SHA-256 `5d30b6e11e15c2edd685f5f99aa3333b28655cbd0ebd3c3b6f6979a1ef62a472`.
+It used 300 paired fresh seeds 77_000–77_299 and six workers, taking 4,496.6
+measured wall seconds (74.9 minutes).
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| buy only | 3.490 | +12.36 | 25.0% | 67.3% | 4.7% | 75/49/36/42/38/26/20/14 |
+| buy + distilled item | 3.537 | +12.01 | 25.3% | 67.3% | 5.3% | 76/45/44/37/30/27/25/16 |
+| **buy + exact item, margin 0.25** | **3.167** | **+16.14** | **30.3%** | **75.0%** | 5.3% | 91/52/53/29/20/21/18/16 |
+
+The learned hybrid fails its primary gate. Distilled minus buy-only is
+**+0.047 placement**, t=+0.36, 95% CI [−0.206, +0.299]. Its point is
+non-negative and its upper bound is far above +0.10.
+
+The exact ceiling remains strong. Exact minus buy-only is **−0.323**, t=−3.17,
+CI [−0.524, −0.123], and exact beats distilled by **−0.370**, t=−2.94, CI
+[−0.617, −0.123]. The primary exact contrast almost exactly reproduces
+160.136's −0.317 on a second disjoint 300-seed block. Corrected buy-plus-item
+search has now beaten buy-only significantly twice, across 600 fresh paired
+seeds. That is the robust teacher result; neither arm's absolute placement is
+compared across blocks.
+
+The distilled branch is active and cheap, not accidentally bypassed. It makes
+10.65 item decisions, evaluates 72.09 candidate actions and overrides 7.92
+times per game, while making exactly zero item combat calls. Total calls remain
+at the buy-only level, 656.8 versus 659.4. Exact item search makes 10.57 item
+decisions, accepts 3.12 changes, and adds 280.6 item calls for 947.9 total.
+Mean worker game time is 25.98 seconds buy-only, 25.53 distilled and 38.02
+exact. The frozen learner overrides 2.54 times as many item layouts as the exact
+margin teacher and captures none of its conditional placement gain.
+
+**Apply the gate exactly.** Reject the distilled hybrid and do not retrain,
+retune or expose these seeds to another item head. This closes the remaining
+learned-item composition route, consistently with 160.130's earlier closure.
+Retain exact buy plus exact item at margin 0.25 as the robust stronger runnable
+teacher. Ordinary BC/PPO remains excluded: this experiment tested a frozen
+learned component inside search and its failure supplies no new transmission
+signal.
+
+### 160.139 Predeclared one-swap fielding search inside the stronger teacher
+
+160.136 and 160.138 established exact buy plus exact item search at margin 0.25
+as a stronger runnable teacher than buy search alone, twice, across 600 fresh
+paired seeds. 160.138 also closed the learned-item compression route. The
+remaining fight-evaluable decision this composed teacher does not search is
+**which benched unit is fielded** — the decision 108.3 isolated as the entire
+residual of the clone's imitation failure, and the one `best_swap` answers.
+
+Historical evidence is genuinely mixed and is quoted here so no story can be
+fitted afterwards. 149.1 measured a board search stacking on buy search for
+**−0.340 (t=−2.13)** on the direct teacher, and called its increment larger
+than the search was worth alone. 108.2 measured that same search alone at
+**−0.243 (t=−2.00)**, less than half the withdrawn 106.2 figure. 106 measured
+three-unit board search against one-swap at **+0.093 (t=+0.59)**, so depth
+beyond one swap buys nothing and only one swap is tested here. None of those
+numbers was measured against a teacher that already searches its buys *and* its
+items, and none is comparable to this block's absolutes.
+
+**Ordering is the substantive design question, so it is measured, not assumed.**
+TFT items cannot be moved once equipped, and 160.108 invalidated an entire item
+result precisely because the search ranked a board that later changed. A swap
+that fires *after* the item phase strands items on a unit it benches and hands
+the newly fielded unit nothing; a swap that fires *before* it restores the item
+teacher's post-settlement contract. `GreedyActionPolicy` gains a `board_planner`
+hook symmetric with its existing `item_planner`, and a `board_planner_first`
+flag that positions the new stage on either side of the equip stage. The
+planner names **units, not bench indices**: a swap renumbers every later bench
+slot, which is the staleness `rl.search.search_policy` already documents.
+
+Three paired arms on 300 fresh seeds **78_000–78_299** with six workers in the
+action environment:
+
+| arm | policy |
+|---|---|
+| `base` | the 160.136 teacher, unchanged |
+| `swap_first` | `base` + one `best_swap` per phase, **before** the item phase |
+| `swap_last` | `base` + one `best_swap` per phase, **after** the item phase |
+
+Fixed: FAST8, `scouting="tokens"`, action limit 600, buy search first in phase
+at panel 2 / trials 2 / margin 0.25, item search at depth 1 / panel 2 / trials 2
+/ margin 0.25. The swap uses `max_candidates=4, panel_size=2, trials=2,
+margin=0.5`. **No constant is selected here.** `best_swap` sums candidate scores
+over the panel and averages over trials exactly as `best_buy` does, and accepts
+on `> baseline + margin` against `best_buy`'s `> baseline + margin * panel_size`;
+at panel 2 the shipped 0.5 is therefore the identical 0.25-per-opponent
+threshold the standing buy and item policies use. Trials drops from the shipped
+3 to 2 so all three components share one estimator budget. The swap search draws
+from its own stream seeded from the same per-episode search seed, identically in
+both treatment arms, so those two differ **only** in ordering.
+
+The `base` arm must be the policy the earlier blocks measured, not a
+re-derivation of it: `test_absent_board_planner_leaves_the_action_stream_untouched`
+pins the control stream against a literal, and one whole game on seed 91_001
+emits a byte-identical action sequence before and after this change. A two-seed
+pilot is wiring only — all three branches active, `base` at zero swap
+decisions — and **its placements are discarded**.
+
+Report placement, LP, first/top-four/eighth rates, full histograms, paired 95%
+intervals, buy/item/swap decision counts, accepted swaps and layout changes,
+fight calls and wall cost.
+
+**The primary contrast is `swap_first` minus `base`.** The composed
+buy+item+swap policy becomes the stronger teacher only if that CI is wholly
+below zero. A negative point whose upper bound excludes a +0.10 practical
+regression is promising but unestablished. A non-negative point rejects the
+third component at this resolution. `swap_last` minus `base` is secondary and
+cannot rescue a failed primary; `swap_first` minus `swap_last` says whether
+ordering is the mechanism and is readable only as a within-block paired effect.
+
+Outcomes named before the run: (1) both treatment arms beat `base` and their
+difference is a null — the swap adds value and ordering does not matter;
+(2) `swap_first` beats `base` and `swap_last` does not — ordering is the
+mechanism, as the item-immobility argument predicts; (3) neither beats `base` —
+buy and item search have already taken the fight-evaluable gain and a third
+component saturates; (4) both are worse — the swap churns a board the item
+search has already provisioned, the antagonism 160.134 saw within one block.
+
+No outcome licenses ordinary BC or PPO. 107–110 closed search transmission on a
+well-specified question, and 110.3 gave the reason: `best_swap`'s rule is a
+*simulation*, so no flat observation is a function of it. This is a
+teacher-composition measurement only. No threshold tuning, no clone, no change
+to the shipped default follows from it.
+
+### 160.140 One-swap fielding search adds a third real increment; ordering does not matter
+
+> **The −0.450 headline is WITHDRAWN by entry 160.142; the effect itself is
+> confirmed at a smaller size by 160.144.** −0.450 does not replicate: a
+> disjoint 300-seed block read −0.033, CI [−0.277, +0.210]. A third block of
+> n=600 then read −0.362, CI [−0.546, −0.177], so the swap increment is real
+> but this entry overstated it by about a quarter. Quote **−0.362** (160.144),
+> or the random-effects −0.287 for the conservative reading — never −0.450.
+> The run itself is sound and reproduces exactly; the ordering null and every
+> diagnostic below stand.
+
+The frozen 160.139 run completed under source fingerprint `14ce232c3923` on
+300 paired fresh seeds 78_000–78_299. The three-arm action-environment run took
+6,433.3 wall seconds (107.2 minutes) with six workers, all six saturated.
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| base (160.136 teacher) | 3.250 | +15.14 | 28.0% | 74.0% | 4.7% | 84/46/55/37/27/20/17/14 |
+| **swap before items** | **2.800** | **+19.77** | 34.0% | 79.0% | **1.7%** | 102/61/48/26/33/12/13/5 |
+| swap after items | 2.830 | +19.55 | **35.7%** | 79.0% | **1.7%** | 107/52/48/30/25/22/11/5 |
+
+**The predeclared primary gate clears.** Swap-before-items minus base is
+**−0.450 placement**, t=−3.67, 95% CI [−0.690, −0.210]. One `best_swap`
+decision per planning phase is worth a third real increment on top of a teacher
+that already searches its buys and its items exactly.
+
+The gain is broad rather than carried by a tail. 129 of 300 seeds improve
+against 81 that worsen and 90 ties; the 5% trimmed mean is −0.411 against the
+−0.450 mean; and the two halves of the block agree at −0.440 and −0.460. Both
+ends of the distribution move the right way — firsts 28.0% → 34.0% and eighths
+4.7% → 1.7% — so this is not a variance trade dressed as a mean.
+
+**My ordering prediction failed, and this is outcome 1 of the four named, not
+outcome 2.** 160.139 argued from item immobility that a swap firing after the
+equip phase would strand items on a unit it benches, and predicted the
+before-items arm would be materially better. It is not. Swap-after-items minus
+base is **−0.420**, t=−3.58, CI [−0.650, −0.190], and the two orderings differ
+by **−0.030**, t=−0.34, CI [−0.202, +0.142]. The honest statement is not that
+ordering is irrelevant but that no ordering effect larger than about 0.2 in
+either direction survives at this n. The diagnostics agree: accepted item
+layout changes are 3.02, 3.04 and 3.14 per game across the three arms, so the
+item search is neither helped nor obstructed by where the swap sits. Recorded
+as a failed prediction.
+
+All branches are active and their costs are honest. Base makes 15.10 searched
+buys, 10.49 item decisions and 946.3 fight calls at 29.97 seconds per game.
+The two swap arms make 34.34 and 34.27 swap decisions, accept 12.11 and 11.94
+of them, and spend 1,595.8 and 1,588.1 calls at 49.42 and 48.99 seconds. The
+swap is the most expensive of the three components per unit of placement.
+
+One diagnostic shift is unexplained and is recorded rather than interpreted:
+**searched buys fall by 30%**, 15.10 to about 10.56, in both swap arms, while
+item decisions and accepted item changes stay put. The swap moves the state
+distribution such that `best_buy` clears its margin far less often. Whether
+that is the swap substituting for purchases or merely reaching a board where
+fewer purchases help is not distinguished by this run.
+
+**What this does and does not establish.** It is one 300-seed block. 160.136
+and 160.138 set this log's bar for a teacher claim at two disjoint blocks, and
+this claim has one. More importantly, nothing here separates the *simulation's
+judgement* from the *act of swapping*: the arm changes about twelve boards per
+game that base leaves alone, and a policy that swapped the same units at the
+same rate by any rule at all has never been measured. Lesson 6 in its exact
+form — a rate is uninterpretable without its achievable maximum, and here a
+gain is uninterpretable without its no-search control. Do not quote −0.450 as
+established, do not clone this teacher, do not start PPO, and do not change the
+shipped default. The next run must supply both the replication and the control.
+
+### 160.141 Predeclared replication and no-search floor for the swap increment
+
+160.140 named the two things its −0.450 leaves open, and this run closes both in
+one block rather than two. The claim needs a **replication** on disjoint seeds,
+because this log's bar for a teacher result is two blocks (160.136 then
+160.138). It needs a **no-search floor** more urgently: the swap arm changes
+about twelve boards a game that base leaves alone, and no policy that changes
+the same boards at the same rate by *no judgement at all* has ever been
+measured. Lesson 6 in its exact form — the rate is uninterpretable without its
+achievable maximum — applied to a placement gain.
+
+`blind_swap` is that floor. Every structural gate, the candidate shortlist
+(top four benched by star then cost) and the target/drop rule are `best_swap`'s
+character for character; a source-level test pins the four shared lines. Only
+two things change: the candidate is drawn uniformly instead of by simulated
+fight value, and acceptance is a coin instead of a margin test. It makes
+**zero** `fight_value` calls, which a test isolates from the item search's
+fights by counting inside the chooser.
+
+**The coin's rate is measured, not chosen.** 160.140's exact arm accepted 12.11
+of 34.34 swap decisions per game; the control uses 0.3526. A control that
+churned less than the search would flatter the search, which is the failure
+mode this arm exists to prevent.
+
+Three paired arms on 300 fresh seeds **79_000–79_299** with six workers: `base`
+(the 160.136 teacher, unchanged), `swap` (exact `best_swap` before the item
+phase, the 160.140 winner), and `blind` (the matched-volume control in the same
+position). Ordering is fixed at before-items for both swap arms because 160.140
+spent that axis at −0.030, t=−0.34. Every other parameter is 160.139's. A
+two-seed pilot is wiring only — `base` at zero swap decisions, `blind` at zero
+swap fights, matched decision volume — and **its placements are discarded**.
+
+**Two gates, and both must clear.** The replication gate is `swap` minus `base`
+with its CI wholly below zero. The primary gate is `swap` minus `blind`, also
+wholly below zero: that contrast, and only that contrast, is the placement the
+*simulation's judgement* buys rather than the churn. `blind` minus `base` is
+reported as the floor's own effect and interprets whichever way the primary
+lands.
+
+Outcomes named before the run: (1) both gates clear — the exact swap is a real
+third component and the search is doing the work; (2) `blind` beats `base` and
+`swap` minus `blind` is a null — **the gain is board churn, not search**, which
+would retire `best_swap`'s simulation in favour of something ~20x cheaper and
+would cast the same doubt back over the buy and item increments; (3) `swap`
+minus `base` fails to replicate — 160.140 was block-specific, as 160.134's
+antagonism turned out to be; (4) `blind` is worse than `base` while `swap` beats
+it — the search's value is larger than 160.140 measured, because the floor sits
+below the baseline rather than above it.
+
+Outcome 2 is the one worth stating a prior on, and mine is that it will not
+happen: `best_swap`'s margin exists precisely to stop the churn a coin
+produces. That prior is recorded so it can be scored, not so it can be assumed.
+No outcome licenses BC or PPO, per 110.4 and 160.139.
+
+### 160.142 The swap increment does not replicate; the search only buys back its own churn
+
+The frozen 160.141 run completed under source fingerprint `fb264332c937` on
+300 paired fresh seeds 79_000–79_299, six workers, 5,537.8 wall seconds
+(92.3 minutes).
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| base (160.136 teacher) | 2.803 | +20.00 | 37.3% | 80.7% | 3.0% | 112/56/36/38/21/16/12/9 |
+| swap (exact) | 2.770 | +20.15 | 34.3% | 79.0% | 3.0% | 103/76/34/24/28/16/10/9 |
+| blind (matched churn) | 3.107 | +16.45 | 30.7% | 72.7% | 3.7% | 92/54/48/24/33/27/11/11 |
+
+**Outcome 3 of the four named. The replication gate fails.** Swap minus base is
+**−0.033**, t=−0.27, 95% CI [−0.277, +0.210]. 160.140's −0.450 does not
+reproduce on a disjoint block.
+
+**The discrimination gate clears, and this is the real content of the run.**
+Swap minus blind is **−0.337**, t=−2.56, CI [−0.594, −0.079]: the simulation's
+judgement is genuinely better than a coin over the same four candidates at the
+same acceptance rate. And blind minus base is **+0.303**, t=+2.28, CI [+0.042,
++0.564] — the no-search floor sits *above* the baseline, so unjudged board churn
+actively costs a third of a placement.
+
+Put together, the two contrasts say something sharper than either alone:
+**`best_swap` buys back almost exactly the harm that swapping at its own rate
+causes, and little else.** The +0.303 the churn destroys and the −0.337 the
+judgement recovers are the same quantity to within their intervals; the
+residual against not swapping at all is the −0.033 that failed the gate. The
+teacher spends about 640 extra fight calls and 19 seconds per game to break
+even. My 160.141 prior — that outcome 2 would not happen, because the margin
+exists to stop exactly this churn — is **scored correct**, and it is the only
+prediction in this arc that was.
+
+**160.140's headline is withdrawn.** Not on a wiring doubt: the current source
+reproduces that run's stored records exactly — placement, fight calls and
+accepted swaps identical on ten spot-checked seed/arm pairs across both arms —
+so the disagreement is between the blocks, not between the codes.
+
+Nor is it within-block noise. Each block is internally stable across its own
+halves: 78k reads −0.440 and −0.460, 79k reads −0.060 and −0.007. The blocks
+disagree with each other, at Q = 5.69 on 1 df, **p = 0.017**; the direct
+difference of the two contrasts is −0.417, t=−2.39. A fixed-effect pool returns
+−0.244, CI [−0.416, −0.073], but pooling assumes a homogeneity these data
+reject, so **that number is recorded and not quoted as the answer.**
+
+This is the second time in this arc that a ~0.3–0.45 paired contrast has
+reversed across disjoint blocks while each block looked internally solid —
+160.134's antagonistic interaction against 160.136's reversal was the first.
+Two blocks are evidently not enough for an effect of this size against this
+teacher, which is a fact about the measurement regime rather than about the
+swap.
+
+**Standing after this run.** Exact buy plus exact item at margin 0.25 remains
+the established teacher; nothing here touches it. The swap is *not* an
+established third component: its two blocks disagree and its residual over no
+swap is unmeasured at useful precision. What is established is narrower and
+worth keeping: unjudged board churn costs +0.303, and `best_swap`'s simulation
+is worth −0.337 against it. No clone, no PPO, no shipped-default change, and no
+threshold tuning follows.
+
+### 160.143 Predeclared tiebreak: simulated fielding against the greedy heuristic
+
+Two disjoint 300-seed blocks disagree about the exact swap's increment —
+160.140 read −0.450, CI [−0.690, −0.210]; 160.142 read −0.033, CI [−0.277,
++0.210] — while each is internally stable across its own halves and the current
+source reproduces the older block's records exactly. The heterogeneity test
+rejects pooling at Q p=0.017. 160.142 already settled the *mechanism*: unjudged
+churn costs +0.303 and the search recovers −0.337 against it. What remains is
+**precision**, and unlike the cases lesson 22 warns about, more seeds is the
+correct instrument here precisely because the discriminating axis has already
+been run and cleared.
+
+**Name what `base` actually is, because it changes the question.**
+`GreedyActionPolicy._next_field_action` already swaps the strongest benched
+unit for the weakest fielded one by `_strength` whenever that is an
+improvement. So this contrast is not search against no fielding decision. It is
+**simulated judgement against the cheap heuristic** — the possibility 149.2
+raised for items ("the `_strength` heuristic is already adequate") asked of
+fielding instead. Under that reading 160.142's −0.033 is not a null result about
+search; it is a positive result about the heuristic.
+
+Two arms only, on **600** fresh seeds **80_000–80_599** with six workers:
+`base` (the 160.136 teacher, unchanged) and `swap` (exact `best_swap` at
+`max_candidates=4, panel_size=2, trials=2, margin=0.5`, before the item phase).
+Every parameter is 160.139's; the `blind` arm is retired, having done its job.
+Doubling n against 160.142's budget is the entire point of the run.
+
+**Power, computed before the run.** The two blocks' paired SE averaged 0.1235 at
+n=300, so n=600 gives SE ≈ 0.0873 and a 95% half-width of 0.171. If the truth is
+the fixed-effect pooled −0.244, the expected t is −2.79 and the gate clears. If
+the truth is zero, the interval is about [−0.17, +0.17] and **excludes −0.244**.
+The two candidate worlds are therefore separable at this budget, which is why
+600 and not 300.
+
+**The decision rule is fixed now, not after the numbers.**
+
+- CI wholly below zero → the swap is a real component. Its magnitude is the
+  three-block fixed-effect pooled estimate, quoted only if the three-block Q
+  test no longer rejects homogeneity; otherwise the block-3 estimate alone.
+- CI straddles zero and excludes −0.244 → the pooled magnitude is rejected. The
+  swap is not worth its ~640 fight calls, 160.140's headline stays withdrawn
+  permanently, and the established teacher remains exact buy plus exact item.
+- CI straddles zero and still includes −0.244 → unresolved at this budget. Say
+  so and **stop**; a fourth block chasing a sub-0.25 effect is not a good use of
+  two hours, and lesson 2's gating applies to compute as much as to code.
+
+Outcomes named before the run: (1) the gate clears near −0.244 — 160.142 was the
+unlucky block; (2) a null near zero that excludes −0.244 — 160.140 was the lucky
+block and the `_strength` heuristic already captures what the simulation finds,
+which is the outcome I expect and am recording as my prediction; (3) an
+intermediate value leaving both alive; (4) a positive point, which would make
+three blocks disagree in two directions and indict the measurement regime rather
+than the swap.
+
+A two-seed pilot is wiring only and its placements are discarded. No outcome
+licenses BC, PPO, threshold tuning, or a shipped-default change.
+
+### 160.144 The swap is a real third component, at a smaller magnitude than 160.140 claimed
+
+The frozen 160.143 run completed under source fingerprint `62360cb35dbf` on
+**600** paired fresh seeds 80_000–80_599, six workers, 8,190.8 wall seconds
+(136.5 minutes).
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| base (160.136 teacher) | 3.292 | +14.58 | 27.3% | 71.3% | 3.2% | 164/110/87/67/57/47/49/19 |
+| **swap (exact)** | **2.930** | **+18.56** | **31.8%** | **78.8%** | 3.5% | 191/126/93/63/48/30/28/21 |
+
+**The predeclared gate clears.** Swap minus base is **−0.362 placement**,
+t=−3.84, 95% CI [−0.546, −0.177], wholly below zero. The block is internally
+stable — halves at −0.293 and −0.430, 244 of 600 seeds better against 179
+worse, and a 5% trimmed mean of −0.363 against the −0.362 mean. Top-four moves
+71.3% → 78.8% while the eighth rate is flat, so the gain is concentrated in the
+middle of the distribution rather than in either tail.
+
+**Outcome 1, and my recorded prediction of outcome 2 failed.** 160.143 predicted
+the `_strength` heuristic would already capture what the simulation finds, and
+that the tiebreak would land near zero. It did not. That is the second failed
+prediction of this arc — the first was 160.139's ordering argument — against one
+correct one, 160.141's prior that unjudged churn would not match the search.
+
+**The magnitude is the block-3 estimate, per the rule fixed in 160.143.** Three
+blocks now read −0.450 (n=300), −0.033 (n=300) and −0.362 (n=600). The
+fixed-effect pool is −0.299, CI [−0.424, −0.173], but the three-block
+heterogeneity test still **rejects homogeneity at Q = 6.53 on 2 df, p = 0.038**,
+and 160.143 pre-specified that pooling may only be quoted if it does not. So the
+number of record is **−0.362, CI [−0.546, −0.177]**. A DerSimonian–Laird
+random-effects estimate, which is the honest cross-block summary under
+heterogeneity, gives **−0.287, CI [−0.518, −0.055]**, τ = 0.170 — recorded
+because it is the more conservative reading and it still excludes zero.
+
+Two of three blocks clear individually and all three point estimates are
+negative. 79k remains the outlier and is not explained; it is not a wiring
+difference, since the current source reproduces 78k's records exactly (160.142).
+
+**What this establishes.** Exact `best_swap` before the item phase is a **third
+real component** of the search teacher, on top of exact buy and exact item at
+margin 0.25. Combined with 160.142's mechanism result — unjudged churn costs
++0.303, the judgement recovers −0.337 against it — the picture is coherent: the
+simulation is doing real discrimination, and it also beats the `_strength`
+heuristic that `_next_field_action` already applies, which 160.143 correctly
+identified as the true comparison but wrongly predicted the outcome of.
+
+**What it costs.** 34.27 swap decisions and 12.57 accepted swaps per game,
+1,591.9 fight calls against base's 949.3, and 50.94 seconds per game against
+30.82 — a 65% wall-cost increase for 0.362 placement. The buy diagnostic
+replicates for a third time: searched buys fall 14.98 → 10.50 whenever the swap
+is active, with item decisions and accepted item changes unmoved. That
+substitution is now a stable property of the composed policy and is still
+unexplained.
+
+**Standing.** The strongest established runnable teacher is now **exact buy +
+exact item (margin 0.25) + exact one-swap fielding, swap before items**. Per
+160.139, 160.141 and 160.143, no outcome here licenses ordinary BC or PPO —
+110.3's reason is unchanged, the swap's rule is a simulation and no flat
+observation is a function of it. Do not tune the swap budget or margin, do not
+clone this teacher, and do not change the shipped default.
+
+### 160.145 Predeclared macro ceiling under the established teacher
+
+160.144 left a teacher that searches every decision it can settle with a fight:
+buy, item and fielding. Each of those increments is a simulation, and 107–110
+and 160.138 closed the routes that would carry a simulation into a learned
+policy. More teacher strength therefore widens the gap to the agent without
+narrowing it. The one reformulation this log has never tried is 105.6's
+macro-action space, which 110.5 called the only open item 110.3 does not argue
+against: search keeps the micro decisions, and learning is spent only on what
+no fight can evaluate — when to level, roll and save. Before building that,
+measure whether there is anything to win.
+
+**What this can and cannot bound, stated before the numbers.** Every arm here
+follows one hand-written economy plan for the whole game. A flat result bounds
+**unconditional** macro value only. A macro policy that conditions on state —
+roll when the board is weak, level when it is strong — is not represented by
+any preset and stays unmeasured whatever this returns. So a flat result does
+not show macro RL has nothing to learn; it shows no *fixed* plan beats FAST8
+under strong micro.
+
+What the greedy record already says. 142 found the economy parameters flat
+near the incumbents: FAST8 against STANDARD read +0.021 (t=0.28) at n=800, and
+no random candidate beat either. 112–114 found the reroll lines dominated at
+every pivot, because a board slot is worth more than the value on it and
+`slowroll6` fields 1.4 fewer units. Those are greedy-micro results from older
+blocks; none is comparable to this block's absolutes.
+
+Six seed-paired arms on 600 fresh seeds **81_000–81_599**, six workers:
+micro ∈ {`greedy` (the faithful `GreedyActionPolicy`), `search` (the 160.144
+teacher, unchanged)} × macro ∈ {`fast8`, `standard`, `slowroll6`}. These are
+the three presets named when this run was recommended, unmodified. The greedy
+arms cost about 2.5 seconds a game and are included because "macro value under
+strong micro" can only be read against weak micro measured on the same seeds —
+quoting greedy-era numbers from another block is the baseline error this log
+prohibits.
+
+Report placement, LP, first/top-four/eighth, full histograms, fight calls,
+and the macro diagnostics that show the presets actually behave differently:
+rerolls, XP purchases, final level and final gold. A two-seed pilot is wiring
+only — every arm must terminate, and the three presets must differ in rolls or
+XP — and **its placements are discarded**.
+
+**Primary: macro headroom under the teacher.** For STANDARD and SLOWROLL6, the
+seed-paired contrast preset minus FAST8 under `search`. Two alternatives are
+tested, so each uses a Bonferroni-widened family-wise 95% interval (z=2.24).
+A preset shows headroom only if that interval lies wholly below zero, and even
+then it is a **screen**, not a result: 142.2's winner's curse means any winner
+needs a fresh-seed replication before it is called a prize.
+
+**Secondary.** The same two contrasts under `greedy`; the seed-paired
+interaction, (preset − FAST8 | search) − (preset − FAST8 | greedy), which asks
+whether strong micro changes what a plan is worth; and search minus greedy
+under each preset, the teacher's micro value by economy. Per lesson 29 no
+single contrast here is final at this effect size, and none is read across
+blocks.
+
+Outcomes named before the run: (1) flat under the teacher — no fixed plan beats
+FAST8 and unconditional macro headroom is absent; state-conditioned macro is
+the only macro question left; (2) a preset beats FAST8 under search but not
+under greedy — strong micro unlocks a different economy, a real prize that
+first needs replicating; (3) SLOWROLL6 stays clearly worse under search — the
+slot deficit of 113–114 is untouched by micro that adds no units; (4) the
+teacher narrows SLOWROLL6's deficit — search partly buys back the slot cost.
+
+**My prediction:** outcome 1 with outcome 3. STANDARD against FAST8 a null
+under both micros; SLOWROLL6 worse under both by at least +0.3, since nothing
+the teacher searches puts another unit on the board. Recorded so it can be
+scored.
+
+No outcome licenses BC, PPO or a shipped-default change. A positive screen
+licenses exactly one replication; a flat result redirects the macro question to
+state-conditioned counterfactuals rather than to more presets.
+
+### 160.146 No fixed economy plan beats FAST8 under the teacher; micro and macro add
+
+The frozen 160.145 run completed under source fingerprint `f5ca3356238b` on
+600 seed-paired fresh seeds 81_000–81_599, six arms, six workers, 14,466.2 wall
+seconds (241.1 minutes).
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| greedy · fast8 | 4.298 | +3.74 | 14.8% | 53.2% | 8.8% | 89/61/83/86/83/79/66/53 |
+| greedy · standard | 4.185 | +4.93 | 12.7% | 56.7% | 9.0% | 76/76/106/82/84/69/53/54 |
+| greedy · slowroll6 | 5.043 | −3.74 | 11.7% | 39.2% | 19.7% | 70/49/63/53/61/94/92/118 |
+| **teacher · fast8** | **2.802** | **+19.86** | **34.5%** | 80.0% | 2.3% | 207/121/91/61/47/45/14/14 |
+| teacher · standard | 2.852 | +19.32 | 28.2% | **81.5%** | 2.3% | 169/152/104/64/46/29/22/14 |
+| teacher · slowroll6 | 3.693 | +10.30 | 23.8% | 62.3% | 8.0% | 143/103/80/48/67/61/50/48 |
+
+The presets genuinely played differently, so a flat result is not an inert
+axis. Under the teacher they averaged 4.51/15.28/46.81 rerolls, 39.79/38.63/
+21.37 XP purchases and final levels 8.96/8.94/7.86; under greedy
+3.43/12.95/41.38 rerolls and levels 8.52/8.59/7.41.
+
+**The primary screen finds no headroom. Outcome 1 with outcome 3, as predicted,
+and the prediction is scored correct on both parts.** Under the teacher,
+STANDARD minus FAST8 is **+0.050**, t=+0.68, family-wise 95% CI [−0.114,
++0.214]; SLOWROLL6 minus FAST8 is **+0.892**, t=+10.12, family-wise CI [+0.694,
++1.089]. Under greedy the same contrasts are −0.113, t=−1.41 (a null) and
++0.745, t=+8.21. Both primary contrasts are stable across halves of the block
+(+0.040/+0.060 and +0.927/+0.857). No fixed hand-written plan beats FAST8 under
+strong micro, and SLOWROLL6 stays far worse — top-four 80.0% → 62.3%, eighths
+2.3% → 8.0%.
+
+**The teacher does not change what a plan is worth.** The seed-paired
+interactions are **+0.163**, t=+1.54, CI [−0.045, +0.372] for STANDARD and
+**+0.147**, t=+1.18, CI [−0.097, +0.391] for SLOWROLL6. Neither is resolved,
+and both points run the *wrong* way for outcome 4: strong micro does not buy
+back any of SLOWROLL6's slot cost, consistent with 113–114, because nothing the
+teacher searches puts another unit on the board. Outcome 4 is rejected. The
+teacher's own value is nearly constant across economies — search minus greedy
+is **−1.497** (t=−14.54) under FAST8, −1.333 under STANDARD and −1.350 under
+SLOWROLL6 — so on this evidence micro and macro are close to additive. The
+−1.497 is also the first measurement, inside one block, of the full
+three-component teacher against the shipped greedy control; it is not compared
+with any other block's figure.
+
+**A distributional finding the mean hides, recorded as post hoc.** Under the
+teacher STANDARD ties FAST8 on mean placement but takes **fewer firsts: −6.3
+points**, t=−3.17, CI [−10.3, −2.4], with top-four (+1.5 points, t=+0.85),
+eighths (0.0) and LP (−0.54, t=−0.67) all flat. It trades firsts for seconds —
+152 against 121. Under greedy the same first-rate gap is −2.2 points,
+t=−1.61. First-place rate was a reported quantity but carried no gate, and it
+is one of sixteen distributional contrasts computed after the fact; its t still
+clears the Bonferroni threshold for sixteen (z≈2.96), but it is a lead, not a
+result. The shape is plausible — FAST8 reaches level 8 at 4-1 rather than 4-5,
+the earlier high-cost board a first place needs — and is not tested here.
+
+**What this closes and what it does not.** It closes **fixed-plan macro
+headroom** under the established teacher: among the three presets named when
+this run was recommended, FAST8 is already the best plan at the mean, and at
+the top of the distribution it is better than STANDARD. It does not touch
+**state-conditioned** macro — rolling when the board is weak, levelling when it
+is strong — which no preset represents and which is the thing a macro-level
+learner would actually learn. Per 160.145, the macro question now moves to
+state-conditioned counterfactuals, not to more presets. No outcome here
+licenses BC, PPO or a shipped-default change.
+
+### 160.147 Predeclared positioning search as the teacher's fourth component
+
+160.146 closed fixed-plan macro headroom: no economy preset beats FAST8 under
+the teacher, and micro and macro are close to additive. So the most useful
+remaining work is to finish the planner. Of the decisions a fight can settle,
+it now searches three — the buy, the item plan and which benched unit is
+fielded — and not the fourth: **where fielded units stand**. The incumbent is
+`_preferred_hex`, two rules (melee forward, ranged back). `best_move` cites
+entry 47.2 for the stake: rearranging the same units moves the fight outcome
+by 2.8x the engine's own noise. Exact move search was worth −0.397 (t=−3.11)
+as a single search in 107.3, on the pre-98 engine and an econ teacher, so that
+number is not comparable here. Since 149.4 named positioning as the missing
+component, only *learned* positioning has been tried (160.54–160.57, 160.131–
+160.132, closed); the exact search has never been composed with buy, item and
+swap.
+
+**Placement in the phase.** The move fires where `search_policy` has always
+fired it: once the base scheduler ends the phase, i.e. after buys, the fielding
+swap and the item plan, on the settled board. Unlike the swap, going last
+carries no settlement hazard — units keep their items when they move. One move
+per phase, emitted as a real SELECT then PLACE.
+
+**Budget, transferred rather than tuned.** `best_move` sums candidate scores
+over the panel and averages over trials, and declines on `best ≤ baseline +
+margin` — both identical to `best_swap`, read from source. At panel 2 its
+shipped 0.5 margin is therefore the 0.25-per-opponent rule the other three
+components use. Candidates stay at the shipped 6 and state seeding stays on
+(107.2); panel rises from the shipped 1 to 2 and trials fall from 3 to 2 so all
+four components share one estimator budget.
+
+Two arms on **600** fresh seeds **82_000–82_599**, six workers: `base` (the
+160.144 teacher, unchanged) and `move` (base plus one `best_move` per phase).
+Before the run, `base` must reproduce 160.145's stored `search:fast8` records
+exactly on spot-checked seeds, and the composition tests must survive
+mutation. A two-seed pilot is wiring only — `base` at zero move decisions,
+`move` making and accepting moves — and **its placements are discarded**.
+
+Report placement, LP, first/top-four/eighth, histograms, the paired contrast
+with its halves, first-place and top-four rate differences, decision counts,
+accepted moves, fight calls and wall cost.
+
+**Gates.** The primary contrast is `move` minus `base`. It clears if its 95%
+CI is wholly below zero. A negative point whose upper bound excludes +0.10 is
+promising but not established; a non-negative point rejects it. **Lesson 29
+also applies, and is pre-registered here rather than invoked afterwards:** this
+teacher's contrasts showed a between-block SD of about 0.170 that no single
+block's interval contains. The component is called *established* only if the
+τ-inflated interval — SE combined in quadrature with 0.170 — also lies wholly
+below zero. A within-block pass without that is "positive in this block,
+pending replication", and says so.
+
+Outcomes named before the run: (1) established — positioning is a real fourth
+component robust to between-block variation; (2) clears within-block but not
+τ-inflated — real in this block, needing a second block before being quoted;
+(3) a null — the swap and `_preferred_hex` already leave little to rearrange;
+(4) worse — a single sampled move churns layouts the item plan was built for.
+
+**My prediction: outcome 2.** The within-block gate clears with a point weaker
+than 107.3's −0.397, between −0.10 and −0.35, and the τ-inflated interval does
+not exclude zero. Recorded so it can be scored.
+
+No outcome licenses BC or PPO (110.3), a margin or budget sweep, or a
+shipped-default change.
+
+### 160.148 Positioning search clears within the block, as predicted, but is not yet robust
+
+The frozen 160.147 run completed under source fingerprint `ea72b3d674de` on
+600 paired fresh seeds 82_000–82_599, six workers, 12,859.3 wall seconds
+(214.3 minutes). The validation gate that launched it saw 1,216 passed and only
+the two inherited failures, smoke green, ruff clean and 681 citations resolved.
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| base (160.144 teacher) | 2.882 | +19.15 | 34.8% | 79.5% | 3.8% | 209/117/83/68/46/27/27/23 |
+| **move** | **2.595** | **+22.27** | **40.3%** | **84.0%** | **2.8%** | 242/118/88/56/37/24/18/17 |
+
+**The within-block gate clears.** Move minus base is **−0.287 placement**,
+t=−3.28, 95% CI [−0.458, −0.115]. The block is internally stable — halves
+−0.307 and −0.267, 218 seeds better against 164 worse and 218 tied, 5% trimmed
+mean −0.270 — and both ends of the distribution move: firsts +5.5 points
+(t=+2.58, CI [+1.3, +9.7]), top-four +4.5 points (t=+2.33, CI [+0.7, +8.3]),
+eighths 3.8% → 2.8%.
+
+**The lesson-29 gate does not.** With the block SE combined in quadrature with
+τ=0.170, the interval is [−0.661, +0.088]; it includes zero. Per the rule
+160.147 fixed in advance this is **outcome 2 — positive in this block, pending
+replication**, and **my prediction is scored correct**: a within-block pass at a
+point between −0.10 and −0.35, weaker than 107.3's −0.397, without the
+inflated interval excluding zero.
+
+The branch is active and its cost is honest. The move arm makes 34.61
+positioning decisions and accepts 13.88 per game; fight calls rise from 1,591.1
+to 2,486.5 and worker time from 51.25 to 76.73 seconds a game (+50%). Buys
+(10.42 → 10.15), item decisions (11.01 → 10.96), accepted item changes (3.16 →
+2.88) and swaps (12.72 → 12.23) barely move, so positioning is an additional
+decision rather than a displacement of the other three. `base` reproduced
+160.145's stored `search:fast8` records exactly on five spot-checked seeds
+before launch, so the control is the established teacher.
+
+**A reporting defect, recorded rather than silently fixed.** The driver applies
+τ=0.170 to every paired contrast, including the first-place and top-four *rate*
+contrasts. τ is a between-block SD in placement units; adding it to a rate's SE
+mixes units, so those two τ columns ([−0.28, +0.39] and [−0.29, +0.38]) are
+meaningless. 160.147 predeclared the τ rule for the placement contrast only,
+and no decision depends on the rate columns; their plain 95% intervals stand.
+The script is left as it ran so its fingerprint still matches this artifact.
+
+**Standing.** Positioning is *not yet* a component of the established teacher,
+and −0.287 is not to be quoted as its size. It needs the second block 160.147
+named.
+
+### 160.149 Predeclared replication of the positioning increment
+
+The replication uses the **identical frozen source**: the same
+`scripts/search_move_composition_ab.py`, run with only `--seed0` changed, and
+the fingerprint must read `ea72b3d674de` at launch — nothing it covers may have
+changed since 160.148. Two arms, `base` and `move`, on **600** fresh seeds
+**83_000–83_599**, six workers. Every parameter is 160.147's.
+
+**Decision rule, fixed before the numbers.** Report the replication block
+alone, the two-block fixed-effect mean, and the two-block heterogeneity Q. The
+component is **established** iff the two-block mean's τ-inflated 95% interval
+lies wholly below zero, with SE² = SE_pooled² + τ²/2 and τ=0.170 carried from
+lesson 29 as a fixed prior. That prior was estimated from only three blocks of
+a different contrast (the swap) and is itself imprecise; it is used because it
+is the only between-block estimate this teacher has, and it is stated so it
+cannot be quietly replaced afterwards.
+
+For scale, computed now: if the replication lands near −0.287 with an SE near
+0.087, the two-block τ-interval is roughly [−0.55, −0.02] and the component is
+established. If it lands near zero, the mean is about −0.14 and the interval
+roughly [−0.41, +0.12]; not established.
+
+Outcomes named before the run: (1) the replication lands negative and the
+two-block τ-interval excludes zero — positioning is established as the fourth
+component, quoted at the two-block mean; (2) the replication is a null and the
+τ-interval includes zero — unresolved, as the swap's 79k block once left it;
+(3) the replication is positive — reject. **Whatever happens, stop after this
+block.** A third block is not automatic; the swap's arc needed one only because
+its first two disagreed, and lesson 2's gating applies to compute as well as to
+code.
+
+**My prediction: outcome 1.** 160.148 was stable across its halves and moved
+both tails, which is what a real effect rather than a lucky block looks like —
+though lesson 29 is precisely the finding that within-block stability did not
+protect the swap's 78k block. Recorded so it can be scored.
+
+No outcome licenses BC or PPO (110.3), a budget or margin sweep, or a
+shipped-default change.
+
+### 160.150 Positioning replicates, the blocks agree — and the predeclared gate still fails
+
+> **Two readings below are superseded by entry 160.152.** The gate failure was
+> real for two blocks; a third block cleared it and positioning is now
+> established at a three-block pooled **−0.229**. And "the tail claims of
+> 160.148 do not [replicate]" was a single-block reading: pooled over three
+> blocks, first-place **+4.8 points** (t=+3.71) and top-four **+3.8 points**
+> (t=+3.42) are both significant. The 83k numbers themselves stand.
+
+The frozen 160.149 replication completed under the identical source fingerprint
+`ea72b3d674de` on 600 paired fresh seeds 83_000–83_599, six workers, 215.8
+measured seconds-of-work minutes against 160.148's 214.3 — the two runs cost
+the same. (The machine slept for about 201 minutes of wall clock during this
+run; `time.perf_counter` does not advance across suspend, so the figure above is
+comparable and no game was affected.)
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| base (160.144 teacher) | 2.867 | +19.25 | 35.8% | 78.7% | 2.5% | 215/108/92/57/41/44/28/15 |
+| move | 2.680 | +21.29 | 37.7% | 82.3% | 2.5% | 226/127/85/56/43/22/26/15 |
+
+**The effect replicates.** Move minus base is **−0.187**, t=−2.07, 95% CI
+[−0.363, −0.010] — negative, and its own interval excludes zero. 212 seeds
+better against 182 worse, 5% trimmed mean −0.180. Its halves are less even than
+160.148's (−0.080 and −0.293). The distributional contrasts weaken: first-place
++1.8 points (t=+0.78) and top-four +3.7 points (t=+1.90), both null here,
+against +5.5 and +4.5 in 160.148. So the mean replicates and the tail claims of
+160.148 do not.
+
+**The two blocks agree.** Fixed-effect pooled **−0.238**, CI [−0.361, −0.115];
+heterogeneity **Q = 0.63 on 1 df, p = 0.426**, and a DerSimonian–Laird τ²
+estimate is **zero**. This is the opposite of the swap arc, where two blocks
+disagreed at p=0.017.
+
+**The predeclared gate nevertheless fails, and is applied exactly.** With
+SE² = SE_pooled² + τ²/2 at the τ=0.170 fixed prior 160.149 named, the interval
+is **[−0.504, +0.028]** — it includes zero, by 0.028. Under the rule fixed
+before the numbers, positioning is **not established**, and −0.238 is not
+quoted as a component size. **My prediction of outcome 1 failed**, the third
+failed prediction of this arc.
+
+**The tension is real and is recorded rather than resolved.** τ=0.170 was
+imported from the *swap* contrast, where blocks genuinely disagreed. This
+contrast's own data show no between-block variation at all, so the gate that
+failed is driven by a prior these two blocks contradict. 160.149 anticipated
+exactly this by fixing τ in advance "so it cannot be quietly replaced
+afterwards", and that binds here: **the prior is not revised to rescue this
+result.** Whether τ=0.170 should apply to every contrast of this teacher, or
+only where heterogeneity is observed, is a methodology decision to take
+deliberately and apply to future experiments — not retroactively to this one.
+
+**160.149's stop rule is honoured: no third block runs automatically.**
+
+**Standing.** The established teacher remains exact buy + exact item (margin
+0.25) + exact one-swap fielding. Positioning is **positive in two independent
+600-seed blocks, pooled −0.238 with agreeing blocks, and not established under
+the predeclared rule.** It costs about 890 extra fight calls and 50% more wall
+time per game. Nothing here licenses BC, PPO, a budget sweep or a
+shipped-default change.
+
+### 160.151 Predeclared third and final block for the positioning increment
+
+160.150 left positioning negative in two independent 600-seed blocks (−0.287
+and −0.187), pooled −0.238 with CI [−0.361, −0.115] and **no** detectable
+between-block variation (Q = 0.63 on 1 df, p = 0.43; DerSimonian–Laird τ² = 0),
+yet failing the predeclared τ-inflated gate by 0.028. Run at the user's
+direction to settle it by measurement rather than by revising the prior.
+
+**The τ prior is still not revised for this claim.** τ = 0.170 remains the
+fixed constant 160.149 named. Whether a contrast-specific τ² should replace it
+is a methodology decision deferred to a separate entry and, if taken, applies
+to future experiments — not retroactively to this one. Changing it now would
+establish positioning by arithmetic rather than by evidence, which is the move
+160.149 pre-committed against.
+
+**Identical frozen source.** The same `scripts/search_move_composition_ab.py`
+with only `--seed0` changed; the fingerprint must read `ea72b3d674de` at
+launch. Two arms, `base` and `move`, on **600** fresh seeds **84_000–84_599**,
+six workers. The run is wrapped in `caffeinate -i` because 160.149 lost about
+201 minutes of wall clock to idle sleep; that changes no measured quantity,
+since `time.perf_counter` does not advance across suspend.
+
+**Decision rule, already computed and published before this run.** Established
+iff the three-block mean's τ-inflated 95% interval lies wholly below zero, with
+SE² = SE_pooled² + τ²/3. The thresholds follow arithmetically from the two
+blocks in hand and are fixed here:
+
+| third block lands at | three-block τ-interval | verdict |
+|---|---|---|
+| −0.30 | [−0.476, −0.042] | established |
+| −0.24 | [−0.456, −0.022] | established |
+| −0.19 | [−0.439, −0.005] | established |
+| −0.10 | [−0.409, +0.025] | not established |
+| 0.00 | [−0.376, +0.058] | not established |
+
+Also report the block alone, the three-block fixed-effect pooled estimate,
+heterogeneity Q on 2 df, and the DL τ² these three blocks imply.
+
+Outcomes named before the run: (1) the block lands at −0.19 or stronger and
+positioning is **established** as the teacher's fourth component, quoted at the
+three-block mean; (2) it lands weaker than about −0.10 and positioning is
+closed as *positive but unestablished*, with the two-block pooled figure
+recorded and not promoted; (3) it lands positive, which with two negative
+blocks would indict the measurement regime rather than the component.
+
+**This is the final block.** No fourth runs, whatever the result — 160.149's
+stop rule, extended once by explicit direction and not again.
+
+**My prediction: outcome 1**, a third block between −0.15 and −0.30. Recorded
+against a poor record: my ordering prediction (160.139), my heuristic
+prediction (160.143) and my gate prediction (160.149) all failed, against two
+correct ones (160.141's churn prior, 160.145's macro flatness).
+
+No outcome licenses BC or PPO (110.3), a budget or margin sweep, or a
+shipped-default change.
+
+### 160.152 Positioning is established: the teacher's fourth component
+
+The frozen 160.151 block completed under the identical source fingerprint
+`ea72b3d674de` on 600 paired fresh seeds 84_000–84_599, six workers, 206.6
+minutes of measured work. `caffeinate` held the no-idle-sleep assertion for the
+whole run, verified live against the run's own pid.
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---|
+| base (160.144 teacher) | 2.895 | +18.86 | 30.5% | 79.7% | 3.2% | 183/129/105/61/53/30/20/19 |
+| **move** | **2.683** | **+21.24** | **37.2%** | **83.0%** | 2.5% | 223/123/82/70/46/22/19/15 |
+
+The block reads **−0.212**, t=−2.43, 95% CI [−0.382, −0.041], with even halves
+(−0.203 and −0.220), 225 seeds better against 174 worse, and a trimmed mean of
+−0.213. **Outcome 1**: it lands stronger than the −0.19 threshold 160.151 fixed
+in advance. **My prediction is scored correct** — predicted −0.15 to −0.30,
+landed −0.212 — bringing this arc's record to three correct and three failed.
+
+**The predeclared gate clears, applied exactly as written.**
+
+| block | n | move − base | t | 95% CI |
+|---|---:|---:|---:|---|
+| 82k | 600 | −0.287 | −3.28 | [−0.458, −0.115] |
+| 83k | 600 | −0.187 | −2.07 | [−0.363, −0.010] |
+| 84k | 600 | −0.212 | −2.43 | [−0.382, −0.041] |
+| **pooled** | **1,800** | **−0.229** | | **[−0.329, −0.129]** |
+
+Three-block fixed effect **−0.229**, SE 0.0509. Heterogeneity **Q = 0.70 on
+2 df, p = 0.706**, DerSimonian–Laird **τ² = 0**: the blocks agree. With the
+fixed τ=0.170 prior and SE² = SE_pooled² + τ²/3, the gate interval is
+**[−0.446, −0.012]** — wholly below zero. **Established.**
+
+**The distribution moves at both ends, pooled across all three blocks:**
+first-place **+4.8 points** (t=+3.71, CI [+2.3, +7.3]), top-four **+3.8 points**
+(t=+3.42, CI [+1.6, +6.0]), LP **+2.53** (t=+4.55). The eighth rate is a null
+(−0.5 points, t=−1.02). Per-block first-place t values were +2.58, +0.78 and
++2.98 (Q=2.41/2df) — the variation that made 160.150 call the tail claim
+unreplicated is ordinary sampling noise across blocks, and that entry now
+carries a banner saying so. **Quote the pooled figures, not any single block.**
+
+**Cost.** 34.40 positioning decisions and 13.59 accepted moves per game; fight
+calls 1,586.9 → 2,475.1 (+56%) and worker time 49.00 → 74.56 seconds (+52%).
+
+**Standing — the established runnable teacher is now four exact searches**, in
+this phase order:
+
+1. `best_buy`, first in phase, panel 2 / trials 2 / margin 0.25 (160.136)
+2. the greedy scheduler's fielding, then **`best_swap`** before the item phase,
+   4 candidates / panel 2 / trials 2 / margin 0.5 (160.144)
+3. `best_item_prefix`, depth 1 / panel 2 / trials 2 / margin 0.25 (160.136)
+4. **`best_move`**, after the item plan on the settled board, 6 candidates /
+   panel 2 / trials 2 / margin 0.5 (**here**)
+
+Every margin is the same 0.25-per-opponent rule, transferred rather than tuned.
+
+**The τ methodology question is now sharper and stays open.** Three blocks of
+this contrast give τ² = 0, while the swap contrast gave genuine heterogeneity
+at p=0.017. So τ is evidently contrast-specific, and the fixed 0.170 prior was
+conservative here — positioning cleared it anyway, which is why the prior was
+never revised to rescue it. Whether future gates should use a contrast-specific
+τ² or keep the fixed prior is a decision to take deliberately in its own entry,
+applying forward.
+
+160.151's stop rule is honoured: no fourth block. Nothing here licenses BC or
+PPO (110.3), a budget or margin sweep, or a change to the shipped default.

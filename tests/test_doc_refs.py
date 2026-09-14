@@ -133,3 +133,15 @@ def test_sidecar_round_trips_the_repositioning_budget(tmp_path):
     )
     assert written(expert_reposition=True, expert_reposition_mode="board")[
         "mode"] == "board"
+
+    # Buy search is a search teacher on its own: it needs no repositioning, and
+    # a run that used it must not rebuild as the plain scripted teacher, which
+    # is 1.040 placement weaker than the policy that produced its labels
+    # (doc 99 entry 160.91).
+    assert written(expert_buy_search=True) == {"mode": "none", "buy_search": True}
+    assert written(expert_buy_search=False) is None
+    both = written(expert_reposition=True, expert_reposition_mode="swap",
+                   expert_reposition_candidates=4, expert_reposition_panel=2,
+                   expert_buy_search=True)
+    assert both == {"mode": "swap", "max_candidates": 4, "panel_size": 2,
+                    "buy_search": True}
