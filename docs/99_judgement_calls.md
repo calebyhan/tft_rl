@@ -21734,3 +21734,185 @@ applying forward.
 
 160.151's stop rule is honoured: no fourth block. Nothing here licenses BC or
 PPO (110.3), a budget or margin sweep, or a change to the shipped default.
+
+### 160.153 Predeclared: does the teacher's edge survive a field that searches?
+
+Every search increment in this arc, 160.136 through 160.152, was measured
+against `DEFAULT_FIELD`, whose seats 5–7 are `slowroll6`, `slowroll6` and
+`hyperroll`, the archetypes 73.5 left about 0.8 placement weaker than the rest.
+Entry 74 is the precedent for what that can hide: a teacher that looked strong
+against a weak field had the *sign* of its edge wrong against a fair one. Three
+more replication blocks on the same field cannot test this; replication tests
+precision, not validity. The axis that discriminates is the field.
+
+**A seat adapter, and why its bar is replay.** The search teacher is written
+against `TFTEnv` and cannot sit in an opponent seat. `rl/teacher_seat.py`
+bridges it. 160.101 found a shadow env that dropped one resolution hook and
+played a different game without crashing, so the contract is byte-level:
+seat 0 driven through the adapter inside a plain `Match` must leave all eight
+players in identical state after every round as the same teacher driven
+through `TFTEnv` (`tests/test_teacher_seat.py`: three full greedy games, 18
+rounds of the buy-and-item-search teacher, and a full game from seat 5).
+
+- The first run of that test diverged, and only at carousel boundaries
+  (`2-4`, `3-4`, `4-4`), in exactly the players who had already drafted.
+  `TFTEnv` starts the draft when the round advances; `Match.play_round` has
+  not. That was snapshot timing, not the adapter: every trace re-converged at
+  the next snapshot and seat 0 never differed. The test now skips carousel
+  boundaries, where a real carousel desync still shows one round later.
+- Mutation-tested. Dropping the anvil-hook forwarding, taking the first
+  carousel offering, or binding the view to seat 0 each fails. **Deferring the
+  augment pick survived mutation**: the scheduler emits `PICK_AUGMENT` itself
+  before it can end the phase, so the flag changed no trace. It was removed
+  rather than kept as coverage that does not exist.
+- A two-game pilot put three 160.144 teachers in seats 5–7 of a bot lobby.
+  They placed 3/2/5 and 2/1/4, costing about 60 CPU-seconds per seat per game.
+
+**Design** (`scripts/field_strength_ab.py`). Two agent arms, both on the FAST8
+greedy scheduler: `greedy`, with no search, and `full`, the 160.152 teacher
+(buy, swap, items, move, at its established budgets). Three fields, differing
+only in seats 5–7:
+
+| field | seats 5–7 |
+|---|---|
+| `default` | `DEFAULT_FIELD` unchanged: slowroll6, slowroll6, hyperroll |
+| `bots` | `GreedyPolicy` on FAST8, which is the teacher's own base without search |
+| `teachers` | the 160.144 teacher (buy, swap, items; no move), via `TeacherSeat` |
+
+`default → bots` removes the weak seats. `bots → teachers` adds search and
+nothing else, because `GreedyActionPolicy` replays `GreedyPolicy` (154).
+All six conditions play the same seeds, so every contrast is paired and both
+arms are re-measured together in every field rather than borrowed from 160.146.
+
+**n and cost.** A two-game smoke run under this source measured about 410
+CPU-seconds per seed across the six conditions (`teachers/full` about 153,
+`bots/full` 92, `teachers/greedy` 84, `default/full` 73, greedy arms without
+teacher seats about 3). 160.151 ran at almost exactly six-fold parallelism on
+six workers, so **300 fresh seeds, 85_000–85_299**, is about 5.7 hours awake
+and on AC power. That is one block, sized to see a collapse or a halving of
+the edge, not a 20% shrink: the per-seed interaction combines four placements
+from lobbies that differ, so its SE should be near 0.23.
+
+**Notation.** G_f = full − greedy placement in field f (negative: search
+helps). I_f = G_f − G_default (positive: the edge is smaller in field f).
+
+**Primary.** G_teachers, and I_teachers.
+
+**Named outcomes**, read off the plain 95% CI of this block:
+
+- **A. The edge is field-robust.** G_teachers < 0 with its CI below zero, and
+  I_teachers' CI includes zero. Search's value does not depend on weak seats.
+- **B. The edge is real but was inflated.** G_teachers' CI is below zero and
+  I_teachers' CI is above zero. The established magnitudes describe
+  `DEFAULT_FIELD`; G_teachers becomes the figure to quote against strong
+  opposition.
+- **C. The edge collapses.** G_teachers' CI includes zero or lies above it.
+  Entry 74 again: the arc's search results do not transfer beyond the field
+  they were measured in.
+- **D, a qualifier on B or C.** I_bots is itself significantly positive and
+  G_teachers is within noise of G_bots. Then the shrinkage comes from removing
+  weak seats, not from opponents that search.
+
+**A caveat named before the numbers.** Placement compresses in a stronger
+lobby: seven strong seats leave less room between any two agents. So B does
+not by itself show search is worth less as skill; it shows the measured
+*placement* magnitude is field-dependent. The secondary head-to-head —
+the share of the three replaced seats each arm outlasts in `teachers` — is
+reported to separate the two.
+
+**Secondary.** Full distributions per condition (placement, LP, first, top
+four, eighth, histogram); G_f's top-four contrast per field; I_bots; the
+head-to-head share; CPU and fight calls.
+
+**Prediction on record: B.** G_default near −1.5, G_teachers near −0.9, I_bots
+small, around +0.2. My record in this arc stands at three correct, three
+failed.
+
+**Stop rule.** One block. A second 300-seed block is licensed only if
+G_teachers' CI straddles zero with a point estimate below −0.3, the one case
+where C and B cannot be told apart at this n. The fixed τ = 0.170 interval is
+reported beside the plain CI but does not decide the outcome; this is a
+validity check on one block, and the τ policy is still the open question
+160.152 left.
+
+**What this does not license**: BC or PPO (110.3), a change to
+`DEFAULT_FIELD`, or retuning any search budget against the new field.
+
+### 160.154 Outcome A: the teacher's edge survives a field that searches
+
+The frozen 160.153 block completed under the smoke-tested source fingerprint
+`624c06ac4b8f` on 300 paired fresh seeds 85_000–85_299, six workers, 375.5
+wall minutes including about 1h50 of machine sleep that paused but did not
+break the run (`runs/field_strength_160_153.json`).
+
+| condition | placement | LP | first | top four | eighth | outlasts seats 5–7 | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---:|---|
+| default · greedy | 4.420 | +2.61 | 14.7% | 51.0% | 12.0% | 57.9% | 44/36/35/38/41/30/40/36 |
+| default · full | 2.757 | +20.47 | 36.0% | 81.0% | 3.3% | 77.4% | 108/63/48/24/18/20/9/10 |
+| bots · greedy | 4.667 | +0.04 | 11.0% | 47.7% | 15.7% | 47.6% | 33/32/38/40/44/29/37/47 |
+| bots · full | 2.920 | +18.57 | 31.7% | 77.7% | 3.7% | 71.3% | 95/69/39/30/29/16/11/11 |
+| teachers · greedy | 5.327 | −6.87 | 5.7% | 35.3% | 19.7% | 27.7% | 17/18/33/38/43/37/55/59 |
+| **teachers · full** | **3.400** | **+13.35** | **26.0%** | **68.7%** | 4.3% | **55.3%** | 78/51/45/32/34/26/21/13 |
+
+The fields got stronger as designed: the no-search arm places 4.420, 4.667
+and 5.327 across them, and the full teacher 2.757, 2.920 and 3.400.
+
+**The primary contrasts.**
+
+| contrast | n | Δ | t | 95% CI | τ-widened (0.170) |
+|---|---:|---:|---:|---|---|
+| G_default, full − greedy | 300 | −1.663 | −11.18 | [−1.955, −1.372] | [−2.106, −1.221] |
+| G_bots | 300 | −1.747 | −11.88 | [−2.035, −1.459] | [−2.187, −1.306] |
+| **G_teachers** | 300 | **−1.927** | **−12.93** | **[−2.219, −1.635]** | [−2.370, −1.484] |
+| I_bots = G_bots − G_default | 300 | −0.083 | −0.40 | [−0.489, +0.322] | |
+| **I_teachers = G_teachers − G_default** | 300 | **−0.263** | −1.33 | **[−0.651, +0.125]** | |
+
+Halves agree throughout (G_teachers −1.780 / −2.073; I_teachers −0.247 /
+−0.280). Top-four contrasts run +30.0, +30.0 and +33.3 points (t = +9.22,
++8.85, +9.67). The interaction SE came in at 0.198 against the 0.23 160.153
+planned for.
+
+**Outcome A, applied as written.** G_teachers' CI lies wholly below zero and
+I_teachers' CI includes zero. The edge does not depend on the weak seats, and
+it does not shrink against opponents that search; the point estimate leans
+the other way. Qualifier D does not apply, because I_bots is a null. The
+τ-widened interval agrees, and the stop rule does not license a second block.
+
+**My prediction failed.** I predicted B, with G_teachers near −0.9. It
+landed at −1.927, so this arc's record is three correct and four failed. The
+reasoning behind B assumed stronger opponents compress placement and shave
+the gap. Compression happened to both arms, but the no-search arm absorbed
+more of it: greedy lost 0.907 placement from `default` to `teachers`, the
+full teacher 0.643. Searching opponents punish the unsearched policy harder.
+That reading is descriptive; I_teachers itself is a null and is not a claim
+that the edge grows.
+
+**The compression caveat is resolved, not merely moot.** 160.153 named the
+head-to-head share as the within-lobby check. In `teachers` the full teacher
+outlasts **55.3%** of the three searching seats (t = +2.39 against parity,
+CI [51.0%, 59.7%]), and greedy outlasts **27.7%** (t = −11.54). That is a
+four-search agent finishing ahead of three-search opponents more often than
+not, in the direction 160.152's positioning increment predicts. It is a
+secondary on one block, with t = +2.39, so it is quoted and not promoted.
+
+**Cost.** `teachers · full` took 184 CPU-seconds per game against the smoke
+run's 153, and `teachers · greedy` 100 against 84; the two-game estimate ran
+about 20% low in the searching field.
+
+**What this changes.** The established teacher's value over its own base is
+no longer a claim about `DEFAULT_FIELD` alone: it replicates at full size
+(−1.663, −1.747, −1.927) in three fields, including one where three seats run
+the 160.144 search. The entry-74 failure mode is ruled out for this contrast
+at this field strength. `rl/teacher_seat.py` makes searching opponents a
+standing option, replay-tested and mutation-tested.
+
+**Still open.**
+
+- A lobby where all seven opponents search. At about 60 CPU-seconds per
+  searching seat, that is roughly 7 minutes of CPU per game, which puts n=300
+  near 12 hours on six workers.
+- Any anchor to human play. Nothing here converts placement against bots,
+  searching or not, into a rank (132.1).
+- The τ policy that 160.152 left open.
+- Nothing here licenses BC or PPO (110.3), a change to `DEFAULT_FIELD`, or a
+  budget retune.
