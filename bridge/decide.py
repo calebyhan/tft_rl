@@ -18,14 +18,17 @@ disagree, the mask is the bug.
 
 from __future__ import annotations
 
+import dataclasses
+import random
 from dataclasses import dataclass
 
 import numpy as np
 
-from bridge.adapter import to_player_state
+from bridge.adapter import canonicalize_board, pool_for, to_player_state
 from bridge.state import ObservedState
 from engine.hexgrid import Board
-from rl.action import ActionExecutor, ActionKind, ActionSpace
+from engine.player import IllegalAction
+from rl.action import Action, ActionExecutor, ActionKind, ActionSpace
 from rl.observation import ObservationEncoder
 
 
@@ -417,3 +420,221 @@ def shop_advice(state: ObservedState, data, registry, *, seed: int = 0,
                     value - baseline))
     out.sort(key=lambda row: -row[2])
     return out
+
+
+# -- the established teacher's plan (doc 99 entry 160.152) ------------------
+
+PLAN_PHASES = ("buy", "swap", "items", "move")
+
+# The established teacher's budgets, transferred rather than re-tuned for the
+# advisor. Entry 136.2's wider advisor panel was measured for `best_board`, a
+# different search, and is not carried over.
+PLAN_BUDGETS = {
+    "buy": {"panel_size": 2, "trials": 2, "margin": 0.25},
+    "swap": {"max_candidates": 4, "panel_size": 2, "trials": 2, "margin": 0.5},
+    "items": {"depth": 1, "panel_size": 2, "trials": 2, "margin": 0.25},
+    "move": {"max_candidates": 6, "panel_size": 2, "trials": 2, "margin": 0.5},
+}
+
+# `best_swap` and `best_move` compare a panel-summed score with an absolute
+# margin, so 0.5 at panel 2 means 0.25 per opponent. Against the one-member
+# mirror it would mean 0.5 per fight. `best_buy` scales by panel size and
+# `best_item_prefix` averages per fight, so neither needs this (doc 99 entries
+# 160.160, 160.161).
+PANEL_SUMMED_PHASES = ("swap", "move")
+
+
+def mirror_budgets(budgets: dict | None = None) -> dict:
+    """Plan budgets for a one-member mirror panel: per-opponent margins.
+
+    Caller budgets still win, phase by phase and key by key.
+    """
+    out = {}
+    for phase in PLAN_PHASES:
+        base = PLAN_BUDGETS[phase]
+        scaled = ({"margin": base["margin"] / base["panel_size"]}
+                  if phase in PANEL_SUMMED_PHASES else {})
+        out[phase] = {**scaled, **(budgets or {}).get(phase, {})}
+    return out
+
+
+@dataclass(frozen=True)
+class PlanStep:
+    """One piece of advice, and the engine actions that carry it out."""
+
+    phase: str
+    detail: str
+    actions: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class Plan:
+    steps: tuple[PlanStep, ...]
+    # Phases whose search found nothing worth its margin -- a real answer.
+    declined: tuple[str, ...]
+    # Steps a search proposed that the engine refused. Always a bug.
+    problems: tuple[str, ...] = ()
+    # No opponent boards were entered, so the searches fought a mirror.
+    mirror: bool = False
+
+
+def _unit_name(unit) -> str:
+    return f"{unit.champion.id}{'*' * unit.star_level}"
+
+
+def plan_on(side, space: ActionSpace, pool, *, seed: int = 0,
+            budgets: dict | None = None) -> Plan:
+    """Run the teacher's four searches on ``side``, applying each step.
+
+    ``side`` is anything with the ``.player`` and ``.match`` a search reads: a
+    live env or :func:`battle_shim`. Every step goes through the action
+    executor and the engine mask, so advice is executable by construction, and
+    the board is re-sorted after each step because the searches' tie-breaks
+    iterate it (``canonicalize_board``).
+    """
+    from rl.opponents import _strength
+    from rl.search import best_buy, best_item_prefix, best_move, best_swap
+
+    player, match = side.player, side.match
+    executor = ActionExecutor(space)
+    steps: list[PlanStep] = []
+    declined: list[str] = []
+    problems: list[str] = []
+
+    def budget(phase: str) -> dict:
+        return {**PLAN_BUDGETS[phase], **(budgets or {}).get(phase, {})}
+
+    def stream(phase: str) -> random.Random:
+        return random.Random(seed * len(PLAN_PHASES) + PLAN_PHASES.index(phase))
+
+    def take(phase: str, detail: str, actions: tuple[int, ...]) -> bool:
+        executor.reset()
+        for action in actions:
+            if not executor.legal_mask(player)[action]:
+                problems.append(f"{phase}: {detail} is not legal here")
+                return False
+            try:
+                executor.apply(player, action, pool, random.Random(seed))
+            except IllegalAction as refusal:
+                problems.append(f"{phase}: {detail} was refused ({refusal})")
+                return False
+        canonicalize_board(player)
+        steps.append(PlanStep(phase, detail, actions))
+        return True
+
+    slot = best_buy(side, stream("buy"), **budget("buy"))
+    if slot is None:
+        declined.append("buy")
+    else:
+        take("buy", f"buy {player.shop.slots[slot]} (shop slot {slot})",
+             (space.buy_offset + slot,))
+
+    found = best_swap(side, stream("swap"), **budget("swap"))
+    if found is None:
+        declined.append("swap")
+    else:
+        bench_index, drop_hex = found
+        unit = player.bench[bench_index]
+        target = drop_hex
+        if target is None:
+            free = [h for h in sorted(player._own_hexes) if h not in player.board]
+            target = free[0] if free else None
+        if unit is None or target is None:
+            problems.append("swap: the search named no unit or no free hex")
+        else:
+            detail = f"field {_unit_name(unit)} -> board {target.q},{target.r}"
+            if drop_hex is not None:
+                detail += f", benching {_unit_name(player.board[drop_hex])}"
+            take("swap", detail,
+                 (space.select_offset + space.slot_for_bench(bench_index),
+                  space.place_offset + space.slot_for_hex(target)))
+
+    original_bag = tuple(player.item_bag)
+    prefix, _diagnostics = best_item_prefix(
+        player, match, stream("items"), max_items=space.item_bag_slots,
+        **budget("items"),
+    )
+    if not prefix:
+        declined.append("items")
+    for token, own_hex in prefix:
+        item_id = original_bag[token].id
+        index = next((i for i, item in enumerate(player.item_bag[: space.item_bag_slots])
+                      if item.id == item_id), None)
+        unit = player.board.get(own_hex)
+        if index is None or unit is None:
+            problems.append(f"items: {item_id} onto {own_hex} no longer applies")
+            break
+        action = space.encode(Action(ActionKind.EQUIP, index, space.slot_for_hex(own_hex)))
+        if not take("items",
+                    f"equip {item_id} onto {_unit_name(unit)} at {own_hex.q},{own_hex.r}",
+                    (action,)):
+            break
+    # The search scored completed loadouts: its prefix, then the shipped
+    # strongest-unit rule for the rest of the bag (`item_candidate_team`), which
+    # is also what the teacher then executes. Advising the prefix alone would
+    # advise a loadout nobody scored.
+    cap = player.config.max_items_per_unit
+    while player.item_bag:
+        targets = [u for u in player.board_units if len(u.items) < cap]
+        if not targets:
+            break
+        target_unit = max(targets, key=_strength)
+        item_id = player.item_bag[0].id
+        if not player.can_equip_from_bag(item_id, target_unit):
+            break
+        hex_ = next(h for h, u in player.board.items() if u is target_unit)
+        action = space.encode(Action(ActionKind.EQUIP, 0, space.slot_for_hex(hex_)))
+        if not take("items", f"equip {item_id} onto {_unit_name(target_unit)} "
+                             f"at {hex_.q},{hex_.r} (default rule)", (action,)):
+            break
+
+    moved = best_move(side, stream("move"), **budget("move"))
+    if moved is None:
+        declined.append("move")
+    else:
+        source, destination = moved
+        unit = player.board.get(source)
+        if unit is None:
+            problems.append(f"move: no unit on {source}")
+        else:
+            take("move",
+                 f"move {_unit_name(unit)} from {source.q},{source.r} "
+                 f"to {destination.q},{destination.r}",
+                 (space.select_offset + space.slot_for_hex(source),
+                  space.place_offset + space.slot_for_hex(destination)))
+
+    return Plan(tuple(steps), tuple(declined), tuple(problems))
+
+
+def mirror_state(state: ObservedState) -> ObservedState:
+    """The state the searches see when no opponent boards were entered.
+
+    The only opponent is the hero's own seat as observed, with its bench and
+    item bag stripped: a reflection that fights with the hero's board.
+    """
+    reflection = dataclasses.replace(
+        state.hero, player_id=1, bench=[], bench_slots=0, item_bag=())
+    return dataclasses.replace(state, opponents=[reflection])
+
+
+def plan_advice(state: ObservedState, data, registry, *, seed: int = 0,
+                budgets: dict | None = None) -> Plan:
+    """The teacher's plan for an observed state.
+
+    With no opponent boards entered, the searches fight a mirror of the hero's
+    board (`mirror_state`) at per-opponent margins (`mirror_budgets`), and
+    `Plan.mirror` says so. Doc 99 entry 160.161 measured that fallback at
+    about 85-89% of the value of planning against the real field, with an
+    interval reaching down to about 77%.
+    """
+    mirror = not any(seat.board for seat in state.opponents)
+    search_state = mirror_state(state) if mirror else state
+    if mirror:
+        budgets = mirror_budgets(budgets)
+    shim, _hero = battle_shim(search_state, data, registry)
+    space = ActionSpace(data.config)
+    space.bind_board(tuple(sorted(Board().half_board_hexes(0))))
+    # The pool is inferred from the state as observed, not the mirrored one,
+    # which would deduct the hero's copies twice.
+    plan = plan_on(shim, space, pool_for(state, data), seed=seed, budgets=budgets)
+    return dataclasses.replace(plan, mirror=mirror)
