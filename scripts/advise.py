@@ -162,6 +162,34 @@ def show_shop(state: ObservedState, data, registry) -> None:
         print(f"  {champion:<28}{cost:>3}g{value:>+8.2f}")
 
 
+def show_plan(state: ObservedState, data, registry) -> None:
+    """The established teacher's four searches, applied in its phase order.
+
+    Buy, then one fielding swap, then the item prefix and the default rule for
+    the rest of the bag, then one positioning move -- each applied before the
+    next search sees the board, at the teacher's own budgets (doc 99 entry
+    160.152). What it does not cover is printed, so a gap reads as a gap.
+    """
+    from bridge.decide import plan_advice
+
+    plan = plan_advice(state, data, registry)
+    print("\nplan -- the established teacher's four searches, in its phase order:")
+    if plan.mirror:
+        print("  (no opponent boards entered: fought a mirror of your own board,"
+              " measured at about 85-89% of the value of entering them;"
+              " doc 99 entry 160.161.)")
+    if not plan.steps:
+        print("  no change worth making")
+    for number, step in enumerate(plan.steps, 1):
+        print(f"  {number}. {step.phase:<6} {step.detail}")
+    if plan.declined:
+        print(f"  searched, nothing worth its margin: {', '.join(plan.declined)}")
+    for problem in plan.problems:
+        print(f"  problem: {problem}")
+    print("  not advised here: levelling, rolling, and the base scheduler's "
+          "own buys and fielding")
+
+
 def show(state: ObservedState, advisor, top_k: int) -> None:
     hero = state.hero
     print(f"\nround {state.stage}-{state.round}   level {hero.level}   "
@@ -204,6 +232,9 @@ def main() -> None:
                         help="rank shop buys by simulated combat (entry 143)")
     parser.add_argument("--search", action="store_true",
                         help="also run the board search (simulated combat)")
+    parser.add_argument("--plan", action="store_true",
+                        help="the established teacher's buy, swap, item and "
+                             "move searches, in its phase order (entry 160.152)")
     args = parser.parse_args()
 
     data = load_all()
@@ -231,7 +262,7 @@ def main() -> None:
     show(state, load_advisor(data, args.run), args.top)
     if args.comps:
         show_comps(state)
-    if args.search or args.shop:
+    if args.search or args.shop or args.plan:
         from engine.items import ItemRegistry
 
         registry = ItemRegistry(data.items, data.config.max_items_per_unit)
@@ -239,6 +270,8 @@ def main() -> None:
             show_board(state, data, registry)
         if args.shop:
             show_shop(state, data, registry)
+        if args.plan:
+            show_plan(state, data, registry)
 
 
 if __name__ == "__main__":
