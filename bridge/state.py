@@ -53,6 +53,11 @@ class ObservedSeat:
     # own section), and visible to a real observer for their own seat -- the
     # round-trip test caught their absence.
     augments: tuple[str, ...] = ()
+    # Unequipped items, in bag order, by id. Visible to a player for their own
+    # seat, and read by item search by index (doc 99 entry 160.111), so the
+    # order is part of the observation. The encoder never read it, which is why
+    # the milestone 1 round trip passed without it.
+    item_bag: tuple[str, ...] = ()
 
 
 @dataclass
@@ -90,6 +95,7 @@ class ObservedState:
             fields["board"] = [unit(u) for u in entry.get("board", [])]
             fields["bench"] = [unit(u) for u in entry.get("bench", [])]
             fields["augments"] = tuple(entry.get("augments") or ())
+            fields["item_bag"] = tuple(entry.get("item_bag") or ())
             return ObservedSeat(**fields)
 
         return cls(
