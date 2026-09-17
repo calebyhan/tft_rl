@@ -51,6 +51,7 @@ def seat_from_player(player: PlayerState) -> ObservedSeat:
                for unit in player.bench],
         bench_slots=len(player.bench),
         augments=tuple(aug.id for aug in player.augments),
+        item_bag=tuple(item.id for item in player.item_bag),
     )
 
 
@@ -65,6 +66,19 @@ def from_player_state(player: PlayerState, round_id: RoundId,
         opponents=[seat_from_player(p) for p in (opponents or [])],
         shop=list(player.shop.slots),
     )
+
+
+def canonicalize_board(player: PlayerState) -> None:
+    """Re-insert the board in hex order.
+
+    Search tie-breaks such as ``min(player.board, key=...)`` iterate this dict,
+    so its insertion order is a hidden input: the order units happened to enter
+    the board. No observer can see it, and the same board typed in a different
+    order, or changed by one applied step, would get different advice.
+    """
+    ordered = sorted(player.board.items())
+    player.board.clear()
+    player.board.update(ordered)
 
 
 def seat_to_player(seat: ObservedSeat, data, registry,
@@ -90,6 +104,7 @@ def seat_to_player(seat: ObservedSeat, data, registry,
         streak_type=seat.streak_type,
         bench=[None] * (seat.bench_slots or data.config.bench_size),
         augments=[data.augments[a] for a in seat.augments],
+        item_bag=[data.items[i] for i in seat.item_bag],
         hex_board=board_obj,
     )
 
@@ -112,6 +127,7 @@ def seat_to_player(seat: ObservedSeat, data, registry,
             continue                      # more units than the board can hold
         player.board[where] = unit
         unit.position = where
+    canonicalize_board(player)
 
     for index, observed in enumerate(seat.bench):
         if observed is not None and index < len(player.bench):
@@ -212,6 +228,9 @@ def validate(state: ObservedState, data) -> list[str]:
                     if item not in data.items:
                         problems.append(
                             f"{label} {where}[{index}]: unknown item {item!r}")
+        for slot, item in enumerate(seat.item_bag):
+            if item not in data.items:
+                problems.append(f"{label} item_bag[{slot}]: unknown item {item!r}")
     for slot, champion_id in enumerate(state.shop):
         if champion_id is not None and champion_id not in data.champions:
             near = difflib.get_close_matches(champion_id, known, 3)
