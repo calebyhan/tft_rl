@@ -81,15 +81,19 @@ def test_every_recommendation_is_legal_and_executes(data, states):
         for rec in recs:
             player, _rid, _opps = to_player_state(
                 state, data, advisor.registry)
+            # The executor's selection state is reset *before* masking, so one
+            # recommendation cannot leave a partial SELECT behind for the next.
+            # It used to be reset only after the mask was read, which let a
+            # SELECT applied on the previous iteration make the next SELECT
+            # illegal. That stayed hidden until the item bag round-tripped and
+            # the enlarged legal set put consecutive SELECTs in the top eight.
+            advisor.executor.reset()
             mask = advisor.executor.legal_mask(player)
             assert mask[rec.index], (
                 f"{rec.kind} recommended but the engine mask says illegal"
             )
             # Executes without raising IllegalAction on a fresh state.
-            # `apply` needs a pool (BUY draws from it) and an rng; the
-            # executor's selection state is reset so one recommendation
-            # cannot leave a partial SELECT behind for the next.
-            advisor.executor.reset()
+            # `apply` needs a pool (BUY draws from it) and an rng.
             advisor.executor.apply(player, rec.index,
                                    pool_for(state, data), random.Random(0))
 
