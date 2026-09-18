@@ -100,6 +100,25 @@ def fight_value(
     return float(ours - theirs)
 
 
+# How a tie between equally ranked board hexes is broken. "hex" breaks it by
+# hex order, a visible fact. "insertion" is the teacher as 160.152 measured
+# it: the board dict's insertion order -- the order units happened to enter
+# the board, which no observer can see -- decided the tie (doc 99 entry
+# 160.155). The legacy mode exists only so the retention check can pair both
+# teachers in one run (doc 99 entry 160.156); that check returned outcome A,
+# so "hex" ships as the teacher (doc 99 entry 160.157).
+BOARD_TIE_BREAK = "hex"
+
+
+def _board_order(player: PlayerState) -> list:
+    """The player's board hexes, in the order ties between them resolve."""
+    if BOARD_TIE_BREAK == "hex":
+        return sorted(player.board)
+    if BOARD_TIE_BREAK == "insertion":
+        return list(player.board)
+    raise ValueError(f"unknown BOARD_TIE_BREAK {BOARD_TIE_BREAK!r}")
+
+
 def opponent_panel(match, player: PlayerState, size: int) -> list[PlayerState]:
     """Living opponents to test a candidate board against.
 
@@ -207,7 +226,7 @@ def best_swap(
 
     free_hexes = [h for h in sorted(player._own_hexes) if h not in player.board]
     weakest_hex = min(
-        player.board,
+        _board_order(player),
         key=lambda h: (player.board[h].star_level, player.board[h].champion.cost),
     )
 
@@ -269,7 +288,7 @@ def blind_swap(
 
     free_hexes = [h for h in sorted(player._own_hexes) if h not in player.board]
     weakest_hex = min(
-        player.board,
+        _board_order(player),
         key=lambda h: (player.board[h].star_level, player.board[h].champion.cost),
     )
 
@@ -408,7 +427,7 @@ def buy_candidates(player: PlayerState, match, max_candidates: int = 5):
 
     free = [hex_ for hex_ in sorted(player._own_hexes) if hex_ not in player.board]
     weakest = min(
-        player.board,
+        _board_order(player),
         key=lambda hex_: (player.board[hex_].star_level, player.board[hex_].champion.cost),
     )
     for slot, champion_id in enumerate(player.shop.slots[:max_candidates]):
@@ -427,8 +446,9 @@ def buy_candidates(player: PlayerState, match, max_candidates: int = 5):
             extra, drops = ((unit, weakest),), (weakest,)
         if star == 2:
             pair = [
-                hex_ for hex_, board_unit in player.board.items()
-                if board_unit.champion.id == champion_id and board_unit.star_level == 1
+                hex_ for hex_ in _board_order(player)
+                if player.board[hex_].champion.id == champion_id
+                and player.board[hex_].star_level == 1
             ]
             drops = tuple({*drops, *pair[:2]})
         yield slot, extra, drops
@@ -482,7 +502,10 @@ def item_candidate_team(player: PlayerState, match, prefix, *, finish: bool):
 
     if finish:
         cap = player.config.max_items_per_unit
-        board_order = tuple(player.board)
+        # The finish must break ties the way the teacher then *executes* the
+        # rest of the bag -- over hex-sorted `board_units` -- or the search
+        # scores a loadout it will not play (doc 99 entry 160.156).
+        board_order = tuple(_board_order(player))
         while remaining:
             targets = [
                 own_hex for own_hex in board_order
