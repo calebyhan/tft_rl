@@ -22029,3 +22029,182 @@ review, never an in-game automation.
 - The mirror fallback's value for the four searches.
 - The vision pipeline, whose minimum scope 132.2 measured.
 
+### 160.156 Predeclared: a visible board tie-break, and whether the teacher survives it
+
+160.155 left this open. The established teacher breaks ties between
+equally ranked board hexes by the board dict's insertion order, which is
+the order units happened to enter the board. No observer can see that
+order, so a student cannot learn the rule and an advisor cannot reproduce
+it. 160.26 set the order for this kind of repair: a visible key first, then
+a paired retention check. This entry declares both before any game is
+played.
+
+**Every order-dependent site in the search teacher.** An AST scan of
+`rl/search.py` for board iteration that is not wrapped in `sorted` found
+four sites:
+
+| site | what insertion order decided |
+|---|---|
+| `best_swap` (and the `blind_swap` control) | which weakest unit a full board gives up |
+| `buy_candidates`, weakest hex | which unit a buy on a full board replaces |
+| `buy_candidates`, pair drops | which two 1-star copies a pair completion consumes |
+| `item_candidate_team`, the finish | which strongest unit takes each leftover item |
+
+160.155 measured the weakest-hex tie deciding differently from hex order on
+14.7% of 380 planning-phase boards. The item finish has a second defect
+that the scan exposed. Item search *scores* each candidate with this finish,
+breaking ties by insertion order, but the teacher then *executes* the rest
+of the bag over `board_units`, which is hex-sorted. On 1,276 bag-holding
+steps across 20 greedy games, the control loadout differed between the two
+orders on **10.8%**. On those states, item search ranks a loadout it will
+not play.
+
+**Scope: search sites only.** `GreedyActionPolicy`'s fielding and
+`GreedyPolicy._fill_board` have the same tie. But `GreedyPolicy` is also
+every bot in `DEFAULT_FIELD`, and the scheduler must keep replaying it
+(154). Changing them would change the field that every number in this log
+was measured against. That is a separate decision about the world, not a
+repair to the teacher.
+
+**The repair.** `rl.search.BOARD_TIE_BREAK = "hex"` routes all four sites
+through `_board_order`, which returns hex order. The legacy mode
+`"insertion"` returns the dict's order and exists only so both teachers can
+be paired in one run.
+
+- `tests/test_board_tie_break.py` pins the exact claim: in hex mode,
+  reversing a live board's insertion order changes no swap, buy candidate
+  or item finish. It also requires the legacy mode to show at least one
+  state where reversal *does* change a decision, so the pin cannot hold
+  vacuously.
+- `tests/test_bridge_search_fidelity.py` stops re-sorting the live board
+  before comparing, which 160.155 needed. If any hidden-order dependence
+  survives the repair, fidelity now fails.
+
+**Conformance.** Before `rl/search.py` was edited, the move driver's
+fingerprint read `ea72b3d674de`, identical to the 160.151 block. Every file
+it hashes was therefore unchanged since those games were recorded, so the
+`insertion` arm must replay them exactly: seeds 84_000 and 84_001 of the
+`move` arm, placement and fight calls, byte for byte. If it does not, the
+refactor changed the teacher and nothing below is interpretable.
+
+**Design** (`scripts/tie_break_retention_ab.py`). Two arms, both the
+160.152 teacher (buy, swap, items, move, at their established budgets),
+differing only in `BOARD_TIE_BREAK`. Default field. **600 fresh paired
+seeds, 86_000–86_599**, six workers, about 4.2 hours awake on AC power at
+75 CPU-seconds per game.
+
+**The gate is equivalence, not difference.** The margin is ±0.229, the
+teacher's smallest established component (positioning, 160.152). A repair
+that moves the teacher by less than its weakest real part has not changed
+what the teacher is. The test is TOST at 5%: the two-sided 90% interval of
+hex − insertion must lie inside ±0.229. The τ = 0.170 interval is reported
+beside it and does not decide, as in 160.153.
+
+**Named outcomes.**
+
+- **A. Retained.** The 90% CI is inside ±0.229. `hex` ships as the default.
+  160.152 and 160.154 carry forward, describing a teacher equivalent within
+  the margin.
+- **B. The repair costs strength.** The 95% CI lies wholly above zero.
+  Insertion order was carrying information, perhaps recency: the most
+  recently fielded unit is the newest buy. `hex` does not ship as the
+  measured teacher until that signal is identified and supplied visibly.
+- **C. The repair gains strength.** The 95% CI lies wholly below zero. `hex`
+  ships, and the teacher's figures are re-quoted from this block. The
+  plausible mechanism is the item finish, where scored and executed
+  loadouts now agree.
+- **D. Unresolved.** None of the above. `hex` stays in code on correctness
+  grounds, 160.152's and 160.154's magnitudes are flagged as describing the
+  pre-repair teacher, and one more 600-seed block is licensed.
+
+**Two mechanisms, with opposite possible signs.** At the weakest-hex sites,
+the tie is between units equal on (star, cost), so which one is replaced
+should be neutral in expectation. At the item finish, aligning the scored
+loadout with the executed one can only help the ranking. That makes the
+total neutral-to-helpful.
+
+**Prediction on record: A**, with hex − insertion between −0.10 and +0.05.
+This arc's record stands at three correct and four failed.
+
+**Stop rule.** One block. A second 600-seed block runs only under D.
+
+**What this does not license**: changing `GreedyPolicy` or the field, BC or
+PPO (110.3), or retuning any budget.
+
+### 160.157 Outcome A: the visible tie-break retains the teacher
+
+The frozen 160.156 block completed under the smoke-tested source fingerprint
+`85c4b2c748e9`, checked before and after the run by the driver itself, on 600
+paired fresh seeds 86_000–86_599, six workers, 254.2 wall minutes on AC power
+with no sleep (`runs/tie_break_retention_160_156.json`).
+
+| arm | placement | LP | first | top four | eighth | sd | histogram 1–8 |
+|---|---:|---:|---:|---:|---:|---:|---|
+| insertion (the teacher as 160.152 measured it) | 2.622 | +21.87 | 38.3% | 83.0% | 1.7% | 1.843 | 230/128/85/55/40/32/20/10 |
+| **hex (visible)** | **2.568** | +22.40 | 38.0% | 84.2% | 1.3% | 1.764 | 228/131/91/55/45/25/17/8 |
+
+**The contrast.**
+
+| quantity | n | Δ | t | 95% CI | 90% CI | τ-widened (0.170) |
+|---|---:|---:|---:|---|---|---|
+| **placement, hex − insertion** | 600 | **−0.053** | −0.78 | [−0.187, +0.080] | **[−0.166, +0.059]** | [−0.412, +0.306] |
+| first-place rate | 600 | −0.33 pt | −0.16 | [−4.31, +3.64] | | |
+| top-four rate | 600 | +1.17 pt | +0.71 | [−2.05, +4.39] | | |
+
+Halves agree in sign of smallness rather than of direction (+0.040 / −0.147),
+which is what a null at this SE looks like. 263 of the 600 paired seeds ended
+on an identical placement in both arms — the two teachers usually play the
+same game, as the tie rates predicted.
+
+**Outcome A, applied as written.** The 90% interval [−0.166, +0.059] lies
+inside ±0.229, so the arms are equivalent within the margin. Neither B nor C
+applies: the 95% interval straddles zero. `hex` ships as the default, which is
+what `rl.search.BOARD_TIE_BREAK` already holds. 160.152 and 160.154 carry
+forward, describing a teacher equivalent to this one within the size of its
+smallest established component.
+
+**My prediction succeeded.** I predicted A with hex − insertion between −0.10
+and +0.05; it landed at −0.053. This arc's record is four correct and four
+failed. The predicted mechanism is *not* confirmed by this block: 160.156
+argued the item finish could only help the ranking, and the point estimate
+does lean that way, but item changes per game are 3.00 against 2.99 and the
+placement effect is a null. The direction is quoted, not claimed.
+
+**The τ interval does not certify the equivalence, and the gate did not ask
+it to.** Widened by the 0.170 between-block prior, the interval runs [−0.412,
++0.306], wider than ±0.229 on both sides. Read strictly, this block
+establishes equivalence against within-block noise only; a second block could
+still move the estimate by more than the margin. 160.156 pre-registered τ as
+reported-not-deciding, so the verdict stands as written — but this is the
+first entry in the arc where the two readings disagree about whether anything
+is established, and it sharpens the τ policy that 160.152 left open rather
+than resolving it.
+
+**Cost.** 74.6 CPU-seconds per game against insertion's 75.5, with fight calls
+at 2498 against 2495 — the repair is free. Accepted swaps run 12.54 against
+12.72 and accepted moves 13.64 against 13.80, so the searches accept slightly
+fewer changes under hex order without losing placement.
+
+**What this changes.** The teacher no longer has a hidden input at these four
+sites. `tests/test_bridge_search_fidelity.py` compares the live board as the
+game left it, with no re-sorting, and the four searches decide identically on
+a captured-and-reconstructed state — so the doc 04 advisor reproduces the
+measured teacher exactly, which was the point of the repair. The strength
+figures survive it.
+
+**Still open.**
+
+- `GreedyActionPolicy`'s fielding and `GreedyPolicy._fill_board` keep the same
+  insertion-order tie. `GreedyPolicy` is every bot in `DEFAULT_FIELD`, so
+  repairing it changes the field every number in this log was measured
+  against: a decision about the world, not a repair to the teacher.
+- The τ policy (160.152), now with a concrete case where τ and the within-block
+  SE disagree.
+- What the advisor's mirror fallback is worth when no opponent boards are
+  entered — the four searches score against a panel, and a mirror is a guess.
+- A lobby where all seven opponents search; any anchor to human rank (132.1);
+  the vision pipeline.
+- Nothing here licenses BC or PPO (110.3), a change to `DEFAULT_FIELD`, or a
+  budget retune. 160.156's stop rule is honoured: outcome D did not occur, so
+  no second block.
+
