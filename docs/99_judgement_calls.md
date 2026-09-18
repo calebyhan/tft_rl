@@ -21916,3 +21916,116 @@ standing option, replay-tested and mutation-tested.
 - The τ policy that 160.152 left open.
 - Nothing here licenses BC or PPO (110.3), a change to `DEFAULT_FIELD`, or a
   budget retune.
+
+### 160.155 The advisor runs the established teacher, and the teacher had a hidden input
+
+160.154 left the four-search teacher established in the simulator, where no
+real player can use it. The doc 04 advisor still ran `best_board` and a
+hand-built shop scorer. This entry connects the measured teacher to the
+advisor, and records what that connection exposed.
+
+**The contract is fidelity at the decision.** Milestone 1 of doc 04 proved
+the adapter faithful through the encoded observation. The four searches read
+things the encoder never read: bench indices, the item bag, and opponent
+boards together with their order. So the bar is restated for them
+(`tests/test_bridge_search_fidelity.py`). On states captured mid-planning
+from real engine games, each of `best_buy`, `best_swap`, `best_item_prefix`
+and `best_move` must return the same decision from the same rng on the live
+match as on that state after capture, JSON and reconstruction. Where a
+search exposes its scored candidates, those must match too. Margins are
+forced far below zero, so the whole ranking is compared rather than only
+the "no change" threshold. A coverage guard fails the test if any search
+never returns a real answer.
+
+**Two gaps, found in that order.**
+
+1. **The item bag was not in the schema.** `ObservedSeat` had no field for
+   it, and the encoder never read it, which is why milestone 1 passed.
+   `best_item_prefix` diverged at round 2-4 against an empty reconstructed
+   bag. `item_bag` is now a seat field that round-trips through JSON and
+   the adapter, and `validate` names an unknown bag item.
+2. **The teacher breaks a tie on dict insertion order.** With the bag
+   fixed, `best_buy` diverged at 3-2. The heroes were identical on every
+   field and the panel matched. Every single fight scored identically. The
+   difference was the candidate: `min(player.board, key=(star, cost))`
+   picks the weakest unit to replace, and on a tie that follows the order
+   units happened to enter the board during the game. No observer can see
+   that order. It is the 160.25 class of leak: a label that depends on
+   hidden history.
+
+   Across 380 planning-phase boards from 12 greedy-scheduler games, the
+   weakest unit was tied on **62.9%**. The insertion-order answer differed
+   from the hex-order answer on **14.7%** of boards. The sites are
+   `best_swap`, `buy_candidates` and the `blind_swap` control in
+   `rl/search.py`, plus the base scheduler (`rl/greedy_action.py`) and
+   `GreedyPolicy` fielding (`rl/opponents.py`).
+
+**The judgement call: the measured teacher is left as measured.** Repairing
+the tie-break changes the teacher on about one board in seven, which would
+put 160.152 and 160.154 back in question pending re-measurement, and 160.26
+already set the order for that kind of repair: a visible key first, then a
+retention check. The advisor instead reconstructs every board in hex order
+(`canonicalize_board`), including after each applied step. The fidelity
+contract is therefore "the teacher, applied to this board in canonical
+order". The fidelity harness canonicalises the live board for the
+comparison and restores the game's order afterwards.
+
+**A latent test bug, surfaced by the schema change.**
+`test_every_recommendation_is_legal_and_executes` reset the executor only
+*after* reading the next mask. A SELECT applied on one iteration therefore
+made the next SELECT illegal. Consecutive SELECTs never landed in the
+uniform top eight until the item bag enlarged the legal set. The advisor
+was right and the test was wrong; it now resets before masking.
+
+**The plan** (`bridge/decide.py`, `scripts/advise.py --plan`). The phase
+order is `best_buy`, then `best_swap`, then `best_item_prefix` followed by
+the default strongest-unit rule for the rest of the bag, then `best_move`.
+Budgets are 160.152's, transferred; 136.2's wider advisor panel was
+measured for `best_board` and is not carried over. Each accepted step is
+applied through `ActionExecutor` before the next search sees the board, so
+every piece of advice is legal by the engine's mask and has executed. The
+item phase includes the finishing equips because item search scored the
+completed loadout; advising only the prefix would advise something nobody
+scored. With no opponent boards entered, the searches fight a mirror of
+the hero's board. 137.1's 70% retention figure was measured for
+`best_board` only, so for these searches the fallback is **unmeasured**,
+and the output says so. The output also names what is not advised:
+levelling, rolling, and the base scheduler's own buys and fielding.
+
+On a captured 4-1 state (seed 7) the CLI printed, in 3.6 seconds:
+
+```
+1. buy    buy TFT17_Morgana (shop slot 0)
+2. swap   field TFT17_Morgana* -> board -2,4, benching TFT17_Diana*
+3. move   move TFT17_Fizz* from 1,4 to 3,5
+searched, nothing worth its margin: items
+```
+
+The swap fields the unit the buy step bought. That is the sequential
+application working on a real state.
+
+**Mutation-tested.** Fidelity suite: dropping the bag restore failed the
+round trip and `best_item_prefix`; an unsorted reconstruction failed the
+ordering test and `best_swap`; dropping augments failed `best_item_prefix`;
+and turning off the harness's canonical order failed `best_buy` at 3-2,
+which confirms the tie-break case occurs in the fixtures rather than only
+in principle. Plan suite: removing the re-sort after a step failed the
+live-versus-observed lockstep; skipping the mirror reflection failed the
+no-opponent test; dropping the default-rule finish failed the
+scored-loadout test; ignoring the swap's drop hex failed legality,
+lockstep and the loadout test.
+
+**What this does not establish.** Nothing here measures whether the advice
+helps a person place better. It is the measured teacher run on what a
+person types, and a typed state has no pool history and partial opponent
+information (132.2). Doc 04's line holds: the advisor is read-only and for
+review, never an in-game automation.
+
+**Still open.**
+
+- The teacher's hidden tie-breaks: a visible key, then a paired retention
+  check, as 160.26 prescribed for the panel. Until then, 160.152 and
+  160.154 describe the teacher with its insertion-order tie-break.
+- The mirror fallback's value for the four searches.
+- The vision pipeline, whose minimum scope 132.2 measured.
+
