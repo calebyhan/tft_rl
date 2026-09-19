@@ -252,6 +252,12 @@ and a tiebreak has to *raise n*, not merely add a third block of the same size.
 Quote the random-effects estimate, not the fixed-effect pool, whenever the
 heterogeneity test rejects. (§160: 160.140, 160.142, 160.144)
 
+> **Qualified by entry 160.159.** The three swap blocks ran one teacher, and
+> 45 contiguous 100-seed sub-blocks across nine blocks scatter as the SE
+> predicts (Q = 41.75 on 36 df, p = 0.235). A single block does not understate
+> its uncertainty; it has low power for 0.3 effects. The fixed τ = 0.170 prior
+> is retired forward. The consequences above still hold.
+
 ---
 
 ## Index
@@ -22207,4 +22213,165 @@ figures survive it.
 - Nothing here licenses BC or PPO (110.3), a change to `DEFAULT_FIELD`, or a
   budget retune. 160.156's stop rule is honoured: outcome D did not occur, so
   no second block.
+
+### 160.158 Predeclared: is τ a property of the teacher, or of one draw?
+
+160.152 left open whether gates keep the fixed τ = 0.170 prior, and 160.157
+sharpened it: the first gate where the τ-widened interval and the within-block
+SE disagreed about whether anything is established. This entry settles the
+policy forward. It changes no verdict already recorded.
+
+**Where 0.170 came from.** It is the DerSimonian–Laird estimate from three
+blocks of the swap contrast (160.144): −0.450 (78k, n=300), −0.033 (79k,
+n=300), −0.362 (80k, n=600), Q = 6.53 on 2 df, p = 0.038. Lesson 29 generalised
+it to "a single block understates its own uncertainty" for this teacher.
+
+**What is already known, disclosed before the test because I have looked.**
+
+- *The three swap blocks ran one teacher.* Today's code, with
+  `BOARD_TIE_BREAK = "insertion"`, replays six stored `base` games exactly —
+  seeds 78_000, 78_151, 79_000, 79_151, 80_000, 80_301 — on placement, fight
+  calls, buy decisions, item decisions and item changes. With 160.142's replay
+  of 78k, the blocks' differing fingerprints reflect only the driver files each
+  hash includes. So the swap heterogeneity is not a code difference.
+- *One arm carries it.* Across the arc, same-teacher arms agree: the three
+  move-block bases (one fingerprint) read 2.882 / 2.867 / 2.895, and the swap
+  arms 2.800 / 2.770 / 2.930. The 160.136 `base` arm reads 3.250 / **2.803** /
+  3.292; the 79k base alone sits about 3σ from its siblings, and the
+  contrast's −0.033 follows from it.
+
+**What that implies.** Blocks of one frozen teacher on fresh seeds are
+exchangeable by construction — each game is an independent seeded draw from
+the same program — so the true between-block variance is zero *unless* the
+within-block SE misses variance that seed ranges carry, or the SE is itself
+miscalibrated. Otherwise 79k was a chance draw (the direct 78k–79k difference
+is z = −2.39). Those two readings imply different policies, and the stored
+records can tell them apart without a new game.
+
+**The test: sub-block calibration**, in `scripts/block_calibration.py`. For
+each of the nine frozen blocks in the arc, take the first primary contrast
+its own pre-registration named:
+
+| block | entry | contrast |
+|---|---|---|
+| 78k | 160.139 | swap_first − base |
+| 79k | 160.141 | swap − base |
+| 80k | 160.143 | swap − base |
+| 81k | 160.145 | search:standard − search:fast8 |
+| 82k, 83k, 84k | 160.147/149/151 | move − base |
+| 85k | 160.153 | default/full − default/greedy |
+| 86k | 160.156 | hex − insertion |
+
+Split each block into contiguous sub-blocks of 100 seeds in seed order and
+compute each sub-block's mean paired difference d_i. Per block,
+Q = Σ (d_i − d̄)² / (s²/100), where s is the block's SD of paired differences;
+df = k − 1. Summed over the nine blocks, df = 36, and under exchangeability
+Q ~ χ²(36). The script also prints the test's power against a seed-range
+variance of τ = 0.170 at the sub-block scale, from the blocks' own s. That
+uses only variances, not the sub-block means.
+
+**Named outcomes.**
+
+- **I. Calibrated** — pooled p ≥ 0.05. The SE is honest across seed ranges and
+  the swap arc's disagreement is recorded as a chance draw. **Policy forward:**
+  the fixed τ prior is retired. Blocks of one teacher (same fingerprint, or
+  replay-verified) are pooled by inverse variance, gates use that SE, Q is
+  always reported, and when Q rejects at 5% the DerSimonian–Laird estimate is
+  quoted instead (lesson 29's rule, kept). Blocks of different code are not
+  replications of each other and are not pooled. Lesson 29 gets a banner
+  pointing to the outcome entry.
+- **II. Overdispersed** — pooled p < 0.05. Seed ranges carry variance the SE
+  misses. **Policy forward:** every gate SE is multiplied by √(Q/df) measured
+  here, which replaces 0.170 as the standing correction.
+
+**Prediction on record: I**, with Q/df between 0.7 and 1.3. This arc's record
+stands at four correct and four failed.
+
+**Scope.** No verdict is revisited. 160.150's failed gate, 160.151's third
+block and 160.157's equivalence stand as recorded. How they would read under
+the new policy may be listed as description, never as re-decision.
+
+**What this does not license**: new games, BC or PPO (110.3), or retuning any
+budget.
+
+### 160.159 Outcome I: the SE is honest, and the fixed τ prior is retired
+
+`scripts/block_calibration.py` ran on the nine stored blocks
+(`runs/block_calibration_160_158.json`). Its χ² tail, Q scaling, grand mean
+and seed pairing are each mutation-tested (`tests/test_block_calibration.py`;
+the seed-order mutation first survived, and the fixture was fixed until it
+did not). Power against a seed-range SD of 0.170 at the sub-block scale was
+**0.746**, computed from the blocks' own s before any sub-block mean was read.
+
+| block | contrast | n | s | Δ | Q | df | p |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 78k | swap_first − base | 300 | 2.125 | −0.450 | 2.68 | 2 | 0.263 |
+| 79k | swap − base | 300 | 2.153 | −0.033 | 1.34 | 2 | 0.512 |
+| 80k | swap − base | 600 | 2.305 | −0.362 | 5.19 | 5 | 0.394 |
+| 81k | search:standard − search:fast8 | 600 | 1.794 | +0.050 | 3.45 | 5 | 0.631 |
+| 82k | move − base | 600 | 2.142 | −0.287 | 4.61 | 5 | 0.465 |
+| 83k | move − base | 600 | 2.208 | −0.187 | **18.82** | 5 | **0.002** |
+| 84k | move − base | 600 | 2.134 | −0.212 | 1.53 | 5 | 0.910 |
+| 85k | default/full − default/greedy | 300 | 2.577 | −1.663 | 0.11 | 2 | 0.947 |
+| 86k | hex − insertion | 600 | 1.672 | −0.053 | 4.03 | 5 | 0.545 |
+| **pooled** | | | | | **41.75** | **36** | **0.235** |
+
+**Outcome I, applied as written.** Q/df = 1.160, p = 0.235 against a critical
+Q of 51.00. Contiguous seed ranges scatter as the within-block SE predicts, and
+the implied sub-block τ is 0.085 — half the prior, and not distinguishable from
+zero. The 79k block that produced the swap heterogeneity is internally
+ordinary (Q = 1.34 on 2 df): it was a whole-block draw about 2.4σ from 78k,
+from one teacher, as the replay in 160.158 showed.
+
+**My prediction succeeded** (I, with Q/df between 0.7 and 1.3). This arc's
+record is five correct and four failed.
+
+**One sub-block is flagged, not promoted.** The pooled excess over 1 is
+entirely 83k (without it Q/df = 0.74), and within 83k it is entirely seeds
+83_500–83_599: −0.940 against a block mean of −0.187, z = −3.41, 53 seeds
+better and 17 worse. The other five 83k sub-blocks read +0.140, −0.430,
++0.050, −0.100 and +0.160. Because 160.149 was the run that lost about 201
+minutes to machine sleep, the three most extreme seeds in that range
+(83_506, 83_553, 83_562: base 7th, 7th, 8th → move 1st in all three) were
+replayed on both arms with `BOARD_TIE_BREAK = "insertion"`. **All six games
+replay exactly**, placement and fight calls included, so the records are
+genuine play. Across 45 sub-blocks, at least one this extreme arises by
+chance about 3% of the time. There is no known mechanism by which a
+contiguous seed range could be special, since each seed seeds its own
+`random.Random`. It is recorded as a watch item. A second such excursion in
+future blocks would reopen this entry.
+
+**Policy forward, as 160.158 named it.**
+
+- The fixed τ = 0.170 prior is **retired** as a gate input. New drivers do not
+  add a τ-widened column.
+- Blocks of one teacher — the same fingerprint, or replay-verified as the
+  same program — are pooled by inverse variance, and gates use that pooled SE.
+- Heterogeneity Q is always reported. When it rejects at 5%, the
+  DerSimonian–Laird random-effects estimate is quoted instead of the
+  fixed-effect pool (lesson 29's rule, kept).
+- Blocks of different code are different experiments, not replications, and
+  are not pooled.
+
+**How past gates would read under it — description only; every recorded
+verdict stands.** 160.150's two positioning blocks pooled to −0.238, CI
+[−0.361, −0.115], with Q p = 0.43; that would have established positioning a
+block earlier than 160.152 did. The swap arc's Q rejects (p = 0.038), so its
+quoted figure would be the DerSimonian–Laird −0.287, CI [−0.518, −0.055],
+which 160.144 already recorded as the conservative reading. 160.157's
+equivalence passes on the SE alone, and its τ caveat no longer applies to
+future gates.
+
+**What this changes.** Lesson 29 is qualified: a single block does not
+understate its own uncertainty. What it has is low power for effects of 0.3,
+which the SE already states. The lesson's practical consequences survive:
+two agreeing blocks are modest evidence, two disagreeing blocks are not a
+refutation, and a tiebreak raises n.
+
+**Still open.**
+
+- The 83_500–83_599 excursion, as a watch item.
+- The mirror fallback's value in the doc 04 advisor.
+- `GreedyPolicy`'s insertion-order tie (160.157): a decision about the world.
+- Nothing here licenses BC or PPO (110.3), new games, or a budget retune.
 
