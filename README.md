@@ -7,6 +7,12 @@ The specs in [docs/](docs/) are the source of truth:
 - [01_game_mechanics_reference.md](docs/01_game_mechanics_reference.md) — game rules
 - [02_data_schema_and_sourcing.md](docs/02_data_schema_and_sourcing.md) — data schema + how real Set 17 data is fetched
 - [03_engine_and_rl_architecture.md](docs/03_engine_and_rl_architecture.md) — module layout and build order
+- [04_real_game_bridge.md](docs/04_real_game_bridge.md) — read-only bridge and advisor for real games
+
+**Status:** the simulator and RL environment are complete for **Set 17**. Live
+TFT is now **Set 18** (*Enchanted Wilds*); the migration was scoped on 09-24 and
+is in progress (see [Progress](#progress) and doc 99 §161). Every Set 17
+measurement in this repo is void for Set 18.
 
 [99_judgement_calls.md](docs/99_judgement_calls.md) is a **temporary** log of every
 decision the specs did not fully determine — to be reviewed, then folded into
@@ -33,12 +39,39 @@ Following doc 03 section 4's build order.
 | 4 | `economy.py` + `shop.py` + `player.py` | done |
 | 5 | `match.py` + `scripts/smoke_test.py` | done |
 | 6 | `rl/env.py` + `rl/opponents.py` | done |
-| 7 | PPO training loop | harness done; agent reaches 6.10 vs 4.36 scripted |
+| 7 | PPO training loop | harness done; PPO never passed its own warm start (see below, doc 99 §96, §130) |
 | 8 | Full data swap via `scripts/fetch_cdragon.py` | done — real Set 17: 63 champions, 35 traits, 65 items |
 | 9 | Stretch: augments, self-play, board scouting | built; both A/B verdicts later **withdrawn** by milestone 12 |
 | 10 | Item acquisition: real PvE fights, loot, equipping | done — items now actually reach units |
 | 11 | Realm of the Gods: HP-ordered contested draft | done — lowest HP picks first from a shared line-up |
 | 12 | Re-measurement against a frozen engine | done — see the results table below |
+| 13 | Behaviour clone at teacher parity | done — relational observation features, 4.567 vs 4.620 (doc 99 §29–30) |
+| 14 | Search-augmented teacher | done — four exact searches (buy, fielding swap, items, positioning); positioning is worth −0.229 placement pooled over 1,800 games (§160.152) |
+| 15 | Real-game bridge and advisor (doc 04) | built, read-only — `scripts/advise.py`, `--plan` runs the teacher; engine combat judges real final fights right only 58.5% of the time (§160.164) |
+| 16 | Set 18 migration | **in progress** — see below |
+
+Doc 99's later arcs closed every learning route tried against the scripted
+teacher (BC, DAgger, PPO, self-play, ES); the teacher itself kept improving
+through search. Every result table below is **Set 17** and is kept as a record;
+the placement figures in it predate the search teacher.
+
+### Set 18 migration (doc 99 §161)
+
+Plan and ordering are in §161.7. Done so far:
+
+| item | status |
+|---|---|
+| Source audit (CDragon has Set 18's roster and base stats but not ability, trait or `DA_*` item magnitudes) | done — numbers come from tftraits.com, tactics.tools, vntft.com and the official 18.x notes, each with per-value provenance |
+| Fetcher (`scripts/fetch_cdragon.py --set 18`) and overlay builder (`scripts/build_set18_overlay.py`) | done — `data/set18/` loads 65 champions, 35 traits, 65 items, 592 augments |
+| Economy constants in `data/config.json` (level-7 odds, XP 7–10, 2-streak gold, stage 5–6 damage) | done, hand-edited from cited sources; unverified ones flagged |
+| Items: live `DA_*` ids reach their behaviours; 18.2 passive changes | done |
+| Emblem passives | 8 of 9 modelled (Sprykin waits on its trait) |
+| Traits | 18 of 35 have hooks, 3 of them partial (§161.16) |
+| Remaining traits, the 65 abilities, new systems (level 11, carousel, Wisps, two-slot units), augments, bridge/advisor ids, then re-measured baselines | **not started** |
+
+`data/` is a deliberate hybrid for now: Set 17 content with Set 18 economy
+constants, until the gate in §161.7 swaps it for `data/set18/`. No Set 18
+performance claim is made until all seven conditions in §161.7 hold.
 
 ## Trying it out
 
@@ -335,7 +368,10 @@ adds a dense board-strength term to bootstrap out of that; see
 
 `data/` holds the **real Set 17 dataset** produced by
 `scripts/fetch_cdragon.py` from Community Dragon: 63 champions, 35 traits, 65
-items. The original hand-authored 13-champion sample is preserved as a frozen
+items. Its economy constants in `config.json` already carry Set 18 values
+(doc 99 §161.12). `data/set18/` holds the in-progress **Set 18 dataset**:
+Community Dragon plus `overlay.json`, the magnitudes it lacks, built by
+`scripts/build_set18_overlay.py` with per-value provenance. The original hand-authored 13-champion sample is preserved as a frozen
 fixture at `tests/fixtures/starter_data/`, because the hand-calculated
 expectations in `test_units.py` and `test_combat.py` are written against it.
 
