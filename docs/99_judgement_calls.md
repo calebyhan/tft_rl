@@ -22375,3 +22375,162 @@ refutation, and a tiebreak raises n.
 - `GreedyPolicy`'s insertion-order tie (160.157): a decision about the world.
 - Nothing here licenses BC or PPO (110.3), new games, or a budget retune.
 
+### 160.160 Predeclared: what the advisor's mirror fallback is worth
+
+160.155 shipped `--plan` with a fallback. When no opponent boards are entered,
+the four searches fight a reflection of the hero's own board: the observed
+seat with its bench and item bag stripped, as the only opponent. 137.1
+measured a mirror at 70% of true-field value for `best_board` alone, graded
+per decision at n=80. For the four-search plan it is unmeasured, and it is the
+case a real user hits first: typing one board a round is plausible, eight is
+not.
+
+**A budget defect found while designing this.** `best_swap` and `best_move`
+score a candidate by summing over panel members and compare against an
+absolute margin. The shipped budgets (0.5) were set for a panel of two, so
+against a one-member mirror they demand **0.5 per fight, twice the
+0.25-per-opponent rule** every margin in this teacher follows (160.152).
+`best_buy` scales its margin by panel size and `best_item_prefix` averages per
+fight, so both are already consistent. `board_advice` corrects for this (137);
+`plan_advice` does not.
+
+**Design** (`scripts/mirror_fallback_ab.py`). Four paired arms on the FAST8
+scheduler, hex tie-break, default field:
+
+- `greedy` — no search: the floor that defines value.
+- `field` — the 160.152 teacher, panel drawn from the real lobby.
+- `mirror` — the same teacher with every hero panel request answered by the
+  reflection. It is built through the advisor's own adapter path, taken at
+  the round's first panel request and held for the round, as a person asking
+  once per round would get it. Budgets are as shipped.
+- `mirror_scaled` — as `mirror`, with the swap and move margins at 0.25.
+
+`tests/test_mirror_fallback_ab.py` pins that the arm measures the shipped
+advisor and not an approximation of it. On 14 captured states, at forced
+margins so whole rankings are compared, all four searches decide identically
+in-game with the patch and on `bridge.decide.mirror_state` — the function
+`plan_advice` now calls. Scope, per-round holding, the empty-board case, the
+scaled arm's budgets and the retention arithmetic are each mutation-tested.
+The one survivor was an equivalent mutant: 0.25 is already the buy/item
+margin. Smoke run on seeds 99_990–99_991, fingerprint `c4768f76de92`, which
+must read the same at launch.
+
+**600 fresh paired seeds, 87_000–87_599**, six workers, about 4.6 awake
+hours. Pooling follows 160.159: one block, no τ.
+
+**Primary: retention of the shipped fallback**, R = (greedy − mirror) /
+(greedy − field) on mean placement, with a paired percentile bootstrap (2,000
+resamples, seed 0). R is interpreted only if field − greedy's 95% CI lies
+wholly below zero.
+
+- **A. Enough.** R's CI lower bound ≥ 0.80. The typed path needs only the
+  hero's board. The advisor quotes the measured figure, and opponent entry or
+  a synthetic panel (137.3) is not the next thing to build.
+- **B. Not enough.** R's CI upper bound < 0.80. Getting opponent boards in,
+  typed or synthetic (137.3), is worth building next, and the advisor states
+  the measured loss.
+- **C. Unresolved.** The CI straddles 0.80. Quote point and CI; no product
+  decision rests on it.
+- **D. Harmful.** R's CI upper bound < 0: mirror advice places worse than no
+  search, and `plan_advice` declines to plan without opponent boards.
+
+**Secondary: the margin**, mirror_scaled − mirror, 95% CI. Below zero: ship
+per-opponent margins in mirror mode. Above zero: keep the stricter shipped
+margins, documented as deliberate. Straddling zero: ship the scaling anyway,
+as conformance to the 0.25-per-opponent rule `board_advice` already follows
+— recorded as a rule fix, not a measured gain. At n=600 the SE is about
+0.085, so only |Δ| ≥ 0.24 is detected with 80% power.
+
+**Prediction on record: C**, with R between 0.70 and 0.90, and the margin
+contrast straddling zero. This arc's record stands at five correct and four
+failed.
+
+**Stop rule.** One block. **What this does not license**: changing the
+teacher's own budgets, the field, BC or PPO (110.3).
+
+### 160.161 The mirror keeps most of the teacher: outcome A by the letter, recorded as C
+
+The frozen 160.160 block completed under fingerprint `c4768f76de92`, checked
+before and after by the driver, on 600 paired seeds 87_000–87_599, six
+workers, 4.59 wall hours on AC power (`runs/mirror_fallback_160_160.json`).
+
+| arm | placement | LP | first | top four | eighth | histogram 1–8 | CPU-s | fights | swaps | item changes | moves |
+|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| greedy | 4.340 | +3.44 | 13.8% | 53.5% | 11.3% | 83/69/93/76/76/69/66/68 | 2.4 | 0 | — | — | — |
+| field | **2.528** | +22.96 | 39.7% | 85.3% | 2.2% | 238/134/89/51/37/15/23/13 | 75.3 | 2,510 | 12.8 | 3.02 | 13.9 |
+| mirror (as shipped) | **2.730** | +20.65 | 35.3% | 81.3% | 1.8% | 212/125/97/54/46/34/21/11 | 43.6 | 1,292 | 13.8 | 4.96 | 16.6 |
+| mirror_scaled | 2.795 | +20.07 | 36.7% | 80.8% | 2.3% | 220/114/82/69/41/30/30/14 | 42.4 | 1,277 | 16.2 | 4.67 | 20.5 |
+
+| contrast | Δ | t | 95% CI | halves |
+|---|---:|---:|---|---|
+| field − greedy | −1.812 | −17.14 | [−2.019, −1.605] | −1.667 / −1.957 |
+| **mirror − field** | **+0.202** | +2.16 | [+0.019, +0.385] | +0.223 / +0.180 |
+| mirror_scaled − field | +0.267 | +2.87 | [+0.085, +0.449] | +0.343 / +0.190 |
+| mirror_scaled − mirror | +0.065 | +0.81 | [−0.092, +0.222] | +0.120 / +0.010 |
+
+| retention | R | bootstrap 95% CI (seed 0) |
+|---|---:|---|
+| **mirror** | **0.889** | [0.802, 0.990] |
+| mirror_scaled | 0.853 | [0.766, 0.950] |
+
+Against the field the mirror gives up first places (−4.3 points, t = −1.77)
+and top fours (−4.0 points, t = −1.96), not last places (−0.3 points,
+t = −0.45). 202 of the 600 seeds ended on an identical placement.
+
+**The primary, applied as written, returns A — and I record C.** field −
+greedy lies wholly below zero, so R is interpretable. The pre-registered
+bootstrap puts R's lower bound at 0.8018, clearing 0.80 by 0.002. But a
+percentile endpoint from 2,000 resamples carries Monte Carlo error, and the
+pre-registration fixed one bootstrap seed without noticing. Across bootstrap
+seeds 0–19 the lower bound runs 0.7898–0.8018, median 0.7951, and seed 0 is
+the maximum: 1 of 20 clears the line. The delta method gives [0.793, 0.984].
+The rule's object is R's 95% interval, and every other estimate of that
+interval straddles 0.80. So the substantive verdict is **C: the mirror
+retains 89% of the teacher's value, with an interval from about 0.79 to
+0.99**, and no product decision rests on the 0.80 line. The letter's A is
+kept here so the call can be overruled.
+
+**My prediction is scored as failed.** I predicted C with R between 0.70 and
+0.90. R landed at 0.889 and the recorded verdict is C, but only because I
+reclassified the letter's A, a call that happens to favour my own prediction.
+It is therefore scored by the letter. This arc's record is five correct and
+five failed. The secondary half of the prediction, a straddling margin
+contrast, held.
+
+**The secondary straddles, so the scaling ships, as 160.160 fixed in
+advance.** mirror_scaled − mirror is +0.065, CI [−0.092, +0.222], 0.8 SE and
+leaning *against* the scaling. The pre-registration named a straddle as
+grounds to ship the scaling anyway: conformance to the 0.25-per-opponent rule
+that every margin in the teacher and `board_advice` follows. That is applied,
+and recorded as a rule fix, not a measured gain.
+`bridge.decide.mirror_budgets` divides the swap and move margins by their
+panel size when `plan_advice` falls back to the mirror, with caller budgets
+still winning. `tests/test_bridge_plan.py` pins it, and four mutations
+(never applied, unscaled, scaled everywhere, caller loses) are each killed.
+What ships is therefore the `mirror_scaled` arm: R = 0.853, CI [0.766,
+0.950], also C.
+
+**What this changes.** Typing only your own board costs about **0.2
+placement** against entering the lobby's boards (+0.202, CI [+0.019,
++0.385]), which is roughly a tenth of what the teacher adds over no search. It
+costs 42% less CPU per game. The loss sits at the top of the distribution.
+`scripts/advise.py` now quotes "about 85–89% of the value of entering them",
+spanning both arms rather than the more flattering one. 137.1's 70% is not
+comparable: it was one search (`best_board`), graded per decision at n=80.
+
+**A descriptive observation, not claimed.** Despite the stricter shipped
+margin, the mirror arms accept *more* changes than the field: swaps 13.8 vs
+12.8, item changes 4.96 vs 3.02, moves 16.6 vs 13.9. One reading: a fight
+against your own board sits near even, where a candidate's edge shows most,
+while fights against the real field are often lopsided. It was not tested.
+
+**Still open.**
+
+- Opponent entry, typed or synthetic (137.3), is not ruled out. This block
+  bounds what it could buy at about 0.2 placement, mostly first places.
+- The 83_500–83_599 watch item (160.159).
+- `GreedyPolicy`'s insertion-order tie (160.157), a decision about the world.
+- Any anchor to human rank (132.1); the vision pipeline.
+- Nothing here licenses BC or PPO (110.3), a change to the teacher's own
+  budgets, or the field.
+
