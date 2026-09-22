@@ -226,7 +226,10 @@ def match_ids(client: RiotClient, puuid: str, region: str, count: int) -> list[s
 
 
 def subset_match(match: dict) -> dict | None:
-    """Keep only the fields the four reference distributions consume.
+    """Keep only the fields the reference distributions and fights consume.
+
+    Items and augments were dropped until doc 99 entry 160.162, which fights
+    real final boards in the engine and cannot do so faithfully without them.
 
     Returns None for anything outside ranked standard -- the queue filter is
     applied on the detail response rather than the id query because match-v1's
@@ -256,9 +259,11 @@ def subset_match(match: dict) -> dict | None:
                     "character_id": unit.get("character_id"),
                     "tier": unit.get("tier"),
                     "rarity": unit.get("rarity"),
+                    "items": list(unit.get("itemNames") or []),
                 }
                 for unit in participant.get("units", [])
             ],
+            "augments": list(participant.get("augments") or []),
         })
     return {
         "match_id": match.get("metadata", {}).get("match_id"),
@@ -271,6 +276,58 @@ def subset_match(match: dict) -> dict | None:
         "game_datetime": info.get("game_datetime"),
         "participants": participants,
     }
+
+
+def refetch(
+    client: RiotClient,
+    source: Path,
+    out: Path,
+    region: str,
+) -> tuple[list[dict], dict]:
+    """Re-download every match id in ``source`` at the current subset.
+
+    Lets an older sample gain fields it was fetched without (items and
+    augments, doc 99 entry 160.162) while keeping the exact same games.
+    Resumable: ids already in ``out`` are skipped.
+    """
+    payload = json.loads(source.read_text())
+    ids = [m["match_id"] for m in payload.get("matches", []) if m.get("match_id")]
+    matches, done = load_existing(out)
+    provenance = dict(
+        payload.get("provenance", {}),
+        refetched_from=str(source.name),
+        refetched_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    )
+    host = REGIONAL_HOST.format(region=region)
+    missing = 0
+    for match_id in ids:
+        if match_id in done:
+            continue
+        try:
+            raw = client.get(f"{host}/tft/match/v1/matches/{match_id}")
+        except urllib.error.HTTPError as error:
+            print(f"  match {match_id} failed: {error.code}", flush=True)
+            missing += 1
+            continue
+        subset = subset_match(raw)
+        if subset is None:
+            missing += 1
+            continue
+        matches.append(subset)
+        done.add(match_id)
+        if len(matches) % 50 == 0:
+            write_output(out, matches, dict(provenance, n_matches=len(matches)))
+            print(f"  {len(matches)}/{len(ids)} matches "
+                  f"({client.requests_made} requests)", flush=True)
+    provenance = dict(
+        provenance,
+        n_matches=len(matches),
+        n_participants=sum(len(m["participants"]) for m in matches),
+        refetch_missing=missing,
+        requests_made=client.requests_made,
+        completed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    )
+    return matches, provenance
 
 
 def load_existing(path: Path) -> tuple[list[dict], set[str]]:
@@ -378,6 +435,10 @@ def main(argv: Iterable[str] | None = None) -> int:
         help="keep only this TFT set; 0 disables the filter",
     )
     parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument(
+        "--refetch", type=Path, default=None,
+        help="re-download the match ids in this file at the current subset",
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     api_key = read_api_key()
@@ -390,6 +451,15 @@ def main(argv: Iterable[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
+
+    if args.refetch:
+        out = args.out or args.refetch.with_name(f"{args.refetch.stem}_full.json")
+        matches, provenance = refetch(
+            RiotClient(api_key), args.refetch, out, args.region)
+        write_output(out, matches, provenance)
+        print(f"\n{len(matches)} matches -> {out} "
+              f"({provenance['refetch_missing']} not refetched)")
+        return 0
 
     out = args.out or (
         REFERENCE_DIR / f"matches_{args.band}_{date.today().isoformat()}.json"
