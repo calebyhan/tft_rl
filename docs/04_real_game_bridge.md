@@ -80,3 +80,30 @@ aggregated measurements did.
 the vision pipeline, whose minimum scope §132.2 measured: **bench, shop and
 augments**, which post-game data cannot fill at all, plus the hero scalars.
 `scripts/advise.py` works today on a hand-written or captured state file.
+
+**`--plan` runs the established teacher** (doc 99 entry 160.155): the four
+searches of entry 160.152 — buy, one fielding swap, the item prefix plus the
+default rule for the rest of the bag, one positioning move — in the teacher's
+phase order and at its budgets, each step applied through the action executor
+before the next search. The milestone 1 contract is restated at the level of
+the decision: each search must decide identically on the live match and on
+the observed state (`tests/test_bridge_search_fidelity.py`). That required
+one schema addition, **`ObservedSeat.item_bag`**, and one repair: entry
+160.155 found the searches breaking ties by the board dict's insertion order,
+which no observer can see. Entry 160.156 made that tie-break visible
+(`rl.search.BOARD_TIE_BREAK = "hex"`), and entry 160.157's 600-seed paired
+check retained the teacher's strength (−0.053 placement, 90% CI [−0.166,
++0.059] against a ±0.229 equivalence margin). The adapter still rebuilds every
+board in hex order, so a state typed in a different order reconstructs
+identically. With no opponent boards entered, the searches fight a reflection of the
+hero's own board at per-opponent margins (`mirror_state`, `mirror_budgets`).
+Doc 99 entry 160.161 measured that at about 85–89% of the value of entering
+the lobby, roughly 0.2 placement, lost mostly in first places.
+
+**What engine combat is worth against reality is barely measured.** Every
+search behind `--plan` judges boards by simulated combat. Doc 99 entry 160.164
+tested that combat on 1,970 real final fights, whose winners are known, and
+found it right 58.5% of the time while nearly certain every time. Those boards
+carried no positions or augments, so a state typed with real positions is a
+different, unmeasured case. Live TFT is also now Set 18; this engine and
+advisor are Set 17.
