@@ -22534,3 +22534,213 @@ while fights against the real field are often lopsided. It was not tested.
 - Nothing here licenses BC or PPO (110.3), a change to the teacher's own
   budgets, or the field.
 
+### 160.162 Predeclared: can the engine judge human boards? Real final fights as labels
+
+Every open list since 160.154 carries "any anchor to human rank" (132.1).
+The obvious anchor is combat: fight the teacher's boards against real players'
+boards and read off a band. That trusts the engine to judge human boards,
+and 111–113 found it misprices the lines humans play. The trust is testable
+before any anchor is built, because real games contain labelled fights.
+
+**The label.** In ranked TFT the last two players fight each other every
+round until one dies. The first- and second-place final boards are therefore
+exactly the two boards that fought last, and the first-place board won. No
+entry has used this. In the stored samples 987 of 1,000 challenger and 983 of
+1,000 diamond games have their top two ending on the same round; the rest are
+excluded.
+
+**The measure** (`scripts/final_fight_fidelity.py`). Each pair fights 20
+times, the real winner on team 0 in even trials and team 1 in odd ones. P_i
+is the engine's share of those fights the real winner wins, draws counting a
+half.
+
+- A = mean P_i: the probability the engine puts on what happened.
+- C = mean [P_i² + (1 − P_i)²], estimated without bias: what A would be if
+  real fights were drawn from the engine's own odds. This is the achievable
+  maximum, since an engine cannot be asked to call a fight it itself calls a
+  coin flip.
+- **S = (A − 0.5) / (C − 0.5)**: the share of achievable skill realised. 0
+  means no information; 1 means as good as the engine's own noise allows.
+
+Intervals are normal and delta-method, deterministic by construction. The
+bootstrap is printed as a check only, because 160.161's verdict moved with a
+percentile endpoint's resampling seed. `tests/test_final_fight_fidelity.py`
+pins pairing, drop counting, placement, side alternation, the unbiased
+ceiling, and S reading 1 for a truthful engine and 0 for an uninformed one.
+Seven mutations (side fixed, odd trials not inverted, biased square, winner
+and loser swapped, melee to the back, S unnormalised, unequal rounds kept)
+are each killed. A fight takes 0.054 s; no statistic was computed before this
+entry.
+
+**Controls.** The winner's board against itself, on each band's first 200
+pairs, must read 0.5 within 2 SE. If it does not, the harness has a side bias
+and nothing below is interpreted.
+
+**Two measurements, one decisive.**
+
+1. **Pilot, now: item-stripped.** The stored subset dropped every unit's
+   items (the fetcher kept only champion, star and cost), so both sides fight
+   without items. It decides nothing. It sizes the harness and, set against
+   the decisive run, says how much of the engine's reading comes from items.
+2. **Decisive, when the Riot key is renewed.** The development key in `.env`
+   has expired (401). `scripts/fetch_riot_matches.py --refetch` re-downloads
+   the same 2,000 match ids and now keeps items and augments
+   (`tests/test_fetch_riot_matches.py`), so the decisive run is the same
+   games with items. Augments are stored but not applied, because
+   `CombatSimulator` has no seat to apply them to.
+
+**Named outcomes, for the decisive run**, on pooled S's 95% interval (per band
+reported beside it). The two thresholds are judgement calls, stated here so
+they cannot move.
+
+- **V. The engine reads human boards.** Lower bound ≥ 0.6. A combat anchor —
+  teacher boards against human boards at matched rounds — is licensed, and
+  quoted with S beside it.
+- **N. It does not.** Upper bound < 0.3. No combat-based anchor. The rank
+  question waits for live play through the vision pipeline.
+- **P. Partial.** Anything else. An anchor may be computed as description,
+  never quoted as a rank.
+
+**Known limits, all symmetric between the two sides:** positions (113's
+rule), augments unapplied, 4-star units clamped (20 challenger and 23 diamond
+units), summons and PvE units dropped (410 and 368), and patch drift. The real
+games span 16.13–16.15. Validity, if found, covers **late-game boards only**.
+
+**Prediction on record:** pilot S between 0.2 and 0.6; decisive S above the
+pilot's, outcome P. This arc's record stands at five correct and five failed.
+
+**What this does not license**: an anchor before the decisive run, BC or PPO
+(110.3), or any engine change.
+
+### 160.163 Pilot: without items, the engine is confidently wrong about a third of human final fights
+
+> **The slot-overweight reading below is WITHDRAWN by entry 160.164.** With
+> items, the engine's odds on the bigger board are calibrated (67.0% against
+> 65.8% real). The overweight came from stripping items. The pilot's numbers
+> stand as measured.
+
+The item-stripped pilot 160.162 named ran on all 1,970 labelled final fights,
+20 trials each, in 7.5 minutes (`runs/final_fight_pilot_160_162.json`). **It
+decides nothing**; the decisive run needs items and waits on a renewed key.
+
+| band | pairs | A | C (ceiling) | **S** | 95% CI | agreement | control (z) |
+|---|---:|---:|---:|---:|---|---:|---|
+| challenger | 987 | 0.616 | 0.953 | 0.256 | [0.192, 0.320] | 61.6% | 0.510 (+1.31) |
+| diamond | 983 | 0.649 | 0.949 | 0.332 | [0.269, 0.394] | 65.2% | 0.499 (−0.17) |
+| **pooled** | 1,970 | 0.632 | 0.951 | **0.294** | **[0.249, 0.338]** | | |
+
+The bootstrap cross-check reads [0.248, 0.339], agreeing with the delta method.
+Both controls sit within 2 SE of 0.5, so the harness has no detectable side
+bias.
+
+**What the numbers say.** C ≈ 0.95: the engine treats almost every human final
+fight as a foregone conclusion — P_i is near 0 or 1 — and it is right about
+63% of the time. It realises **29%** of the skill its own confidence implies.
+Read as if it were the decisive run, that is outcome **P**, and the upper
+bound (0.338) sits 0.04 above N's line. Items are the obvious missing
+information, and the decisive run exists to add them.
+
+**Where the engine goes wrong — descriptive, chosen after seeing the
+headline, not claimed.** In reality, the board with more units won 65.8%
+(challenger) and 65.1% (diamond) of the final fights where counts differed.
+The engine gives the bigger board **76.2%** and **75.9%**. When unit counts
+are equal (346 and 349 pairs), the engine's A falls to **0.566** and
+**0.611**, barely above a coin. Gold value is overweighted less: 66.6% real
+against 70.2% engine. This is 113's slot mispricing ("a board slot is worth
+more than the value in it") seen against human outcomes for the first time,
+in the same direction. It is item-stripped, and items may carry part of it.
+
+**The pilot half of the prediction held** (S between 0.2 and 0.6). The
+prediction is scored as a whole after the decisive run.
+
+**What this changes, before the decisive run.** Nothing is licensed. But the
+pilot bounds the ambition: unless items lift pooled S by about 0.3, no
+combat-based anchor to human rank will clear V, and a rank figure from this
+engine's combat would be description at best.
+
+**Still open.**
+
+- The decisive run: `.venv/bin/python scripts/fetch_riot_matches.py --refetch
+  data/reference/matches_<band>_2026-08-09.json` for both bands, once
+  `RIOT_KEY` in `.env` is renewed (about 2,000 requests, roughly 40 minutes at
+  a development key's rate), then the harness on the two `_full` files.
+- Whether the slot overweight survives items. If it does, it is a fidelity
+  defect measured against reality, not just against the engine's own
+  archetypes as in 113.
+
+### 160.164 Outcome N: the engine cannot judge human final boards, so no combat anchor to rank
+
+The same 2,000 games were refetched with items: `--refetch`, 1,950 requests,
+one DNS drop resumed without loss. Both `_full` files were verified against
+the stored samples: the same match ids, no duplicates, and every game
+identical in placements, final round, units and stars, now carrying 98,577 and
+97,421 items. All are Set 17 games. The harness ran unchanged on both
+(`runs/final_fight_decisive_160_162.json`).
+
+| band | pairs | A | C (ceiling) | **S** | 95% CI | agreement | control (z) | items kept / dropped |
+|---|---:|---:|---:|---:|---|---:|---|---|
+| challenger | 987 | 0.586 | 0.938 | 0.195 | [0.130, 0.261] | 58.4% | 0.494 (−0.71) | 26,080 / 2,407 |
+| diamond | 983 | 0.585 | 0.938 | 0.195 | [0.129, 0.260] | 59.0% | 0.502 (+0.32) | 25,701 / 2,209 |
+| **pooled** | 1,970 | 0.585 | 0.938 | **0.195** | **[0.149, 0.242]** | | | |
+
+The bootstrap check reads [0.148, 0.242], and both controls sit within 2 SE
+of 0.5.
+
+**Outcome N, applied as written.** The pooled upper bound, 0.242, is below
+0.3. **No combat-based anchor to human rank is licensed.** Fighting the
+teacher's boards against human boards in this engine would produce a number
+the engine cannot be trusted to have computed. The rank question waits for
+live play.
+
+**Items made it worse**, not better: S fell from the item-stripped 0.294 to
+0.195. The engine stays nearly certain (C = 0.938) and is right 58.5% of the
+time.
+
+**My prediction failed.** I predicted P, with S above the pilot's; it landed
+at N, below. The pilot half (S between 0.2 and 0.6) held, but the prediction
+is scored whole. This arc's record is five correct and six failed.
+
+**Where the reading goes wrong — descriptive, not claimed.** With items, the
+engine's odds on the bigger board are **calibrated**: 67.0% against 65.8%
+real (challenger) and 66.8% against 65.1% (diamond). The pilot's slot
+overweight was an artefact of stripping items, and 160.163 carries a banner
+saying so. Between boards of equal size (346 and 349 pairs) the engine's A is
+**0.572** and **0.538**, at the level of a coin. So the engine knows that
+more units usually win, and almost nothing past that about which of two human
+boards wins. Every kept item has an engine implementation (emblems through
+the trait path, the rest registered), so unimplemented item effects are not
+the explanation. About 8% of item ids — Set 17 trait items and radiants — are
+unknown to the engine and dropped.
+
+**What this cannot separate.** The payload carries no positions and, as of the
+live check in this session, no augments at all; Riot has dropped them from
+match data. Both sides are placed by 113's fixed rule. Real players position
+carefully, and in a fight between equal boards positioning and augments may
+be exactly what decides it. So N says **the engine, fed what post-game data
+contains, cannot judge human boards**. It does not by itself say the engine's
+combat is wrong about fully specified boards. The consequence for anchoring
+holds either way, because post-game data is all an anchor could be built from.
+
+**What this changes.**
+
+- The human-rank anchor is closed on this route. The only open route is live
+  play, through the vision pipeline — and live TFT is now **Set 18**, with a
+  new unit-id scheme (`DA_18_…`) and client version string, confirmed on a
+  current ranked match in this session. The engine and the doc 04 advisor are
+  Set 17.
+- For the advisor: its real-game value rests on engine combat, and the one
+  measurement of that combat against real outcomes found it weak on
+  position-free boards. An advisor state typed with real positions is a
+  different case and is unmeasured. Doc 04 now says so.
+- Tooling left in place: `--refetch`, the item- and augment-keeping subset,
+  and the harness can re-run this on any future sample, including Set 18 once
+  the engine supports it.
+
+**Still open.**
+
+- Whether positions rescue the reading. Positions exist only in live state,
+  so this is a vision-pipeline question.
+- A Set 18 migration, which would reset every baseline in this log. It is a
+  decision to take on its own.
+- The 83_500–83_599 watch item (160.159); `GreedyPolicy`'s tie (160.157).
+- Nothing here licenses an engine change, BC or PPO (110.3).
