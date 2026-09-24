@@ -433,6 +433,7 @@ heterogeneity test rejects. (§160: 160.140, 160.142, 160.144)
 | 158 | 08-22 | **The first shared-seed search-buy placement pilot retains no strength: direct places 4/1, action 6/3 (action − direct = +2.0) on seeds 0/1, with no cap events. n=2 is not a placement claim; trace the first whole-match divergence before scaling** | ⚠️ |
 | 159 | 08-22 | **The real port seam is planning order: direct seat 0 acts before opponents, while `TFTEnv` lets all opponents mutate the shared pool before the agent acts. The 4th-vs-6th seed-0 pilot is therefore not a policy-retention result. Match the direct timing or re-baseline the teacher before any RL/search conclusion** | ⚠️ |
 | 160 | 08-22 | **The search-buy teacher's label is not a function of either shipped scouting encoding: a hidden enemy-position swap preserves the observation and mask but changes BUY slot 3 to no buy. Do not begin BC/PPO against this privileged teacher; first expose the scouted boards it uses** | ✅ |
+| 161 | 09-24 | **Set 18 migration decided and scoped; every Set 17 baseline is void for Set 18. CDragon's Set 18 has the roster, ids and base stats but not the magnitudes: 2 of 65 units have ability variables and 2 have roles, and the `DA_*` items that live games use are empty. 0/65 abilities and 0/35 traits are implemented, and the empty engine still passes the smoke test** | ✅ |
 
 ### The arc, in one table
 
@@ -464,6 +465,10 @@ row 20 (§36), so nothing above it is comparable to anything below.
 > before 08-09 is comparable to one measured after it. **Re-derived so far:**
 > the econ archetype table, unmoved ([§100](#100-the-reroll-mispricing-survives-both-fixes-and-86s-table-reproduces-exactly-08-09)), and the agent baseline
 > ([§104](#104-the-agent-baseline-re-derived-post-98-08-09)): clone **4.900**, teacher **4.750** on the same 60 seeds.
+
+> **Every figure in this log is a Set 17 number and is void for Set 18
+> ([§161](#161-set-18-migration--scoping-09-24)).** None may be cited as a
+> Set 18 fact; each baseline is re-measured on Set 18, never carried over.
 
 ---
 
@@ -22744,3 +22749,347 @@ holds either way, because post-game data is all an anchor could be built from.
   decision to take on its own.
 - The 83_500–83_599 watch item (160.159); `GreedyPolicy`'s tie (160.157).
 - Nothing here licenses an engine change, BC or PPO (110.3).
+## 161. Set 18 migration — scoping (09-24)
+
+Live TFT is Set 18, *Enchanted Wilds*. It launched with patch 18.1 in August
+2026. Sources give both 12 and 25 August, and the scoping does not depend on
+which. 160.164 confirmed the new id scheme on a ranked match and left
+the migration as "a decision to take on its own".
+
+**The decision to migrate was taken on 09-24.** This entry scopes the
+migration and changes no engine code, `data/` file or test. All Set 18 data
+below was fetched into a session scratch directory. `data/config.json` was
+read, never written: its SHA-1 was `e1fca318…` before and after.
+
+**Every Set 17 baseline is void for Set 18.** Every number in §1–§160 was
+measured on Set 17 content, and none may be cited as a Set 18 fact. That
+includes:
+
+- the established teacher and its components (160.136–160.154);
+- the clone's parity (104);
+- mirror retention (160.161);
+- the final-fight skill share S (160.164);
+- every constant `config.json` calls verified;
+- every economy, reroll and fidelity table (§70–§128).
+
+What carries forward is methodology: the Lessons, 160.159's pooling policy,
+and pre-registration. Every baseline is re-measured on Set 18, never carried
+over. This new arc starts its prediction record at zero; arc 160's tally does
+not carry.
+
+### 161.1 Repository state at the start
+
+- **The Set 17 work is not fully committed.** The tree has 9 modified files
+  (the bridge, `rl/search.py`, doc 04, doc 99, `advise.py`,
+  `fetch_riot_matches.py` and a test) and 14 untracked ones: the
+  160.155–160.164 drivers, their tests, and the two `_full` reference files.
+  The proposal is to commit on `main`, tag it `set17-final`, and do the
+  migration on a `set18` branch. **None of that has been done; it waits on
+  approval.**
+- **The suite is not green before any change.** `ruff` is clean and
+  `smoke_test.py` passes 20 games, but
+  `test_every_shipped_augment_does_something` fails on the committed
+  `data/augments.json`. 169 of its 274 augments grant no stat and have no
+  hook; the first one reported is `TFT10_Augment_CrashTestDummies`.
+  `test_pivot.py::test_a_pivoted_teacher_actually_out_levels_a_slow_roller`
+  also fails, with `assert 7 > 7`, and reproduces in isolation. **The full
+  suite: 1,275 passed and 2 failed, of 1,277.** Both failures predate this
+  entry. The run took about 2.5 hours of wall time, much of it machine sleep
+  before `caffeinate` held it. CLAUDE.md's "about 2 min" is stale for this
+  tree.
+- **Two texts are stale.** `config.json`'s provenance and `unverified` blocks
+  still describe `augments.json` as generic archetypes (17.1). Entry 152
+  corrected that: the file holds the fetched Riot pool. The migration brief
+  repeated the stale description.
+
+### 161.2 CommunityDragon kept Set 18's layout but not its numbers
+
+`fetch_cdragon.py --set 18 --dry-run` ran against CDragon `latest` (content
+16.19.8217343). The `TFTSet18` mutator exists, and the teamplanner file has a
+`TFTSet18` list of 65 units. The normaliser runs unchanged: 65 champions, 35
+traits, 114 items, 0 summons and 592 augments. It raised two warnings:
+`DA_18_Rival` has a duplicate count-1 breakpoint, and `DA_18_Eclipse` has
+none. The PBE payload (16.20) gives the same picture.
+
+**Id scheme.** Ids carry a `DA_` prefix, but where the set number goes is
+inconsistent: `DA_18_Ornn`, `DA_Vi18`, `DA_KogMaw18_AD`, `DA_Gromp18_AP`,
+`DA_Lux18_Base`. Traits follow suit (`DA_18_Blossom`, `DA_Juggernaut18`,
+`DA_Riftbeast18`). Some display names differ from their ids: Ravager is
+`DA_18_Slayer` and Monolith is `DA_18_Battlemage`. Nothing may parse an id for
+its set.
+
+**Field shapes are unchanged.** Champion, ability, stats, trait, trait-effect
+and item entries have exactly the keys they had in Set 17. **The content is
+not:**
+
+| field, shop units only | Set 17 (same payload) | Set 18 |
+|---|---|---|
+| champions with a `role` | 64 / 64 | **2 / 65** |
+| champions with ability variables | 64 / 64 (369 vars) | **2 / 65** (11 vars: Kobuko, Alune) |
+| trait variables | 652, 17% hashed names | **212, 58% hashed**; 7 traits have none |
+| craftable items | `TFT_Item_*` | two copies of each: 49 `TFT_Item_*` identical to Set 17, and 49 `DA_*` with **empty** effects and description |
+| augments | 274 | 592: 250 `DA_` (54% of keys hashed) and 342 legacy |
+| Wisps (the set mechanic) | — | 6 entries, empty effects; tftraits counts about 156 in game |
+
+The raw bin shows the same thing below the JSON. `da_18_ornn.cdtb.bin.json`'s
+spell holds two placeholder data values, `DataValue` and `OtherValue`, and
+one hashed calculation. The tooltip's own names (`ShieldCalc1`,
+`MagicDamageCalc1`) appear nowhere. `tft17_ornn` holds `Shield`,
+`ShieldDuration`, `Damage` and `GrooveDuration`.
+
+**The likely cause is the engine move.** Set 18 is the first TFT set on
+Unreal Engine: the 18.1 notes describe "the transition from Hextech to
+Unreal", and match-v1's `game_version` reads `TFT Unreal Version ?.?.?.?`. The
+League client files CDragon extracts hold stubs. **That the real numbers
+exist only in the Unreal client is an inference, not verified.** Two other
+routes were checked:
+
+- Riot's reactivated TFT Data Dragon leaves `@Variable@` strings unfilled, so
+  it has no numbers either.
+- tftraits.com reads the Unreal game files but shows "?" wherever the files
+  expose nothing.
+
+**No verified, machine-readable source for Set 18 ability magnitudes was
+found.**
+
+**The legacy item twins are stale, not current.** Patch 18.2 changed three
+items; the `TFT_Item_*` entries still hold the old numbers:
+
+| item | 18.2 change | `TFT_Item_*` value |
+|---|---|---|
+| Bloodthirster | AD 15%⇒18%, trigger 40%⇒50%, shield 25%⇒30% | 15%, 40%, 25% |
+| Hand of Justice | AD/AP 15%⇒18%, omnivamp 12%⇒15% | 15%, 12% |
+| Edge of Night | trigger 60%⇒40%, heal 20%⇒15% | 60%, 20% |
+
+They cannot supply Set 18 item numbers.
+
+**The fetcher itself is sound.** Re-fetching Set 17 from the same payload
+reproduces `data/`. The differences are patch drift: 1 effect id
+(`TFT17_IvernMinion`), 6 ability-param sets, 4 stat blocks, and 273 augments
+against 274. Traits and items are byte-identical. So the Set 18 gap is in the
+content, not the pipeline.
+
+**Fetcher defects the dry run surfaced:**
+
+- `main()` reads `config.json` from `--out`, so fetching into any other
+  directory needs a copy of it there.
+- `--set` defaults to 17.
+- `CLASS_TRAITS` and `SUMMON_UNIT_IDS` are Set 17 tables.
+- **The role fallback fails silently.** Every unit without a role becomes
+  Fighter or Caster by range. For Set 18 that is 32, 32 and one Tank, so mana
+  per attack is wrong for every real tank, and so is the damage-mana rule,
+  which applies to Tanks only. Past the fetch log, nothing warns.
+
+### 161.3 What loads, and what is implemented
+
+`engine.loader.load_all` on the scratch data loads 65 champions, 35 traits,
+114 items and 592 augments, with **0 schema errors**. That holds both with
+and without Set 17's `creeps.json` copied in; without it, PvE rounds are free
+wins. Coverage uses the engine's own registries, the same predicates as
+`test_abilities` and `test_augments`:
+
+| kind | referenced | implemented | Set 17 (`data/`) |
+|---|---:|---|---|
+| abilities | 65 | **0** (63 have empty params, so the classifier cannot canonicalise) | 63 / 63 (34 generic, 29 bespoke) |
+| traits | 35 | **0** by hook, 0 stat-only | 35 / 35 |
+| craftable items | 65 (the other 49 are legacy twins) | **0 in substance**: 49 `DA_*` normalise to statless `no_effect`, so the count reads 114/114 while none is real | 65 / 65 |
+| augments | 592 | 118 hooked (gold/XP), 72 stat-only, **402 inert** | 65 hooked, 40 stat-only, 169 inert |
+
+The registries today hold 83 effect ids (29 `ability_TFT17_*`, 38
+`item_TFT_Item_*`, 16 generic), 36 trait hooks (35 of them `TFT17_`) and 5
+augment hooks.
+
+**Unimplemented abilities, 65:**
+
+| cost | count | units |
+|---|---:|---|
+| 1 | 14 | Akali, Camille, Cinderling, Karma, Kobuko, Leona, Ornn, Pebbles, Rakan, Rek'Sai, Varus, Veigar, Xayah, Yorick |
+| 2 | 13 | Alistar, Caitlyn, Elise, Gromp, Kayle, LeBlanc, Murkwolf, Scuttlecrab, Sejuani, Shen, Teemo, Warwick, Yunara |
+| 3 | 14 | Azir, Cassiopeia, Diana, Fiddlesticks, Hecarim, Kha'Zix, Kog'Maw, Krug, Mama Beak, Master Yi, Rammus, Rengar, Tristana, Vi |
+| 4 | 14 | Ahri, Amumu, Aphelios, Brambleback, Ezreal, Lillia, Malphite, Morgana, Nidalee, Sentinel, Sett, Sivir, Soraka, Zyra |
+| 5 | 10 | Alune, Ashe, Draven, Elder Dragon, Gnar, Ivern, Kennen, Lux, Maokai, Taric |
+
+**Unimplemented traits, 35:** Adaptor, Apex Predator, Attuned, Avatar,
+Blackthorn, Blossom, Bounty Seeker, Brawler, Caustic, Coven, Defender,
+Elderwood, Emerald Aspect, Executioner, Fae, Flora Fatalis, Greenfather,
+Hunter, Inferno, Invoker, Juggernaut, Lunar, Monolith, Old Growth, Primal,
+Rapidfire, Ravager, Riftbeast, Rival, Solar, Spellweaver, Sprykin, Summoner,
+Thornmaiden, Vanguard.
+
+**The empty engine passes the smoke test.** `smoke_test.py` was driven on the
+scratch data through a wrapper that swaps its `load_all`. **Every invariant
+held across 5 games**, while 143 effect ids and 30 traits warned once and did
+nothing. Conservation invariants cannot tell a Set 18 game from a game of
+unit stat-sticks. Coverage therefore has to be a **gate that fails**, not a
+report.
+
+### 161.4 `config.json` against Set 18 sources
+
+The file was not edited. Status key: "changed" means two or more
+independent sources agree; "unverified" means no Set 18 source was found or
+the sources conflict.
+
+| constant | `config.json` | Set 18 | source | status |
+|---|---|---|---|---|
+| shop odds, level 7 | 19/30/40/10/1 | **16/30/43/10/1** | tftflow (18.2), esportstales | changed |
+| shop odds, level 11 | no row | **1/2/12/50/35** | tftflow, esportstales | new |
+| `max_level` | 10 | **11** | tftraits ("level cap 11") | unverified: one source, and the XP cost of 10→11 is unknown |
+| shop odds, levels 1–6 and 8–10 | as shipped | same | tftflow, esportstales | unchanged |
+| `pool_sizes` | 30/25/18/10/9 | same; 14/13/14/14/10 units, matching CDragon's 65 | tftflow, esportstales | unchanged |
+| XP 7→8, 8→9, 9→10 | 60, 68, 68 | **56, 64, 64** | official 18.2 notes | changed (tftflow still shows 68/68 and is stale) |
+| `damage_per_surviving_unit` | 1 | 1, flat | tftflow | unchanged |
+| `realm` (§21) | an HP-ordered draft at every x-4 | **the carousel returns** (18.1 notes), with a chance of more or higher-cost units | official 18.1 notes | changed; schedule unverified |
+
+No Set 18 source was retrieved for income and its ramp, interest, streaks,
+PvP-win gold, reroll and XP-purchase costs, bench size, starting HP, items
+per unit, the augment reveal rounds, or round structure. They are
+**unverified**, presumed unchanged.
+
+**Mechanics with no representation at all:**
+
+- Wisps: single-use effects in the rightmost shop slot, in every other shop,
+  across 7 categories, with a combat Wisp guaranteed after stage 5. Costs
+  were cut in 18.2, and about 156 effects exist.
+- The Elder Dragon takes two board slots and counts as two Riftbeasts.
+- Lux, the Avatar, adopts one of 9 origins.
+- Missed PvE loot from 4-7 onward carries over to the next PvE round.
+- Units no longer retarget after crowd control.
+- New opening encounters.
+
+### 161.5 match-v1: the live ids
+
+60 challenger ranked matches from na1 (queue 1100, set 18) were fetched into
+the scratch directory. The development key was valid on 09-24.
+
+- **Units: 65 of 65 ids are exactly CDragon's apiNames.** No mapping table is
+  needed.
+- **Items: every live id is a `DA_*` id**, 122 distinct, and all 122 are in
+  CDragon's item table. 5,509 of 5,732 item copies (96.1%) fall in the
+  normalised craftable set. The rest are artifacts (120), uncraftable emblems
+  (53), radiants (48) and potions (2). **But 5,252 copies (91.6%) resolve to
+  `DA_*` entries that normalise to a statless `no_effect`.** A Set 18 advisor
+  or fidelity run on today's normalised data would silently fight with
+  itemless units.
+- `game_version` reads `TFT Unreal Version ?.?.?.?` on all 60 games, so a Set
+  18 sample cannot be split by patch. Lesson 24's comparator-drift check
+  loses that axis; `game_datetime` against the patch calendar would have to
+  replace it.
+- Augments: 0 stored, which confirms 160.164. Traits are not in the stored
+  subset, because the fetcher drops them.
+
+### 161.6 Tests, fixtures and models
+
+- **19 test files and 382 lines reference `TFT17_`.** Most of those lines
+  are against the frozen 13-champion starter fixture: `test_combat` (90),
+  `test_player` (64), `test_units` (63), `test_shop`, `test_loader`,
+  `test_multi_hit`, `test_env`, `test_item_search` and
+  `test_move_search_composition`. They pin mechanics, not Set 17 content, so
+  they survive unchanged **if the starter fixture is kept as a frozen Set 17
+  mechanics fixture by design**.
+- **The real-data files will break:** `test_abilities`, `test_trait_effects`
+  (35 refs), `test_traits`, `test_scout_observation`,
+  `test_swap_search_composition`, `test_bridge_advise` and
+  `test_final_fight_fidelity`. `test_fetch_cdragon` (30) and
+  `test_reference_profile` use inline Set 17 payloads, which stay valid as
+  fixtures but need Set 18 cases added.
+- **45 of 68 test files load real data.** All of them will run on Set 18
+  content, whether or not they name an id.
+- **Models are roster-bound.** `rl/observation.py` sizes the vector by
+  `n_traits` and scales champion indices by `n_champions`, so every model in
+  `runs/` is Set 17-only.
+- The downstream consumers of ids are `bridge/`, `scripts/advise.py` and
+  `scripts/final_fight_fidelity.py`. Their unit ids align with CDragon
+  unchanged; their item ids need `DA_*` entries that carry numbers.
+
+### 161.7 The plan: work items, estimates and order
+
+The estimates are engineer-days and uncalibrated. Their direction of error is
+known: this project's own estimates have run low (lesson 23; 160.154's cost
+ran 20% over).
+
+| # | work item | needs | estimate |
+|---|---|---|---|
+| 0 | Commit Set 17, tag `set17-final`, branch `set18`; triage the failing augment test on `main` | approval | 0.5 d |
+| 1 | **Source audit**: find and verify a source for Set 18 ability, trait and item magnitudes and for roles | — | 1–2 d |
+| 2 | Fetcher: Set 18 support (`DA_*` item selection, role source, class-trait and summon tables, the `--out`/config coupling, Rival and Eclipse), plus a provenance-carrying overlay for what CDragon lacks | 1 | 2–3 d, plus 4–8 d of transcription under outcome B |
+| 3 | `config.json` Set 18 constants, hand-edited from cited sources (161.4) | approval; a hand edit only | 0.5–1 d |
+| 4a | Items: re-key the 38 item hooks to `DA_*` ids, apply the 18.x item changes, retire the legacy twins | 2 | 1–2 d |
+| 4b | Traits: 35. New mechanics include Riftbeast, the two-slot Elder Dragon, Rival, Avatar, Summoner and Greenfather | 2 | 6–10 d |
+| 4c | Abilities: 65, generic where a canonical shape fits, bespoke otherwise | 2 | 6–10 d |
+| 4d | New systems: level 11, carousel (adapting §21's draft), two-slot units, Wisps (shop, action space, observation), Set 18 PvE, no retarget after CC | 1–3 | 5–9 d (Wisps alone 3–5 d, and unsourced) |
+| 4e | Augments: decide the scope. Set 17 already ships 169 inert (161.1) | 2 | a 1 d decision; 3–6 d if implemented |
+| 5 | Tests: re-derive the real-data tests on Set 18 ids; a mutation-tested coverage gate; label the starter fixture as frozen Set 17 | 4, written alongside it | 2–3 d |
+| 6 | Bridge, advisor and `final_fight_fidelity`: `DA_*` item handling; Set 18 reference samples of 1,000 matches per band | 2, 4 | 1–2 d |
+| 7 | RL: new observation dims, retrain BC, re-establish the teacher and the clone baseline on Set 18, each pre-registered | 5 | 2–3 d, plus 3–6 compute blocks of 4–6 h |
+
+That is about **30–55 engineer-days plus compute**. The largest single
+uncertainty is item 1.
+
+**Order: 0 → 1 → 3 → 2 → 4a → 4b and 4c → 4d → 4e → 6 → 7.** Item 5 runs
+continuously, with each item's tests written as it lands. The reasoning:
+
+- Item 1 decides whether items 2 and 4 are an adapter or a transcription job.
+- Items (4a) come first among the engine work: 91.6% of live item copies are
+  currently statless, and the fix is mostly re-keying.
+- Wisps come last among the systems: they are the least sourceable, and they
+  are the only change that alters the action space.
+
+**Named outcomes for item 1**, declared before the audit:
+
+- **A. A machine-readable source is found and verified.** "Verified" means at
+  least 10 spot-checked values agree with the 18.x patch notes. Item 2
+  becomes an adapter, with the overlay covering only the gaps.
+- **B. Only human-readable sources exist** (tooltips with numbers, patch
+  notes). The overlay is hand-curated with per-value provenance, and item 2's
+  transcription estimate applies.
+- **C. Neither covers most abilities.** The engine cannot be Set 18-faithful
+  for abilities. The choice is then between approximations flagged 🟠 and
+  pausing until CDragon supports Unreal. That is a decision to take, not a
+  default.
+
+**Prediction on record: B.** CDragon support for the Unreal client does not
+arrive during 18.x.
+
+**What "migrated" means.** All seven conditions must hold before any Set 18
+performance claim is made:
+
+1. **Data.** All 65 champions, 35 traits and every craftable item load with 0
+   schema errors. Every magnitude carries provenance (a CDragon field, a patch
+   note, or a dated third-party source) or a 🟠 flag. No value is copied from
+   a Set 17 or pre-18.2 legacy entry unless a source says it is unchanged.
+2. **Coverage.** 65/65 abilities, 35/35 traits and 100% of craftable items are
+   implemented, the Set 17 standard (§35). Augments are either implemented to
+   a declared threshold or disabled, with an entry recording which.
+3. **A coverage gate.** A Set 18 smoke run emits zero unimplemented-effect
+   warnings outside an explicit allowlist that cites doc 99. The gate is
+   mutation-tested: removing one hook must fail it. 161.3 is why the gate is
+   needed.
+4. **Live ids.** In a Set 18 reference sample, 100% of unit copies and at
+   least 95% of item copies resolve to implemented entries.
+5. **Suites.** pytest is green, ruff is clean, and `smoke_test.py` and
+   `check_doc_refs.py` pass, all on Set 18 data.
+6. **Conformance.** The real-data tests are re-derived on Set 18 ids. The
+   starter fixture stays the frozen Set 17 mechanics fixture and is labelled
+   that way. Any hand-calculated Set 18 expectation is recomputed, never
+   carried over.
+7. **Baselines, only then.** Teacher versus greedy, clone versus teacher, and
+   final-fight S on Set 18 matches are re-measured, each pre-registered.
+   Finishing the migration is not itself a performance claim.
+
+**What this does not license:**
+
+- any engine, `data/` or test change before the plan is approved;
+- any machine write to `config.json`;
+- citing any number in §1–§160 as a Set 18 fact.
+
+### 161.8 Still open
+
+- Approval of the branch plan (item 0), and whether to fix the failing augment
+  test on `main` first.
+- The source audit (item 1), under the outcomes above.
+- `stage_base_damage`, `max_level` and the XP cost of 10→11, the carousel
+  schedule, and every constant marked unverified in 161.4.
+- Whether the numbers really exist only in the Unreal client. 161.2 infers
+  it and does not verify it.
+- From arc 160, still Set 17 questions: the 83_500–83_599 watch item
+  (160.159) and `GreedyPolicy`'s tie (160.157).
