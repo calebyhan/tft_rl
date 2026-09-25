@@ -23159,3 +23159,105 @@ gap, now counted, not fixed. `config.json`'s provenance and `unverified`
 text still describe `augments.json` as archetypes. That stale text is left
 for the hand edit that 161.7 item 3 already plans.
 
+### 161.10 Source audit: one numeric source for abilities and traits, none for items
+
+This is item 1 of 161.7, run against the outcomes that entry declared. The
+spot-check ground truth is the post-change values in the official 18.2 and
+18.3 notes. Every comparison was run by script on raw HTML, never on a
+summarised page. **Nothing was written to `data/`.**
+
+**Sources examined:**
+
+| source | what it holds for Set 18 |
+|---|---|
+| CDragon `latest` and `pbe` | ids, roster, base stats, partial traits; ability and item stubs (161.2) |
+| Riot TFT Data Dragon | text with `@Variable@` left unfilled; no numbers |
+| **tftraits.com/set18** (content 18.3.0.5E525E04, updated 09-23) | **all 65 champions, keyed by the CDragon ids** (image names like `da_18_varus.png`), each with role, ability text with per-star numbers, mana and base stats; all 36 traits with per-breakpoint values and their class/origin category; Wisp and augment sections |
+| teamfight.lol | a CDragon mirror: the same `DA_` ids, with `?` wherever CDragon has a stub; not independent |
+| Blitz, tactics.tools, MetaBot, tftitemguide | item names only in the raw HTML; tooltips render client-side |
+| Mobalytics, METAsrc, League wiki | 403 to a script |
+
+**tftraits' coverage.** It has 65/65 abilities with 0 `?` placeholders, 64/65
+with per-star triples (Master Yi is the exception), roles for all 65, and
+62/65 stat lines. It omits the 4-star value the notes quote (Set 18 has
+4-stars; the engine has 3).
+
+**Abilities, spot-checked against the notes: 36 checks.**
+
+- 32 match.
+- 3 are omissions: the Adaptor second-form numbers for Nidalee (AD) and Master
+  Yi (AP), and Alistar's self-heal. Search results give the heal as 230/300/400
+  alongside the 80/105/130 ally heal, and tftraits prints only the latter;
+  treat this one as probable, not certain.
+- **1 disagrees**: Cassiopeia is 420/630/1020 on the site and 425/630/1020 in
+  the 18.3 notes. The notes win.
+
+The Alistar case is the caveat that matters: **tftraits drops a missing value
+silently rather than printing `?`**. Zero placeholders is therefore not
+completeness, and every ability still needs reading when it is implemented.
+
+**Traits: 8 of 8 checks match** (Hunter, Inferno, Invoker, Defender, Solar,
+Blackthorn, Rapidfire, Coven, all at post-18.2 or post-18.3 values).
+
+**CDragon base stats: 8 of 10 match** post-18.2 values (Warwick, Kha'Zix,
+Rengar, Mama Beak, Brambleback, Leona ×2, Maokai's starting mana). Two are
+ambiguous:
+
+- Maokai's maximum mana: the notes list two 18.2 changes that contradict each
+  other.
+- Master Yi's AD: CDragon has 62, while the notes and tftraits have 60.
+
+So base stats are usable from CDragon, with a check.
+
+**Items: no numeric Set 18 source was found.** The 18.1 notes list no changes
+to craftable items, so the legacy `TFT_Item_*` values plus the 18.2 and 18.3
+deltas are a candidate derivation. It is **unverified**: a set launch can
+rework items without a patch line. It needs at least a few in-client
+tooltips of unchanged items to confirm.
+
+**Terms.** robots.txt allows all crawling. The site's terms forbid scraping
+"substantial parts of the site or its data for redistribution or to build a
+competing service", and this repository is public. Committing extracted
+values would plausibly be redistribution. **That is the user's decision, not
+the fetcher's.** Until it is made, the audit's extraction stays out of the
+repository.
+
+**Outcome B, applied by the letter.** 161.7 defined A as a *machine-readable*
+source of magnitudes, and B as human-readable tooltips with numbers.
+tftraits is tooltip prose. It is regular enough to parse, and keyed by
+CDragon ids, but it names no parameters. A still requires someone to decide
+which number is `damage` and which is `ad_ratio`. So this is **B**, with a
+qualifier: extraction can be automated, which removes transcription but not
+annotation.
+
+**Prediction: the first half is scored correct.** B held. The second half
+(CDragon will not support Unreal during 18.x) cannot be scored yet. This
+arc's record is one correct, zero failed, with one half open.
+
+**What this changes in 161.7:**
+
+- Item 2's magnitude work becomes annotation plus a notes cross-check, not
+  transcription. The revised estimate is 2–4 days, down from 4–8, and still
+  uncalibrated.
+- Item 2 also gains a per-value provenance rule: tftraits for values the
+  notes do not mention, the notes wherever they speak, and a 🟠 flag on each
+  omission until it is resolved.
+- Item 4a needs in-client verification of the item derivation first.
+
+**Found in passing:**
+
+- Five Adaptor units (Akali, Gromp, Kog'Maw, Master Yi, Nidalee) have AD and
+  AP forms; CDragon lists one id each.
+- The 18.2 and 18.3 notes quote four-star values throughout.
+
+Both are engine mechanics for item 4d.
+
+**Still open:**
+
+- The storage decision under the terms: commit extracted values with
+  attribution, keep a local uncommitted overlay, or use tftraits only as a
+  reference for hand-entered values.
+- An in-client check of a handful of item tooltips.
+- The Wisp and augment sections of tftraits, not audited here.
+- The second half of the prediction.
+
