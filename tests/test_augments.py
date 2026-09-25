@@ -77,13 +77,39 @@ def test_starter_fixture_has_no_augments():
     assert not starter.config.augments.enabled
 
 
-def test_every_shipped_augment_does_something(data):
-    """No augment may be inert: it grants a stat, or has a known hook."""
-    for augment in data.augments.values():
-        has_stats = bool(augment_hooks.board_bonuses([augment]).values)
-        assert has_stats or augment_hooks.is_implemented(augment.effect_id), (
-            f"{augment.id} grants no stat and has no implemented effect"
-        )
+# Augments in the real pool that grant no stat and have no hook. Written for the
+# 14-archetype file, this test once required zero. The fetched 274-augment pool
+# (doc 99 entry 152.4) ships behaviour the engine does not model, named on
+# purpose so it warns once and no-ops (`normalise_augment`). The invariant is
+# therefore "never *silently* inert", and this ceiling may only fall
+# (doc 99 entry 161.9).
+INERT_AUGMENT_CEILING = 169
+
+
+def _is_inert(augment: AugmentDef) -> bool:
+    has_stats = bool(augment_hooks.board_bonuses([augment]).values)
+    return not has_stats and not augment_hooks.is_implemented(augment.effect_id)
+
+
+def test_no_shipped_augment_is_silently_inert(data):
+    """An inert augment must carry its own id, so the gap warns and is named.
+
+    A `None` or a shared id would hide which augment does nothing; its own
+    `augment_<id>` makes the warn-once name the augment itself.
+    """
+    unnamed = [
+        (a.id, a.effect_id) for a in data.augments.values()
+        if _is_inert(a) and a.effect_id != f"augment_{a.id}"
+    ]
+    assert not unnamed, f"{len(unnamed)} inert augments hide their gap: {unnamed[:10]}"
+
+
+def test_inert_augments_do_not_grow(data):
+    """A ratchet: coverage may rise, and a regression must not pass silently."""
+    inert = sorted(a.id for a in data.augments.values() if _is_inert(a))
+    assert len(inert) <= INERT_AUGMENT_CEILING, (
+        f"{len(inert)} inert augments, ceiling {INERT_AUGMENT_CEILING}: {inert}"
+    )
 
 
 # --- offering ------------------------------------------------------------
