@@ -119,32 +119,104 @@ def test_pivot_replaces_the_level_curve(data):
     assert PIVOTED.level_target_after_pivot(hit, RoundId(4, 5)) == 6
 
 
+@dataclasses.dataclass(frozen=True)
+class _Step:
+    round: str
+    level: int
+    gold_before: int
+    rerolled: bool
+    pivoted: bool
+
+
+def _play(data, econ) -> list[_Step]:
+    """One scripted-teacher game on seed 0, one record per action."""
+    env = TFTEnv(data=data)
+    policy = scripted_policy(env, econ=econ, **FLAGS)
+    reroll = env.action_space_helper.reroll_index
+    obs, _info = env.reset(seed=0)
+    steps = []
+    for _ in range(5000):
+        now, gold = env.match.round_id, env.player.gold
+        pivoted = econ.has_pivoted(env.player, now)
+        action = int(policy(obs, env.action_masks()))
+        obs, _r, term, trunc, _i = env.step(action)
+        steps.append(_Step(str(now), env.player.level, gold, action == reroll, pivoted))
+        if term or trunc:
+            break
+    return steps
+
+
+def _first_pivot(steps: list[_Step]) -> str:
+    """The round the seat abandoned its line.
+
+    The case must actually occur: a seed whose seat hits its 3-star never
+    pivots, and every comparison after it would pass or fail for nothing.
+    """
+    first = next((s.round for s in steps if s.pivoted), None)
+    assert first is not None, "seed 0 no longer bricks; pick a seed that does"
+    return first
+
+
+def test_a_pivoted_teacher_stops_rolling_into_its_bank(data):
+    """The roll-floor consumer, which the level test above cannot see.
+
+    Not pinnable with `PIVOTED` as defined. SLOWROLL6's own roll floor is 50
+    from 3-2 and `pivot_floor` defaults to 50, so deleting `pivot_floor` from
+    the scripted teacher's roll branch is an *equivalent* mutant there: the
+    floor stays at 50 either way (doc 99 entry 161.9). A bank above the plan's
+    floor is the case that tells the consumer apart, so this uses one.
+
+    Once pivoted, no reroll may take the seat below its bank. The plain slow
+    roll on the same seed must roll below that line after the same round, or
+    the bank never binds in this game and the check would hold for nothing.
+    """
+    banker = dataclasses.replace(PIVOTED, pivot_floor=80)
+    steps = _play(data, banker)
+    pivot_round = banker._key(_first_pivot(steps))
+    cost = data.config.reroll_cost
+    into_bank = [
+        s for s in steps
+        if s.pivoted and s.rerolled and s.gold_before - cost < banker.pivot_floor
+    ]
+    assert not into_bank, (
+        f"pivoted seat rerolled below its {banker.pivot_floor}g bank at "
+        f"{[(s.round, s.gold_before) for s in into_bank][:5]}"
+    )
+    plain_below = [
+        s for s in _play(data, SLOWROLL6)
+        if s.rerolled
+        and banker._key(s.round) >= pivot_round
+        and s.gold_before - cost < banker.pivot_floor
+    ]
+    assert plain_below, (
+        "the plain slow roll never rolls below the pivot floor after the pivot "
+        "round on seed 0, so this game cannot show the floor binding"
+    )
+
+
 def test_a_pivoted_teacher_actually_out_levels_a_slow_roller(data):
     """End to end, through the teacher, which is the claim that matters.
 
-    Pins the roll-floor and level consumers together: a pivoted seat banks and
-    levels, so across a whole game it must reach a higher level than the plain
-    slow roll on the same seed. Reads the outcome rather than the action
-    sequence, so it cannot pass merely because *something* differed.
-    """
-    def final_level(econ) -> int:
-        env = TFTEnv(data=data)
-        policy = scripted_policy(env, econ=econ, **FLAGS)
-        obs, _info = env.reset(seed=0)
-        best = env.player.level
-        for _ in range(5000):
-            action = int(policy(obs, env.action_masks()))
-            obs, _r, term, trunc, _i = env.step(action)
-            best = max(best, env.player.level)
-            if term or trunc:
-                break
-        return best
+    A pivoted seat banks and levels, so on the same seed it must stand at a
+    higher level than the plain slow roll. Reads the outcome rather than the
+    action sequence, so it cannot pass merely because *something* differed.
 
-    plain = final_level(SLOWROLL6)
-    pivoted = final_level(PIVOTED)
-    assert pivoted > plain, (
-        f"pivoted seat reached level {pivoted}, plain slow roll {plain} -- the "
-        "pivot's level curve is not reaching the teacher"
+    Compared round by round over the rounds both seats are alive, not as a
+    whole-game maximum. The maximum mixes in survival: on seed 0 the pivoted
+    seat was level 7 from 4-3 while the plain one held 6, then died at 5-2, one
+    round before the plain seat's own curve reached 7 -- a tie at 7 that read as
+    the pivot not levelling (doc 99 entry 161.9).
+    """
+    plain = {s.round: s.level for s in _play(data, SLOWROLL6)}
+    steps = _play(data, PIVOTED)
+    pivoted = {s.round: s.level for s in steps}
+    pivoted_at = _first_pivot(steps)
+    common = [r for r in pivoted if r in plain]
+    ahead = [r for r in common if pivoted[r] > plain[r]]
+    assert ahead, (
+        f"pivot fired at {pivoted_at} but the pivoted seat never stood above "
+        f"the plain slow roll at any shared round -- the pivot's level curve is "
+        "not reaching the teacher"
     )
 
 
