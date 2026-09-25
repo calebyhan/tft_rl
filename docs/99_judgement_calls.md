@@ -23093,3 +23093,69 @@ performance claim is made:
   it and does not verify it.
 - From arc 160, still Set 17 questions: the 83_500–83_599 watch item
   (160.159) and `GreedyPolicy`'s tie (160.157).
+
+### 161.9 The two baseline failures: a survival confound and a superseded invariant
+
+161.1 found the suite red before any Set 18 work: 2 failures in 1,277 tests.
+Both are fixed on `main` as test changes. No engine or data file changed, so
+every Set 17 figure still reproduces.
+
+**`test_pivot`: the test mixed in survival.** On seed 0 the pivot fires at 4-2
+as designed. The pivoted seat is level 7 from 4-3, while the plain slow roll
+holds 6. The pivoted seat then dies at 5-2, one round before the plain seat
+(5-3). The plain seat reaches 7 at 5-1, where its own curve steps up. Compared
+as a whole-game maximum, the two arms tied at 7, which read as the pivot not
+levelling. The rewrite compares levels round by round, over the rounds both
+seats are alive, and first asserts that the pivot fired. A seed that stops
+bricking therefore fails loudly instead of passing for nothing (lesson 11).
+
+**A claim in the old docstring was never true.** It said the end-to-end test
+pinned the roll-floor consumer as well as the level one. Deleting `floor =
+econ.pivot_floor` from `scripted_policy` passed the whole file. The reason:
+`SLOWROLL6`'s own roll floor is 50 from 3-2, and `pivot_floor` defaults to 50,
+so under `PIVOTED` that mutation is **equivalent** and no test on it can see
+the consumer. `test_a_pivoted_teacher_stops_rolling_into_its_bank` uses an
+80g bank, which does tell the two apart. It carries a non-vacuity guard: the
+plain slow roll must roll below the bank after the pivot round on the same
+seed.
+
+**Mutations, each reverted after running:**
+
+| mutation | killed by |
+|---|---|
+| level consumer ignores the pivot | the level test |
+| pivot roll floor deleted | the bank test (`rerolled below its 80g bank at 4-4`) |
+| `has_pivoted` always false | both tests, plus five unit tests |
+
+**`test_augments`: the invariant was superseded and never recorded.** The
+test dates from the 14-archetype file (17.1) and required that no augment be
+inert. `958027d` replaced the file with the fetched 274-augment pool that
+152.4 identified. That pool ships 169 augments that grant no stat and have no
+hook. It does so by design: `normalise_augment` gives each one its own
+`augment_<id>`, so it warns once and no-ops. The data change was never
+entered here, and the test has failed since.
+
+The call, taken with the user: **restate the test, don't filter the pool.**
+Filtering would drop the offer pool from 274 to 105, change every game, and
+stop 152 onward from reproducing. The replacement pins two things:
+
+- `test_no_shipped_augment_is_silently_inert`: an inert augment must carry its
+  own `augment_<id>`, never `None` or a shared id.
+- `test_inert_augments_do_not_grow`: a ratchet at 169 that may only fall. Its
+  failure message carries the counted list.
+
+**Mutations:**
+
+| mutation | killed by |
+|---|---|
+| `board_bonuses` grants nothing | both tests |
+| the instant-gold hook is unregistered | both tests |
+| an inert augment's id set to `None` | the naming test |
+| an inert augment's id set to a shared id | the naming test |
+
+**What this does not change.** A seat is still offered 169 augments that do
+nothing, just as in every measurement since `958027d`. That is a fidelity
+gap, now counted, not fixed. `config.json`'s provenance and `unverified`
+text still describe `augments.json` as archetypes. That stale text is left
+for the hand edit that 161.7 item 3 already plans.
+
