@@ -480,7 +480,11 @@ def test_value_head_rewinds_but_the_policy_does_not():
     from tests.paths import REAL_DATA_DIR
 
     data = load_all(REAL_DATA_DIR)
-    EPOCHS = 12
+    # The guard below needs the held-out peak strictly before the last epoch.
+    # On this two-game dataset it moves with the data: at 12 epochs it sat on
+    # the last one once the Set 18 constants changed the games (doc 99 entry
+    # 161.12); at 20 it lands on 16, leaving a real rewind to detect.
+    EPOCHS = 20
 
     def policy_after(with_holdout: bool):
         torch.manual_seed(0)
