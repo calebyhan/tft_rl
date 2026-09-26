@@ -43,9 +43,9 @@
       0.0
     ],
     "7": [
-      0.19,
+      0.16,
       0.3,
-      0.4,
+      0.43,
       0.1,
       0.01
     ],
@@ -85,9 +85,9 @@
     "4": 10,
     "5": 20,
     "6": 36,
-    "7": 60,
-    "8": 68,
-    "9": 68
+    "7": 56,
+    "8": 64,
+    "9": 64
   },
   "max_level": 10,
   "passive_xp_per_round": 2,
@@ -105,7 +105,7 @@
   "interest_cap": 5,
   "streak_bonus": [
     [
-      3,
+      2,
       1
     ],
     [
@@ -138,8 +138,8 @@
     "2": 2,
     "3": 5,
     "4": 7,
-    "5": 9,
-    "6": 11,
+    "5": 10,
+    "6": 12,
     "7": 17,
     "8": 150
   },
@@ -179,7 +179,7 @@
     "overtime_healing_reduction": 0.66
   },
   "provenance": {
-    "_comment": "Where each group of constants comes from. scripts/fetch_cdragon.py regenerates champions/traits/items/VERSION only -- it never writes this file, because Riot publishes none of the tables below (see docs/99_judgement_calls.md 2.1). xp_to_next_level and stage_base_damage were corrected on 2026-08-03 against the LoL wiki (TFT:Experience, Teamfight Tactics (game)); the previous values were invented and both favoured levelling -- see doc 99 entry 36.4. Note the wiki and community trackers disagree on stage 4-6 base damage (wiki 7/9/11, some trackers 8/10/12); the wiki is used.",
+    "_comment": "Where each group of constants comes from. scripts/fetch_cdragon.py regenerates champions/traits/items/VERSION only -- it never writes this file, because Riot publishes none of the tables below (see docs/99_judgement_calls.md 2.1). xp_to_next_level and stage_base_damage were corrected on 2026-08-03 against the LoL wiki (TFT:Experience, Teamfight Tactics (game)); the previous values were invented and both favoured levelling -- see doc 99 entry 36.4. Note the wiki and community trackers disagree on stage 4-6 base damage (wiki 7/9/11, some trackers 8/10/12); the wiki is used. Set 18 (2026-09-24, docs/99_judgement_calls.md 161.11): level 7 odds (tftflow 18.2, esportstales), XP 7-10 (official 18.2 notes), 2-streak gold (op.gg, tft-lab) and stage 5-6 damage (op.gg, tftflow) were changed; income, interest, PvP gold, pool sizes and the other odds rows were re-confirmed against Set 18 sources. Stage 3-4 and 8+ damage and the level cap stay as shipped and are flagged unverified.",
     "riot_published": [],
     "community_documented": [
       "shop_odds",
@@ -220,7 +220,7 @@
     ],
     "engine_artifact": [
       "augments",
-      "augments.json (the whole file -- see docs/99_judgement_calls.md 17.1: the Set 17 CDragon payload carries no generic augment pool and no tier field, so these are archetypes, not Riot data)",
+      "augments.json tiers (docs/99_judgement_calls.md 152.4: the pool itself is fetched from CDragon since 17.1 was corrected, but Riot ships no tier field, so tiers are read off icon paths)",
       "shop_draw_weighting",
       "combat.tick_seconds",
       "combat.movement_hexes_per_second",
@@ -308,7 +308,10 @@
   "unverified": [
     "realm.cost_tiers (doc 99 entry 98: the schedule now covers every x-4, which real match data confirms is a no-combat round at every stage. The tier *offered* at 5-4 and later is not sourced -- 'cost = stage, capped at 5' continues the documented 1/2/3/4 pattern and is an assumption)",
     "augments.rounds (doc 01 sec 9 explicitly flags the 2-1/3-2/4-2 reveal pattern as unconfirmed for the current patch)",
-    "augments (doc 99 entry 17.1: augments.json is a set of generic archetypes, not the real Set 17 pool, which the CDragon payload does not expose)",
+    "augments (doc 99 entry 161.9: augments.json is the fetched pool, but 169 of its augments have no modelled behaviour and warn once when picked)",
+    "stage_base_damage (doc 99 entry 161.11: stages 5-6 are sourced for Set 18; stage 3 (5 vs 6), stage 4 (7 vs 8) and stage 8+ (150) are disputed between op.gg and tftflow and kept as shipped)",
+    "max_level (doc 99 entry 161.11: tft-lab gives a natural cap of 10, tftraits a cap of 11, and both odds sources print a level-11 row; how level 11 is reached is not sourced, so the cap stays 10)",
+    "realm (doc 99 entry 161.11: Set 18 replaces the Realm draft with a carousel at every x-4, and 1-1 is an opening encounter, not a draft; the schedule here is Set 17's until the carousel is modelled)",
     "combat.movement_hexes_per_second (doc 01 sec 9: not publicly documented, approximated)",
     "combat.projectile_hexes_per_second (doc 01 sec 3.1: travel time approximated)",
     "combat.armor_mitigation_constant (doc 01 sec 9: exact curve coefficient unconfirmed)",
