@@ -23261,3 +23261,127 @@ Both are engine mechanics for item 4d.
 - The Wisp and augment sections of tftraits, not audited here.
 - The second half of the prediction.
 
+### 161.11 The remaining facts, sourced
+
+161.10 left three things open: how to store the tftraits data, items, and
+the constants 161.4 marked unverified. **The user settled the terms
+question: the use is not redistribution, and no attribution is needed.**
+Everything below was checked by script on raw HTML, against the official
+18.1–18.3 notes wherever they speak. Search-engine summaries were used as
+leads only, never as values.
+
+**Abilities: two sources plus the notes.** tactics.tools `/info/units` is an
+**18.2 snapshot**. It shows the pre-18.3 value on 7 of 9 units that changed
+in 18.3, and its Varus and LeBlanc match their 18.2 values. Its advantage is
+that it names each variable (`Damage: 600 [400/600/950]`) and prints fuller
+formulas. Rammus's shield-break damage (25/37.5/60), for example, is absent
+from tftraits. The working recipe is therefore: **tactics.tools names and
+18.2 values, plus the 18.3 deltas, checked against tftraits' 18.3 text.**
+
+161.10's omissions, resolved:
+
+| unit | value | source |
+|---|---|---|
+| Alistar | self-heal exists: 200/260/320 at 18.2 on tactics.tools, 230/300/400 per the 18.3 notes | tactics.tools, notes |
+| Nidalee (AD form) | 210/315 per the 18.3 notes; the 3-star 3000 and armor ignore of 60/60/80% come from a search lead only | notes; lead unverified |
+| Master Yi (AP form) | 125/190/285 per the 18.2 notes; the 35% heal comes from a lead that quotes pre-18.2 numbers | notes; heal **unverified** |
+
+**Items: tactics.tools `/info/items` is current.** It shows post-18.2 values
+for Bloodthirster (18% AD and AP, 50% trigger, 30% shield), Edge of Night
+(40%, 15%) and Hand of Justice (18%, 15%). It covers 36 of the 39 `DA_*`
+advanced items; the 3 Tactician's items are missing.
+
+- **Every craftable base stat on it equals the legacy `TFT_Item_*` value,
+  except Bloodthirster's AD and AP, which are the 18.2 change.** So legacy
+  plus the note deltas, which 161.10 called unverified, is now confirmed for
+  base stats.
+- vntft's items are a **pre-18.2** snapshot. It agrees with tactics.tools on
+  10 of 11 items that 18.2 did not change.
+- Red Buff is the exception: 6% or 3% damage amp. The legacy entry carries
+  both (`BonusDamage` 0.06, and the hashed damage-amp key 0.03), so it stays
+  **unverified**.
+- Components: no page lists them. No note from 18.1 to 18.3 changes them, so
+  the legacy values stand, **not independently verified**.
+
+**Emblems carry more than a trait.** vntft's emblem list is an **18.2
+snapshot**: all 9 checks against 18.2 values match. Three of the 18.3
+emblem changes are not in it: Hunter's per-takedown AD (18%⇒15%), Invoker's
+mana regen (3⇒2) and Juggernaut's mana on death (15⇒10). The 18.3 deltas
+therefore apply on top. Several Set 18 emblems grant an effect beyond stats
+and the trait:
+
+- Defender: Attack Speed per front-row ally.
+- Vanguard: +1 player health for surviving 22 seconds.
+- Executioner: executes below 8% health.
+
+Those are engine work under item 4b. tftraits supplies the recipes and marks
+which emblems cannot be crafted.
+
+**Economy.** op.gg and tft-lab (labelled 18.1) agree with each other on all
+of it:
+
+| constant | Set 18 | `config.json` |
+|---|---|---|
+| income ramp (1-2 to 2-2+) | 2/2/3/4/5 | matches |
+| interest | +1 per 10g, capped at 5 | matches |
+| PvP win gold | 1 | matches |
+| **streak gold** | 2:+1, 3:+1, 4:+1, 5:+2, 6+:+3 | **differs**: no payout at a 2-streak |
+
+Both sites' XP tables read 60/68/68 and are stale against the official 18.2
+change to 56/64/64.
+
+**Level cap.** tft-lab says "max level is 10". tftraits says "level cap 11".
+Both odds sources print a level 11 row, and no XP table goes past 10. The
+reading most consistent with all of that: a natural cap of 10, with 11
+reachable through augments or encounters. That is **unverified**. tft-lab
+also says the game starts at level 2, which does not match how
+`config.json`'s XP table is keyed; that is **unverified** and needs a look at
+the engine's own start level.
+
+**Stage base damage:**
+
+| stage | 3 | 4 | 5 | 6 | 7 | 8+ |
+|---|---|---|---|---|---|---|
+| op.gg | 5 | 8 | 10 | 12 | 17 | — |
+| tftflow | 6 | 7 | 10 | 12 | 17 | 150 |
+| `config.json` | 5 | 7 | 9 | 11 | 17 | 150 |
+
+Stages 5 and 6 agree across both Set 18 sources and **differ from
+`config.json`**. Stages 3, 4 and 8+ stay **disputed**.
+
+**Round structure (tft-lab):**
+
+- 1-1 is an opening encounter, and 1-2 to 1-4 are PvE.
+- Augments come at 2-1, 3-2 and 4-2; carousels at every x-4; PvE at every x-7.
+
+That matches `config.json`'s augment rounds and PvE schedule. `realm.rounds`
+also schedules 1-1, which Set 18 makes an encounter rather than a draft.
+
+**What this changes in 161.7.** Every magnitude class now has a named source
+and a provenance rule:
+
+| class | source |
+|---|---|
+| abilities | tactics.tools names + 18.3 deltas, checked against tftraits |
+| traits | tftraits |
+| base stats | CDragon, checked against the notes |
+| craftable items | tactics.tools; equivalently, legacy + deltas |
+| emblems | vntft + 18.3 deltas |
+| components | legacy |
+| economy | op.gg and tft-lab, with the XP table from the notes |
+
+Item 3's constants are now concrete: level 7 odds, XP 56/64/64, 2-streak
+gold, and stage 5 and 6 damage of 10 and 12. Stages 3, 4 and 8+ and the
+level-11 rule stay flagged 🟠.
+
+**Still open:**
+
+- Red Buff's damage amp.
+- Master Yi's AP-form heal.
+- Component stats verified independently of legacy.
+- The three Tactician's items.
+- Stage damage at 3, 4 and 8+.
+- How level 11 is reached.
+- The starting level.
+- The augment and Wisp sections, which are item 4e's decision.
+
