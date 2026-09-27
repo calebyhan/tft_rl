@@ -1,0 +1,5884 @@
+[
+  {
+    "id": "DA_18_BigGrabBag",
+    "display_name": "Big Grab Bag",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0
+    }
+  },
+  {
+    "id": "DA_18_BlossomTraitAugment",
+    "display_name": "Blossom's Call",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_BlossomTraitAugment",
+    "params": {}
+  },
+  {
+    "id": "DA_18_BranchingOut",
+    "display_name": "Branching Out",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_BranchingOut",
+    "params": {}
+  },
+  {
+    "id": "DA_18_BranchingOutPlus",
+    "display_name": "Branching Out+",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_BranchingOutPlus",
+    "params": {}
+  },
+  {
+    "id": "DA_18_CaretakersAlly",
+    "display_name": "Caretaker's Ally",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_CaretakersAlly",
+    "params": {}
+  },
+  {
+    "id": "DA_18_CovenTraitAugment",
+    "display_name": "Coven Acolyte",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "health": 2.0
+    }
+  },
+  {
+    "id": "DA_18_CovenTraitAugment_LootToAP",
+    "display_name": "Dark Ritual",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_CovenTraitAugment_LootToAP",
+    "params": {}
+  },
+  {
+    "id": "DA_18_DuoQueue",
+    "display_name": "Duo Queue",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_DuoQueue",
+    "params": {}
+  },
+  {
+    "id": "DA_18_ElderwoodTraitAugment",
+    "display_name": "Nature's Shelter",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_ElderwoodTraitAugment",
+    "params": {
+      "attack_speed_pct": 0.0015,
+      "Heal": 0.019999999552965164,
+      "HealInterval": 2.0
+    }
+  },
+  {
+    "id": "DA_18_FOURcing",
+    "display_name": "FOURcing",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "health": 100.0
+    }
+  },
+  {
+    "id": "DA_18_FaeTraitAugment",
+    "display_name": "Embiggen",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_FaeTraitAugment",
+    "params": {
+      "BonusMultiplier": 0.5,
+      "{020fc56b}": 0.10000000149011612
+    }
+  },
+  {
+    "id": "DA_18_FloraFatalisAugment",
+    "display_name": "Consuming Flora",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0,
+      "{df808d3d}": 0.5
+    }
+  },
+  {
+    "id": "DA_18_GoodForSomethingI",
+    "display_name": "Good For Something I",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_GoodForSomethingI",
+    "params": {
+      "GoldReward": 1.0,
+      "{f117ccd4}": 0.4000000059604645
+    }
+  },
+  {
+    "id": "DA_18_InfernoTraitAugment",
+    "display_name": "Flame On",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_InfernoTraitAugment",
+    "params": {
+      "ADAP": 0.20000000298023224
+    }
+  },
+  {
+    "id": "DA_18_LunarTraitAugment",
+    "display_name": "Sun and Moon",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "damage_amp": 0.08,
+      "health": 100.0
+    }
+  },
+  {
+    "id": "DA_18_LunarTraitAugmentPlus",
+    "display_name": "Sun and Moon+",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "damage_amp": 0.08,
+      "health": 100.0
+    }
+  },
+  {
+    "id": "DA_18_LuxAugmentII",
+    "display_name": "Master of All Origins",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_18_LuxAugmentII",
+    "params": {
+      "{d6cf9365}": 3.0
+    }
+  },
+  {
+    "id": "DA_18_OneTwoFive",
+    "display_name": "One, Two, Five!",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0
+    }
+  },
+  {
+    "id": "DA_18_OnesTwosThree",
+    "display_name": "Ones Two Three",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_OnesTwosThree",
+    "params": {
+      "{16f514ab}": 1.0,
+      "{79bfdecd}": 1.0,
+      "{c280645f}": 2.0
+    }
+  },
+  {
+    "id": "DA_18_PrimalAugmentPlus_Nidalee",
+    "display_name": "Beast Within+",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_PrimalAugmentPlus_Nidalee",
+    "params": {}
+  },
+  {
+    "id": "DA_18_PrimalAugmentPlus_Sivir",
+    "display_name": "Beast Within+",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_PrimalAugmentPlus_Sivir",
+    "params": {}
+  },
+  {
+    "id": "DA_18_PrimalAugment_Nidalee",
+    "display_name": "Beast Within",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_PrimalAugment_Nidalee",
+    "params": {
+      "{288cc52f}": 3.0
+    }
+  },
+  {
+    "id": "DA_18_PrimalAugment_Sivir",
+    "display_name": "Beast Within",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_PrimalAugment_Sivir",
+    "params": {
+      "{288cc52f}": 3.0
+    }
+  },
+  {
+    "id": "DA_18_ResidualMagic",
+    "display_name": "Residual Magic",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_ResidualMagic",
+    "params": {
+      "InitialHealth": 60.0,
+      "{17a52adf}": 10.0
+    }
+  },
+  {
+    "id": "DA_18_ResidualMagicPlus",
+    "display_name": "Residual Magic +",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_ResidualMagicPlus",
+    "params": {
+      "InitialHealth": 75.0,
+      "{17a52adf}": 10.0
+    }
+  },
+  {
+    "id": "DA_18_ResidualMagicPlusPlus",
+    "display_name": "Residual Magic ++",
+    "tier": "silver",
+    "effect_id": "augment_DA_18_ResidualMagicPlusPlus",
+    "params": {
+      "InitialHealth": 90.0,
+      "{17a52adf}": 10.0
+    }
+  },
+  {
+    "id": "DA_18_RiftbeastTraitAugment",
+    "display_name": "Omega Riftbeast",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_RiftbeastTraitAugment",
+    "params": {}
+  },
+  {
+    "id": "DA_18_RivalsAugment",
+    "display_name": "Unrivaled",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_RivalsAugment",
+    "params": {}
+  },
+  {
+    "id": "DA_18_SolarTraitAugment",
+    "display_name": "Chosen of the Sun",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_SolarTraitAugment",
+    "params": {
+      "FlatHealth": 70.0,
+      "{ff019e0e}": 10.0
+    }
+  },
+  {
+    "id": "DA_18_SprykinAugment",
+    "display_name": "Small Furry Friend",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_SprykinAugment",
+    "params": {
+      "{7f8d6662}": 0.3499999940395355
+    }
+  },
+  {
+    "id": "DA_18_WeightTheWorth",
+    "display_name": "Weight The Worth",
+    "tier": "gold",
+    "effect_id": "augment_DA_18_WeightTheWorth",
+    "params": {}
+  },
+  {
+    "id": "DA_18_WispRebatePlus",
+    "display_name": "Wisp Rebate",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "{66816927}": 4.0
+    }
+  },
+  {
+    "id": "DA_18_WispRebatePlusPlus",
+    "display_name": "Wisp Rebate+",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "{66816927}": 8.0
+    }
+  },
+  {
+    "id": "DA_AdvancedLoan",
+    "display_name": "Advanced Loan",
+    "tier": "gold",
+    "effect_id": "augment_DA_AdvancedLoan",
+    "params": {
+      "{c2c01596}": 20.0
+    }
+  },
+  {
+    "id": "DA_AdvancedLoanPlus",
+    "display_name": "Advanced Loan+",
+    "tier": "gold",
+    "effect_id": "augment_DA_AdvancedLoanPlus",
+    "params": {
+      "{076d12c0}": 33.0
+    }
+  },
+  {
+    "id": "DA_ArcaneViktory",
+    "display_name": "Arcane Viktor-y",
+    "tier": "gold",
+    "effect_id": "augment_DA_ArcaneViktory",
+    "params": {
+      "StunDuration": 1.5,
+      "{234b347e}": 8.0,
+      "{4c23f86b}": 18.0
+    }
+  },
+  {
+    "id": "DA_Ascension",
+    "display_name": "Ascension",
+    "tier": "gold",
+    "effect_id": "augment_DA_Ascension",
+    "params": {
+      "damage_amp": 0.35,
+      "ActivationDelay": 12.0
+    }
+  },
+  {
+    "id": "DA_AugmentedPower",
+    "display_name": "Augmented Power",
+    "tier": "silver",
+    "effect_id": "augment_DA_AugmentedPower",
+    "params": {}
+  },
+  {
+    "id": "DA_BacklineBlueprint",
+    "display_name": "Backline Blueprint",
+    "tier": "gold",
+    "effect_id": "augment_DA_BacklineBlueprint",
+    "params": {}
+  },
+  {
+    "id": "DA_BackupBows",
+    "display_name": "Backup Bows",
+    "tier": "silver",
+    "effect_id": "augment_DA_BackupBows",
+    "params": {
+      "AttackCount": 1000.0,
+      "{434df90e}": 2.0
+    }
+  },
+  {
+    "id": "DA_BandOfThieves",
+    "display_name": "Band of Thieves",
+    "tier": "silver",
+    "effect_id": "augment_DA_BandOfThieves",
+    "params": {
+      "{df001585}": 1.0
+    }
+  },
+  {
+    "id": "DA_BandOfThievesII",
+    "display_name": "Band of Thieves II",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_BandOfThievesII",
+    "params": {
+      "{1e541b17}": 2.0,
+      "{cd9faa42}": 5.0
+    }
+  },
+  {
+    "id": "DA_BandOfThievesIIPlus",
+    "display_name": "Band of Thieves II+",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_BandOfThievesIIPlus",
+    "params": {
+      "{14baa76b}": 2.0,
+      "{4af53eb6}": 5.0
+    }
+  },
+  {
+    "id": "DA_BandOfThievesIIPlusPlus",
+    "display_name": "Band of Thieves II++",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_BandOfThievesIIPlusPlus",
+    "params": {
+      "{1336236f}": 2.0,
+      "{3c620baa}": 3.0
+    }
+  },
+  {
+    "id": "DA_BaronsLair",
+    "display_name": "Baron's Lair",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_BaronsLair",
+    "params": {
+      "StartSeconds": 8.0,
+      "Stats": 0.03999999910593033
+    }
+  },
+  {
+    "id": "DA_BeltOverflow",
+    "display_name": "Belt Overflow",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_BeltOverflow",
+    "params": {
+      "{4c69dfc4}": 85.0,
+      "{c37beadb}": 4.0
+    }
+  },
+  {
+    "id": "DA_BirthdayPresent",
+    "display_name": "Birthday Present",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1.0,
+      "{0d14760d}": 5.0,
+      "{c2a3e602}": 4.0
+    }
+  },
+  {
+    "id": "DA_BirthdayReunion",
+    "display_name": "Birthday Reunion",
+    "tier": "gold",
+    "effect_id": "augment_DA_BirthdayReunion",
+    "params": {
+      "{6aaaa386}": 2.0,
+      "{753e85a2}": 5.0,
+      "{90aacdef}": 6.0,
+      "{b4ea6eba}": 2.0,
+      "{c64c8794}": 9.0
+    }
+  },
+  {
+    "id": "DA_BlackthornTraitAugment",
+    "display_name": "Item Extraction",
+    "tier": "gold",
+    "effect_id": "augment_DA_BlackthornTraitAugment",
+    "params": {
+      "NumComponents": 3.0
+    }
+  },
+  {
+    "id": "DA_BodyguardTraining",
+    "display_name": "Bodyguard Training",
+    "tier": "gold",
+    "effect_id": "augment_DA_BodyguardTraining",
+    "params": {
+      "ArmorBonus": 15.0,
+      "{8ca89e49}": 2.0
+    }
+  },
+  {
+    "id": "DA_BonusGift",
+    "display_name": "Bonus Gifts",
+    "tier": "gold",
+    "effect_id": "augment_DA_BonusGift",
+    "params": {
+      "Chance": 0.25,
+      "{8ec37f1f}": 1.0
+    }
+  },
+  {
+    "id": "DA_BonusGiftPlus",
+    "display_name": "Bonus Gifts+",
+    "tier": "gold",
+    "effect_id": "augment_DA_BonusGiftPlus",
+    "params": {
+      "Chance": 0.25,
+      "{8ec37f1f}": 2.0
+    }
+  },
+  {
+    "id": "DA_BoosterPack",
+    "display_name": "Booster Pack",
+    "tier": "gold",
+    "effect_id": "augment_DA_BoosterPack",
+    "params": {
+      "{4b65cc7c}": 3.0,
+      "{8aa0da9c}": 12.0
+    }
+  },
+  {
+    "id": "DA_BoosterPackPlus",
+    "display_name": "Booster Pack+",
+    "tier": "gold",
+    "effect_id": "augment_DA_BoosterPackPlus",
+    "params": {
+      "{c717f167}": 18.0,
+      "{ecffcc47}": 4.0
+    }
+  },
+  {
+    "id": "DA_BoosterPackPlusPlus",
+    "display_name": "Booster Pack++",
+    "tier": "gold",
+    "effect_id": "augment_DA_BoosterPackPlusPlus",
+    "params": {
+      "{171edc1b}": 26.0,
+      "{cbc2b1fb}": 5.0
+    }
+  },
+  {
+    "id": "DA_BoxingLessons",
+    "display_name": "Boxing Lessons",
+    "tier": "silver",
+    "effect_id": "augment_DA_BoxingLessons",
+    "params": {
+      "{0e4302c3}": 30.0
+    }
+  },
+  {
+    "id": "DA_BronzeForLifeI",
+    "display_name": "Bronze For Life I",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "damage_amp": 0.025
+    }
+  },
+  {
+    "id": "DA_BronzeForLifeII",
+    "display_name": "Bronze For Life II",
+    "tier": "prismatic",
+    "effect_id": null,
+    "params": {
+      "armor": 4.0,
+      "damage_amp": 0.025
+    }
+  },
+  {
+    "id": "DA_BuildABud",
+    "display_name": "Build A Bud",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_BuildABud",
+    "params": {
+      "NumGold": 6.0,
+      "UnitCost": 1.0,
+      "{141b5538}": 3.0
+    }
+  },
+  {
+    "id": "DA_BuriedTreasuresIII",
+    "display_name": "Buried Treasures III",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_BuriedTreasuresIII",
+    "params": {
+      "{bb1120a8}": 6.0
+    }
+  },
+  {
+    "id": "DA_CallToChaos",
+    "display_name": "Call To Chaos",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_CallToChaos",
+    "params": {}
+  },
+  {
+    "id": "DA_CalledShot",
+    "display_name": "Called Shot",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0,
+      "{dccca3be}": 4.0
+    }
+  },
+  {
+    "id": "DA_CapitalGainsI",
+    "display_name": "Capital Gains I",
+    "tier": "silver",
+    "effect_id": "augment_DA_CapitalGainsI",
+    "params": {
+      "Round": 3.0,
+      "Stage": 3.0,
+      "{1c49a816}": 1.0,
+      "{66816927}": 1.0
+    }
+  },
+  {
+    "id": "DA_CapitalGainsII",
+    "display_name": "Capital Gains II",
+    "tier": "gold",
+    "effect_id": "augment_DA_CapitalGainsII",
+    "params": {
+      "Round": 3.0,
+      "Stage": 3.0,
+      "{1c49a816}": 1.25,
+      "{66816927}": 3.0
+    }
+  },
+  {
+    "id": "DA_CaretakersFavor",
+    "display_name": "Caretaker's Favor",
+    "tier": "gold",
+    "effect_id": "augment_DA_CaretakersFavor",
+    "params": {}
+  },
+  {
+    "id": "DA_CarveAPath",
+    "display_name": "Carve a Path",
+    "tier": "silver",
+    "effect_id": "augment_DA_CarveAPath",
+    "params": {
+      "{0d78d513}": 2.0,
+      "{1e3f247d}": 65000.0
+    }
+  },
+  {
+    "id": "DA_CelestialBlessingI",
+    "display_name": "Celestial Blessing I",
+    "tier": "silver",
+    "effect_id": "augment_DA_CelestialBlessingI",
+    "params": {
+      "{5c26a433}": 0.11999999731779099,
+      "{90b497f5}": 200.0
+    }
+  },
+  {
+    "id": "DA_CelestialBlessingII",
+    "display_name": "Celestial Blessing II",
+    "tier": "gold",
+    "effect_id": "augment_DA_CelestialBlessingII",
+    "params": {
+      "{684aaa94}": 400.0,
+      "{6ad4b9ae}": 0.18000000715255737
+    }
+  },
+  {
+    "id": "DA_CelestialBlessingIII",
+    "display_name": "Celestial Blessing III",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_CelestialBlessingIII",
+    "params": {
+      "{2a8b2c47}": 1000.0,
+      "{f3e07445}": 0.25
+    }
+  },
+  {
+    "id": "DA_ChallengersGrace",
+    "display_name": "Challenger's Grace",
+    "tier": "gold",
+    "effect_id": "augment_DA_ChallengersGrace",
+    "params": {
+      "BuffDuration": 3.0,
+      "{ad998bcf}": 0.25
+    }
+  },
+  {
+    "id": "DA_ChampDelivery",
+    "display_name": "Champ Delivery",
+    "tier": "silver",
+    "effect_id": "augment_DA_ChampDelivery",
+    "params": {
+      "ChampCost": 2.0,
+      "Delay": 6.0,
+      "{30e83e0d}": 3.0,
+      "{b82d82af}": 3.0
+    }
+  },
+  {
+    "id": "DA_ChampDeliveryPlus",
+    "display_name": "Champ Delivery+",
+    "tier": "silver",
+    "effect_id": "augment_DA_ChampDeliveryPlus",
+    "params": {
+      "ChampCost": 3.0,
+      "Delay": 6.0,
+      "{30e83e0d}": 3.0,
+      "{b82d82af}": 3.0
+    }
+  },
+  {
+    "id": "DA_ChampDeliveryPlusPlus",
+    "display_name": "Champ Delivery++",
+    "tier": "silver",
+    "effect_id": "augment_DA_ChampDeliveryPlusPlus",
+    "params": {
+      "ChampCost": 4.0,
+      "Delay": 6.0,
+      "{30e83e0d}": 3.0,
+      "{b82d82af}": 3.0
+    }
+  },
+  {
+    "id": "DA_ClearMind",
+    "display_name": "Clear Mind",
+    "tier": "gold",
+    "effect_id": "augment_DA_ClearMind",
+    "params": {
+      "XPGain": 3.0
+    }
+  },
+  {
+    "id": "DA_ClockworkAccelerator",
+    "display_name": "Clockwork Accelerator",
+    "tier": "gold",
+    "effect_id": "augment_DA_ClockworkAccelerator",
+    "params": {
+      "attack_speed_pct": 0.001,
+      "{0810f00e}": 3.0
+    }
+  },
+  {
+    "id": "DA_ClutteredMind",
+    "display_name": "Cluttered Mind",
+    "tier": "gold",
+    "effect_id": "augment_DA_ClutteredMind",
+    "params": {
+      "NumChamps": 4.0,
+      "XPGain": 3.0,
+      "{d546bdd8}": 1.0
+    }
+  },
+  {
+    "id": "DA_CognitiveOverload",
+    "display_name": "Cognitive Overload",
+    "tier": "gold",
+    "effect_id": "augment_DA_CognitiveOverload",
+    "params": {
+      "ChampCost": 1.0,
+      "NumGold": 7.0,
+      "NumRerolls": 1.0,
+      "{12945232}": 3.0,
+      "{139453c5}": 2.0,
+      "{6aaaa386}": 2.0,
+      "{718ec2c6}": 1.0,
+      "{9b31b433}": 1.0,
+      "{b7bce61c}": 1.0,
+      "{b8bce7af}": 2.0
+    }
+  },
+  {
+    "id": "DA_CognitiveTax",
+    "display_name": "Cognitive Tax",
+    "tier": "silver",
+    "effect_id": "augment_DA_CognitiveTax",
+    "params": {
+      "NumGold": 8.0,
+      "{9b31b433}": 1.0
+    }
+  },
+  {
+    "id": "DA_CognitiveTaxPlus",
+    "display_name": "Cognitive Tax+",
+    "tier": "silver",
+    "effect_id": "augment_DA_CognitiveTaxPlus",
+    "params": {
+      "{351944c7}": 3.0,
+      "{96ce7ab1}": 12.0
+    }
+  },
+  {
+    "id": "DA_ComebackStory",
+    "display_name": "Comeback Story",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_ComebackStory",
+    "params": {
+      "HPPerMissingHP": 4.0,
+      "{54f2d0e4}": 0.003000000026077032
+    }
+  },
+  {
+    "id": "DA_CommerceCore",
+    "display_name": "Commerce Core",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_CommerceCore",
+    "params": {
+      "{cfee5822}": 3.0,
+      "{fce5f43a}": 16.0
+    }
+  },
+  {
+    "id": "DA_ComponentBuffet",
+    "display_name": "Component Buffet",
+    "tier": "silver",
+    "effect_id": "augment_DA_ComponentBuffet",
+    "params": {}
+  },
+  {
+    "id": "DA_ComponentQuest",
+    "display_name": "Component Quest",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_ComponentQuest",
+    "params": {
+      "NumGold": 1.0,
+      "{4daea365}": 5.0
+    }
+  },
+  {
+    "id": "DA_CookingPot",
+    "display_name": "Cooking Pot",
+    "tier": "gold",
+    "effect_id": "augment_DA_CookingPot",
+    "params": {
+      "HealthIncrease": 60.0
+    }
+  },
+  {
+    "id": "DA_Coronation",
+    "display_name": "Coronation",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_Coronation",
+    "params": {
+      "attack_speed_pct": 0.002,
+      "AbilityPower": 0.30000001192092896,
+      "AttackDamage": 0.25
+    }
+  },
+  {
+    "id": "DA_Corrosion",
+    "display_name": "Corrosion",
+    "tier": "silver",
+    "effect_id": "augment_DA_Corrosion",
+    "params": {
+      "ResistLoss": 4.0,
+      "Time": 2.0
+    }
+  },
+  {
+    "id": "DA_CraftedCrafting",
+    "display_name": "Crafted Crafting",
+    "tier": "silver",
+    "effect_id": "augment_DA_CraftedCrafting",
+    "params": {
+      "{aed5e4c4}": 2.0
+    }
+  },
+  {
+    "id": "DA_CryMeARiver",
+    "display_name": "Cry Me A River",
+    "tier": "gold",
+    "effect_id": "augment_DA_CryMeARiver",
+    "params": {
+      "RegenBonus": 1.0,
+      "UpgradedRegenBonus": 4.0,
+      "{a69302a6}": 12.0
+    }
+  },
+  {
+    "id": "DA_CyberneticImplants_Gold",
+    "display_name": "Cybernetic Implants",
+    "tier": "gold",
+    "effect_id": "augment_DA_CyberneticImplants_Gold",
+    "params": {
+      "{697f1a9e}": 0.15000000596046448,
+      "{b64e9f63}": 100.0
+    }
+  },
+  {
+    "id": "DA_CyberneticUplink_Gold",
+    "display_name": "Cybernetic Uplink",
+    "tier": "gold",
+    "effect_id": "augment_DA_CyberneticUplink_Gold",
+    "params": {
+      "{8f6709ad}": 2.0,
+      "{b64e9f63}": 100.0
+    }
+  },
+  {
+    "id": "DA_DeadlierBlades",
+    "display_name": "Deadlier Blades",
+    "tier": "gold",
+    "effect_id": "augment_DA_DeadlierBlades",
+    "params": {
+      "AttackDamagePercent": 0.009999999776482582
+    }
+  },
+  {
+    "id": "DA_DeadlierCaps",
+    "display_name": "Deadlier Caps",
+    "tier": "gold",
+    "effect_id": "augment_DA_DeadlierCaps",
+    "params": {
+      "ManaGen": 1.0,
+      "{b8e3e5e3}": 0.009999999776482582
+    }
+  },
+  {
+    "id": "DA_Dummify",
+    "display_name": "Dummify",
+    "tier": "silver",
+    "effect_id": "augment_DA_Dummify",
+    "params": {
+      "{9190ad30}": 0.6000000238418579,
+      "{acc6fa4b}": 1150.0
+    }
+  },
+  {
+    "id": "DA_EarlyLearnings",
+    "display_name": "Early Learnings",
+    "tier": "gold",
+    "effect_id": "augment_DA_EarlyLearnings",
+    "params": {
+      "{6af58d52}": 5.0,
+      "{b584a6db}": 1.0
+    }
+  },
+  {
+    "id": "DA_ElectrochargeI",
+    "display_name": "Electrocharge I",
+    "tier": "silver",
+    "effect_id": "augment_DA_ElectrochargeI",
+    "params": {
+      "Cooldown": 1.0,
+      "{75249118}": 90.0,
+      "{b342e48b}": 30.0,
+      "{c6163c80}": 4.0
+    }
+  },
+  {
+    "id": "DA_ElectrochargeII",
+    "display_name": "Electrocharge II",
+    "tier": "gold",
+    "effect_id": "augment_DA_ElectrochargeII",
+    "params": {
+      "Cooldown": 1.0,
+      "{0f3faf3d}": 140.0,
+      "{144e4fc6}": 50.0,
+      "{c6163c80}": 4.0
+    }
+  },
+  {
+    "id": "DA_EpicRolldown",
+    "display_name": "Epic Rolldown",
+    "tier": "gold",
+    "effect_id": "augment_DA_EpicRolldown",
+    "params": {
+      "Level": 8.0,
+      "Rerolls": 20.0
+    }
+  },
+  {
+    "id": "DA_Epoch",
+    "display_name": "Epoch",
+    "tier": "gold",
+    "effect_id": "augment_DA_Epoch",
+    "params": {
+      "{795f1afe}": 4.0,
+      "{831a9955}": 2.0
+    }
+  },
+  {
+    "id": "DA_EpochPlus",
+    "display_name": "Epoch+",
+    "tier": "gold",
+    "effect_id": "augment_DA_EpochPlus",
+    "params": {
+      "{4951ec62}": 8.0,
+      "{c409ef91}": 2.0
+    }
+  },
+  {
+    "id": "DA_ExclusiveCustomization",
+    "display_name": "Exclusive Customization",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7.0
+    }
+  },
+  {
+    "id": "DA_ExpectedUnexpectedness",
+    "display_name": "Expected Unexpectedness",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_ExpectedUnexpectedness",
+    "params": {}
+  },
+  {
+    "id": "DA_Expedition",
+    "display_name": "Expedition",
+    "tier": "silver",
+    "effect_id": "augment_DA_Expedition",
+    "params": {
+      "CashoutCost": 33.0
+    }
+  },
+  {
+    "id": "DA_ExplosiveGrowth",
+    "display_name": "Explosive Growth",
+    "tier": "gold",
+    "effect_id": "augment_DA_ExplosiveGrowth",
+    "params": {
+      "XPPerRound": 7.0,
+      "rounds": 3.0
+    }
+  },
+  {
+    "id": "DA_ExplosiveGrowthPlus",
+    "display_name": "Explosive Growth+",
+    "tier": "gold",
+    "effect_id": "augment_DA_ExplosiveGrowthPlus",
+    "params": {
+      "rounds": 3.0,
+      "{5ad11391}": 10.0,
+      "{822fdcb5}": 3.0
+    }
+  },
+  {
+    "id": "DA_ExtraBuckles",
+    "display_name": "Extra Buckles",
+    "tier": "silver",
+    "effect_id": "augment_DA_ExtraBuckles",
+    "params": {
+      "{25a5e77d}": 75000.0,
+      "{ca6db686}": 2.0
+    }
+  },
+  {
+    "id": "DA_FeelingLucky",
+    "display_name": "Feeling Lucky",
+    "tier": "silver",
+    "effect_id": "augment_DA_FeelingLucky",
+    "params": {
+      "{b198bbbb}": 4.0,
+      "{be75f5e1}": 12.0
+    }
+  },
+  {
+    "id": "DA_FindYourCenter",
+    "display_name": "Find Your Center",
+    "tier": "silver",
+    "effect_id": "augment_DA_FindYourCenter",
+    "params": {
+      "DamageAmpPercent": 0.15000000596046448,
+      "MaxHealthMultiplier": 0.25
+    }
+  },
+  {
+    "id": "DA_Flexible",
+    "display_name": "Flexible",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "health": 30.0
+    }
+  },
+  {
+    "id": "DA_FlowingTears",
+    "display_name": "Flowing Tears",
+    "tier": "silver",
+    "effect_id": "augment_DA_FlowingTears",
+    "params": {
+      "{c11bb61b}": 2.0,
+      "{ca7d02a1}": 6500.0
+    }
+  },
+  {
+    "id": "DA_FocusedFire",
+    "display_name": "Focused Fire",
+    "tier": "silver",
+    "effect_id": "augment_DA_FocusedFire",
+    "params": {
+      "attack_damage_pct": 0.1,
+      "Timer": 5.0,
+      "{7c17607a}": 0.05000000074505806
+    }
+  },
+  {
+    "id": "DA_ForgedInStrength",
+    "display_name": "Forged In Strength",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_ForgedInStrength",
+    "params": {
+      "health": 35.0,
+      "{559cca94}": 2.0,
+      "{70b8be03}": 1.0,
+      "{736a47ea}": 1.0,
+      "{8ec217d3}": 1.0
+    }
+  },
+  {
+    "id": "DA_FrontlineFoundation",
+    "display_name": "Frontline Foundation",
+    "tier": "gold",
+    "effect_id": "augment_DA_FrontlineFoundation",
+    "params": {}
+  },
+  {
+    "id": "DA_FutureFocused",
+    "display_name": "Future Focused",
+    "tier": "silver",
+    "effect_id": "augment_DA_FutureFocused",
+    "params": {
+      "HealthLoss": 20.0,
+      "NumChampions": 3.0,
+      "NumRounds": 5.0,
+      "{461c2a88}": 8.0
+    }
+  },
+  {
+    "id": "DA_GainGold",
+    "display_name": "Gain 21 Gold",
+    "tier": "gold",
+    "effect_id": "augment_DA_GainGold",
+    "params": {
+      "NumGold": 21.0
+    }
+  },
+  {
+    "id": "DA_GiantAndMighty",
+    "display_name": "Giant and Mighty",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_GiantAndMighty",
+    "params": {
+      "FlatHealth": 200.0,
+      "{52fcdfb4}": 0.10000002384185791
+    }
+  },
+  {
+    "id": "DA_GildedSteel",
+    "display_name": "Gilded Steel",
+    "tier": "gold",
+    "effect_id": "augment_DA_GildedSteel",
+    "params": {
+      "Durability": 0.07999999821186066
+    }
+  },
+  {
+    "id": "DA_GlassCannon_Gold",
+    "display_name": "Glass Cannon II",
+    "tier": "gold",
+    "effect_id": "augment_DA_GlassCannon_Gold",
+    "params": {
+      "{3013a2e1}": 0.25,
+      "{eb5881d0}": 0.800000011920929
+    }
+  },
+  {
+    "id": "DA_GlassCannon_Silver",
+    "display_name": "Glass Cannon I",
+    "tier": "silver",
+    "effect_id": "augment_DA_GlassCannon_Silver",
+    "params": {
+      "damage_amp": 0.16,
+      "{9e58e1a9}": 0.800000011920929
+    }
+  },
+  {
+    "id": "DA_GoingLong",
+    "display_name": "Going Long",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_GoingLong",
+    "params": {
+      "{1e108c20}": 10.0,
+      "{677df9f0}": 4.0,
+      "{dcfa8547}": 10.0
+    }
+  },
+  {
+    "id": "DA_GoldDestiny",
+    "display_name": "Gold Destiny",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0
+    }
+  },
+  {
+    "id": "DA_GoldDestinyPlus",
+    "display_name": "Gold Destiny+",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 5.0
+    }
+  },
+  {
+    "id": "DA_GoldenEgg",
+    "display_name": "The Golden Egg",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_GoldenEgg",
+    "params": {
+      "rounds": 11.0
+    }
+  },
+  {
+    "id": "DA_GoldenGamble",
+    "display_name": "Golden Gamble",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "NumAnvils": 2.0
+    }
+  },
+  {
+    "id": "DA_GoldenGamblePlus",
+    "display_name": "Golden Gamble+",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0,
+      "NumAnvils": 2.0
+    }
+  },
+  {
+    "id": "DA_GoldenGamblePlusPlus",
+    "display_name": "Golden Gamble++",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 6.0,
+      "NumAnvils": 2.0
+    }
+  },
+  {
+    "id": "DA_GroupHugI",
+    "display_name": "Group Hug I",
+    "tier": "silver",
+    "effect_id": "augment_DA_GroupHugI",
+    "params": {
+      "{9724cae4}": 6.0
+    }
+  },
+  {
+    "id": "DA_GroupHugII",
+    "display_name": "Group Hug II",
+    "tier": "gold",
+    "effect_id": "augment_DA_GroupHugII",
+    "params": {
+      "{cf29d61f}": 9.0
+    }
+  },
+  {
+    "id": "DA_HardBargain",
+    "display_name": "Hard Bargain",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 8.0,
+      "PlayerHealth": 6.0
+    }
+  },
+  {
+    "id": "DA_HardCommit",
+    "display_name": "Hard Commit",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_HardCommit",
+    "params": {}
+  },
+  {
+    "id": "DA_HealingOrbsI",
+    "display_name": "Healing Orbs I",
+    "tier": "silver",
+    "effect_id": "augment_DA_HealingOrbsI",
+    "params": {
+      "{cab2cdc5}": 250.0
+    }
+  },
+  {
+    "id": "DA_HealingOrbsII",
+    "display_name": "Healing Orbs II",
+    "tier": "gold",
+    "effect_id": "augment_DA_HealingOrbsII",
+    "params": {
+      "{2b5df382}": 575.0
+    }
+  },
+  {
+    "id": "DA_HeartOfSteel",
+    "display_name": "Heart of Steel",
+    "tier": "gold",
+    "effect_id": "augment_DA_HeartOfSteel",
+    "params": {
+      "MaxHealthGain": 16.0,
+      "{40e6f170}": 10.0
+    }
+  },
+  {
+    "id": "DA_HedgeFund",
+    "display_name": "Hedge Fund",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_HedgeFund",
+    "params": {
+      "InstantGold": 22.0
+    }
+  },
+  {
+    "id": "DA_HeroicGrabBag",
+    "display_name": "Heroic Grab Bag",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0
+    }
+  },
+  {
+    "id": "DA_HeroicGrabBagPlus",
+    "display_name": "Heroic Grab Bag+",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 8.0
+    }
+  },
+  {
+    "id": "DA_HeroicGrabBagPlusPlus",
+    "display_name": "Heroic Grab Bag++",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 14.0
+    }
+  },
+  {
+    "id": "DA_HoldTheLine",
+    "display_name": "Hold the Line",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_HoldTheLine",
+    "params": {
+      "{910d2567}": 0.09000000357627869,
+      "{dac37571}": 0.10000000149011612
+    }
+  },
+  {
+    "id": "DA_Hustler",
+    "display_name": "Hustler",
+    "tier": "gold",
+    "effect_id": "augment_DA_Hustler",
+    "params": {
+      "{1e108c20}": 3.0,
+      "{a3ad916e}": 3.0,
+      "{dcfa8547}": 10.0
+    }
+  },
+  {
+    "id": "DA_InfinityProtection",
+    "display_name": "Infinity Protection",
+    "tier": "gold",
+    "effect_id": "augment_DA_InfinityProtection",
+    "params": {
+      "GoldAmount": 3.0,
+      "HealthPercent": 0.11999999731779099,
+      "UnlockRound": 7.0,
+      "UnlockStage": 3.0
+    }
+  },
+  {
+    "id": "DA_InvestedPlus",
+    "display_name": "Invested+",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_InvestedPlus",
+    "params": {}
+  },
+  {
+    "id": "DA_InvestedPlusPlus",
+    "display_name": "Invested++",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_InvestedPlusPlus",
+    "params": {}
+  },
+  {
+    "id": "DA_InvestmentStrategy",
+    "display_name": "Investment Strategy II",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_InvestmentStrategy",
+    "params": {
+      "InstantGold": 8.0,
+      "{77dbf275}": 2.0,
+      "{da66a800}": 10.0
+    }
+  },
+  {
+    "id": "DA_InvestmentStrategyI",
+    "display_name": "Investment Strategy I",
+    "tier": "gold",
+    "effect_id": "augment_DA_InvestmentStrategyI",
+    "params": {
+      "InstantGold": 4.0,
+      "{da66a800}": 8.0
+    }
+  },
+  {
+    "id": "DA_IronAssets",
+    "display_name": "Iron Assets",
+    "tier": "silver",
+    "effect_id": "augment_DA_IronAssets",
+    "params": {
+      "{4e157f8f}": 3.0
+    }
+  },
+  {
+    "id": "DA_ItemGrabBag",
+    "display_name": "Item Grab Bag I",
+    "tier": "silver",
+    "effect_id": "augment_DA_ItemGrabBag",
+    "params": {}
+  },
+  {
+    "id": "DA_ItsMeBaby",
+    "display_name": "It's Me, Baby",
+    "tier": "gold",
+    "effect_id": "augment_DA_ItsMeBaby",
+    "params": {
+      "attack_speed_pct": 0.0015,
+      "DamageAmpPercent": 0.15000000596046448,
+      "GoldToGrant": 1.0,
+      "{d0e73794}": 5.0
+    }
+  },
+  {
+    "id": "DA_JeweledLotus_I",
+    "display_name": "Jeweled Lotus I",
+    "tier": "gold",
+    "effect_id": "augment_DA_JeweledLotus_I",
+    "params": {
+      "{eb825291}": 10.0
+    }
+  },
+  {
+    "id": "DA_JeweledLotus_II",
+    "display_name": "Jeweled Lotus II",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_JeweledLotus_II",
+    "params": {
+      "{265c28b7}": 10.0,
+      "{b6289c68}": 25.0
+    }
+  },
+  {
+    "id": "DA_KickStart",
+    "display_name": "Kick Start",
+    "tier": "silver",
+    "effect_id": "augment_DA_KickStart",
+    "params": {
+      "ChampCost": 2.0,
+      "NumGold": 1.0,
+      "starLevel": 2.0
+    }
+  },
+  {
+    "id": "DA_Kingslayer",
+    "display_name": "Kingslayer",
+    "tier": "silver",
+    "effect_id": "augment_DA_Kingslayer",
+    "params": {
+      "InitialGold": 1.0,
+      "{a53ec6ac}": 1.0,
+      "{f0923f66}": 6.0
+    }
+  },
+  {
+    "id": "DA_KnowYourEnemy",
+    "display_name": "Know Your Enemy",
+    "tier": "gold",
+    "effect_id": "augment_DA_KnowYourEnemy",
+    "params": {
+      "{2b91485b}": 0.07999999821186066,
+      "{9b25dff5}": 0.15000000596046448
+    }
+  },
+  {
+    "id": "DA_LateGameScaling",
+    "display_name": "Late Game Scaling",
+    "tier": "gold",
+    "effect_id": "augment_DA_LateGameScaling",
+    "params": {
+      "XPGain": 2.0,
+      "{4980c641}": 0.12000000476837158
+    }
+  },
+  {
+    "id": "DA_LateGameSpecialist",
+    "display_name": "Late Game Specialist",
+    "tier": "silver",
+    "effect_id": "augment_DA_LateGameSpecialist",
+    "params": {
+      "LevelReq": 9.0,
+      "NumGold": 27.0
+    }
+  },
+  {
+    "id": "DA_LatentForge",
+    "display_name": "Latent Forge",
+    "tier": "silver",
+    "effect_id": "augment_DA_LatentForge",
+    "params": {
+      "{1adef671}": 8.0
+    }
+  },
+  {
+    "id": "DA_LegionOfThrees",
+    "display_name": "Legion Of Threes",
+    "tier": "gold",
+    "effect_id": "augment_DA_LegionOfThrees",
+    "params": {
+      "AttackSpeedPercent": 0.12000000476837158,
+      "{28e35d72}": 150.0
+    }
+  },
+  {
+    "id": "DA_LevelUp",
+    "display_name": "Level Up!",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_LevelUp",
+    "params": {
+      "InstantXP": 6.0,
+      "{322ef094}": 2.0
+    }
+  },
+  {
+    "id": "DA_LivingForge",
+    "display_name": "Living Forge",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_LivingForge",
+    "params": {
+      "{1accd79d}": 10.0
+    }
+  },
+  {
+    "id": "DA_LoadedDice",
+    "display_name": "Loaded Dice",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1.0
+    }
+  },
+  {
+    "id": "DA_LuckyGloves",
+    "display_name": "Lucky Gloves",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0,
+      "{9af8dfcf}": 2.0
+    }
+  },
+  {
+    "id": "DA_LuckyGlovesPlus",
+    "display_name": "Lucky Gloves+",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_LuckyGlovesPlus",
+    "params": {
+      "{0bfe3dfc}": 4.0,
+      "{9af8dfcf}": 2.0
+    }
+  },
+  {
+    "id": "DA_LuxurySubscription",
+    "display_name": "Luxury Subscription",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0,
+      "{04a101fa}": 2.0,
+      "{34512474}": 1.0,
+      "{3ae20dd9}": 5.0
+    }
+  },
+  {
+    "id": "DA_MagicRoll",
+    "display_name": "Magic Roll",
+    "tier": "gold",
+    "effect_id": "augment_DA_MagicRoll",
+    "params": {}
+  },
+  {
+    "id": "DA_MakeshiftArmorI",
+    "display_name": "Makeshift Armor I",
+    "tier": "silver",
+    "effect_id": "augment_DA_MakeshiftArmorI",
+    "params": {
+      "{9724cae4}": 30.0
+    }
+  },
+  {
+    "id": "DA_MakeshiftArmorII",
+    "display_name": "Makeshift Armor II",
+    "tier": "gold",
+    "effect_id": "augment_DA_MakeshiftArmorII",
+    "params": {
+      "{cf29d61f}": 50.0
+    }
+  },
+  {
+    "id": "DA_MaliciousMonetization",
+    "display_name": "Malicious Monetization",
+    "tier": "gold",
+    "effect_id": "augment_DA_MaliciousMonetization",
+    "params": {
+      "Duration": 2.0,
+      "InstantGold": 4.0,
+      "{2af2509e}": 2.0
+    }
+  },
+  {
+    "id": "DA_MaxBuild",
+    "display_name": "Max Build",
+    "tier": "gold",
+    "effect_id": "augment_DA_MaxBuild",
+    "params": {
+      "Level": 9.0,
+      "Rerolls": 10.0,
+      "{a1ea30d2}": 3.0
+    }
+  },
+  {
+    "id": "DA_Min_Max",
+    "display_name": "Min-Max",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_Min_Max",
+    "params": {}
+  },
+  {
+    "id": "DA_MissedConnections",
+    "display_name": "Missed Connections",
+    "tier": "silver",
+    "effect_id": "augment_DA_MissedConnections",
+    "params": {}
+  },
+  {
+    "id": "DA_MoneyHungryPlus",
+    "display_name": "Money Hungry+",
+    "tier": "gold",
+    "effect_id": "augment_DA_MoneyHungryPlus",
+    "params": {
+      "{bac4bc6c}": 7.0,
+      "{f3c91381}": 13.0
+    }
+  },
+  {
+    "id": "DA_MoneyHungry_NotBroken",
+    "display_name": "Money Hungry",
+    "tier": "gold",
+    "effect_id": "augment_DA_MoneyHungry_NotBroken",
+    "params": {
+      "GoldPerStage": 7.0,
+      "InitialGold": 7.0
+    }
+  },
+  {
+    "id": "DA_MoneyMonsoon",
+    "display_name": "Money Monsoon",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_MoneyMonsoon",
+    "params": {
+      "{6d7e7c33}": 7.0
+    }
+  },
+  {
+    "id": "DA_NestingAnvils",
+    "display_name": "Nesting Anvils",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0
+    }
+  },
+  {
+    "id": "DA_NestingAnvilsPlus",
+    "display_name": "Nesting Anvils+",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 8.0
+    }
+  },
+  {
+    "id": "DA_NestingDollsPlus",
+    "display_name": "Nesting Dolls",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_NestingDollsPlus",
+    "params": {
+      "NumRerolls": 3.0,
+      "{52fcdfb4}": 0.6000000238418579
+    }
+  },
+  {
+    "id": "DA_NestingDollsPlusPlus",
+    "display_name": "Nesting Dolls",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_NestingDollsPlusPlus",
+    "params": {
+      "NumRerolls": 3.0,
+      "{52fcdfb4}": 0.6000000238418579
+    }
+  },
+  {
+    "id": "DA_NoScoutNoPivot",
+    "display_name": "NO SCOUT NO PIVOT",
+    "tier": "gold",
+    "effect_id": "augment_DA_NoScoutNoPivot",
+    "params": {
+      "{198d04cd}": 0.009999999776482582,
+      "{3a0c2000}": 0.009999999776482582
+    }
+  },
+  {
+    "id": "DA_OneBuffTwoBuff",
+    "display_name": "One Buff Two Buff",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_OneBuffTwoBuff",
+    "params": {}
+  },
+  {
+    "id": "DA_PandorasBench",
+    "display_name": "Pandora's Bench",
+    "tier": "gold",
+    "effect_id": "augment_DA_PandorasBench",
+    "params": {
+      "GoldGain": 4.0,
+      "NumBenchSlots": 3.0
+    }
+  },
+  {
+    "id": "DA_PandorasItemsI",
+    "display_name": "Pandora's Items I",
+    "tier": "silver",
+    "effect_id": "augment_DA_PandorasItemsI",
+    "params": {
+      "{7f5c7d9c}": 1.0
+    }
+  },
+  {
+    "id": "DA_PandorasItemsII",
+    "display_name": "Pandora's Items II",
+    "tier": "gold",
+    "effect_id": "augment_DA_PandorasItemsII",
+    "params": {
+      "{739a48af}": 2.0
+    }
+  },
+  {
+    "id": "DA_PandorasItemsIII",
+    "display_name": "Pandora's Items III",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_PandorasItemsIII",
+    "params": {
+      "{def3d059}": 1.0
+    }
+  },
+  {
+    "id": "DA_PartialAscension",
+    "display_name": "Partial Ascension",
+    "tier": "silver",
+    "effect_id": "augment_DA_PartialAscension",
+    "params": {
+      "damage_amp": 0.2,
+      "ActivationDelay": 12.0
+    }
+  },
+  {
+    "id": "DA_PatienceIsAVirtue",
+    "display_name": "Patience Is A Virtue",
+    "tier": "silver",
+    "effect_id": "augment_DA_PatienceIsAVirtue",
+    "params": {
+      "Rerolls": 1.0,
+      "{88446308}": 4.0
+    }
+  },
+  {
+    "id": "DA_PatientStudy",
+    "display_name": "Patient Study",
+    "tier": "gold",
+    "effect_id": "augment_DA_PatientStudy",
+    "params": {
+      "{5c260a45}": 3.0,
+      "{956c98ba}": 2.0
+    }
+  },
+  {
+    "id": "DA_Pilfer",
+    "display_name": "Pilfer",
+    "tier": "gold",
+    "effect_id": "augment_DA_Pilfer",
+    "params": {
+      "{299b9104}": 21.0
+    }
+  },
+  {
+    "id": "DA_PlotArmor",
+    "display_name": "Plot Armor",
+    "tier": "gold",
+    "effect_id": "augment_DA_PlotArmor",
+    "params": {
+      "{0735b729}": 40.0,
+      "{5705afa5}": 8.0,
+      "{a6c6ae91}": 0.5
+    }
+  },
+  {
+    "id": "DA_PortableForge",
+    "display_name": "Portable Forge",
+    "tier": "gold",
+    "effect_id": "augment_DA_PortableForge",
+    "params": {}
+  },
+  {
+    "id": "DA_PrismaticDestiny",
+    "display_name": "Prismatic Destiny",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0
+    }
+  },
+  {
+    "id": "DA_PrismaticDestinyPlus",
+    "display_name": "Prismatic Destiny+",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7.0
+    }
+  },
+  {
+    "id": "DA_PrismaticTicket",
+    "display_name": "Prismatic Ticket",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_PrismaticTicket",
+    "params": {
+      "{0c2e40cb}": 45.0
+    }
+  },
+  {
+    "id": "DA_PromisedProtection",
+    "display_name": "Promised Protection",
+    "tier": "gold",
+    "effect_id": "augment_DA_PromisedProtection",
+    "params": {
+      "{88b73576}": 0.20000000298023224,
+      "{c38f01f2}": 200.0
+    }
+  },
+  {
+    "id": "DA_QuickStreaks",
+    "display_name": "Quick Streaks",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0
+    }
+  },
+  {
+    "id": "DA_RadiantRascal",
+    "display_name": "Radiant Rascal",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_RadiantRascal",
+    "params": {}
+  },
+  {
+    "id": "DA_RadiantRelic",
+    "display_name": "Radiant Relics",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_RadiantRelic",
+    "params": {}
+  },
+  {
+    "id": "DA_Recombobulator",
+    "display_name": "Recombobulator",
+    "tier": "silver",
+    "effect_id": "augment_DA_Recombobulator",
+    "params": {
+      "NumRemovers": 2.0,
+      "Numrolls": 3.0
+    }
+  },
+  {
+    "id": "DA_Replication",
+    "display_name": "Replication",
+    "tier": "gold",
+    "effect_id": "augment_DA_Replication",
+    "params": {
+      "{2e582b57}": 2.0
+    }
+  },
+  {
+    "id": "DA_Retribution",
+    "display_name": "Retribution",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_Retribution",
+    "params": {
+      "CriticalStrikeChance": 0.25,
+      "{cf436c6a}": 2.0
+    }
+  },
+  {
+    "id": "DA_RollingForDays",
+    "display_name": "Rolling For Days",
+    "tier": "silver",
+    "effect_id": "augment_DA_RollingForDays",
+    "params": {
+      "{aed5e4c4}": 10.0
+    }
+  },
+  {
+    "id": "DA_SalvageBin",
+    "display_name": "Salvage Bin",
+    "tier": "gold",
+    "effect_id": "augment_DA_SalvageBin",
+    "params": {
+      "rounds": 8.0
+    }
+  },
+  {
+    "id": "DA_SalvageBinPlus",
+    "display_name": "Salvage Bin+",
+    "tier": "gold",
+    "effect_id": "augment_DA_SalvageBinPlus",
+    "params": {
+      "{4e40c208}": 4.0
+    }
+  },
+  {
+    "id": "DA_SeraphimsStaff",
+    "display_name": "Seraphim's Staff",
+    "tier": "gold",
+    "effect_id": "augment_DA_SeraphimsStaff",
+    "params": {
+      "APThreshold": 0.8999999761581421,
+      "ManaPerSecond": 2.0
+    }
+  },
+  {
+    "id": "DA_ShimmerscaleEssence",
+    "display_name": "Shimmerscale Essence",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_ShimmerscaleEssence",
+    "params": {
+      "{9b9fe148}": 6.0
+    }
+  },
+  {
+    "id": "DA_ShoppingSpree",
+    "display_name": "Shopping Spree",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_ShoppingSpree",
+    "params": {
+      "BonusRollPerLevel": 1.0,
+      "GoldGain": 6.0
+    }
+  },
+  {
+    "id": "DA_SilverDestiny",
+    "display_name": "Silver Destiny",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0
+    }
+  },
+  {
+    "id": "DA_SilverDestinyPlus",
+    "display_name": "Silver Destiny+",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0
+    }
+  },
+  {
+    "id": "DA_SilverDestinyPlusPlus",
+    "display_name": "Silver Destiny++",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7.0
+    }
+  },
+  {
+    "id": "DA_SilverSpoon",
+    "display_name": "Silver Spoon",
+    "tier": "silver",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 10.0
+    }
+  },
+  {
+    "id": "DA_Slammin",
+    "display_name": "Slammin'",
+    "tier": "gold",
+    "effect_id": "augment_DA_Slammin",
+    "params": {
+      "NumGold": 3.0,
+      "{e279ec9e}": 2.0
+    }
+  },
+  {
+    "id": "DA_SlamminPlus",
+    "display_name": "Slammin'+",
+    "tier": "gold",
+    "effect_id": "augment_DA_SlamminPlus",
+    "params": {
+      "{14bedd02}": 2.0,
+      "{96ce7ab1}": 4.0,
+      "{c8226cce}": 10.0
+    }
+  },
+  {
+    "id": "DA_SliceOfLife",
+    "display_name": "Slice of Life",
+    "tier": "silver",
+    "effect_id": "augment_DA_SliceOfLife",
+    "params": {
+      "{5f411789}": 5.0,
+      "{949c47da}": 1.0
+    }
+  },
+  {
+    "id": "DA_SlightlyMagicRoll",
+    "display_name": "Slightly Magic Roll",
+    "tier": "silver",
+    "effect_id": "augment_DA_SlightlyMagicRoll",
+    "params": {}
+  },
+  {
+    "id": "DA_SmallGrabBag",
+    "display_name": "Small Grab Bag",
+    "tier": "silver",
+    "effect_id": "augment_DA_SmallGrabBag",
+    "params": {
+      "{856d7d1d}": 2.0
+    }
+  },
+  {
+    "id": "DA_SoloLeveling",
+    "display_name": "Solo Leveling",
+    "tier": "gold",
+    "effect_id": "augment_DA_SoloLeveling",
+    "params": {
+      "NumCombats": 5.0,
+      "NumComponents": 2.0,
+      "XPPerKill": 1.0,
+      "{948200d9}": 1.0
+    }
+  },
+  {
+    "id": "DA_SoloPlate",
+    "display_name": "Solo Plate",
+    "tier": "gold",
+    "effect_id": "augment_DA_SoloPlate",
+    "params": {
+      "MaxHealthPercent": 0.16999995708465576
+    }
+  },
+  {
+    "id": "DA_SoulAwakening",
+    "display_name": "Soul Awakening",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_SoulAwakening",
+    "params": {
+      "TrueDamage": 0.11999999731779099,
+      "{3b7e331f}": 10.0,
+      "{a69048c5}": 0.014999999664723873
+    }
+  },
+  {
+    "id": "DA_SpeedyDoubleKill",
+    "display_name": "Speedy Double Kill",
+    "tier": "gold",
+    "effect_id": "augment_DA_SpeedyDoubleKill",
+    "params": {
+      "GoldAmount": 40.0,
+      "{9f8b33fc}": 2.0
+    }
+  },
+  {
+    "id": "DA_SpiritOfRedemption",
+    "display_name": "Spirit Of Redemption",
+    "tier": "gold",
+    "effect_id": "augment_DA_SpiritOfRedemption",
+    "params": {
+      "HexRange": 1.0,
+      "PercentMissingHealth": 0.07500000298023224,
+      "{0f5a682a}": 5.0
+    }
+  },
+  {
+    "id": "DA_SpreadingRoots",
+    "display_name": "Spreading Roots",
+    "tier": "gold",
+    "effect_id": "augment_DA_SpreadingRoots",
+    "params": {
+      "Delay": 3.0
+    }
+  },
+  {
+    "id": "DA_SpreadingRootsPlus",
+    "display_name": "Spreading Roots+",
+    "tier": "gold",
+    "effect_id": "augment_DA_SpreadingRootsPlus",
+    "params": {
+      "{1a129973}": 2.0,
+      "{c99cbe2b}": 2.0
+    }
+  },
+  {
+    "id": "DA_Staffsmith",
+    "display_name": "Staffsmith",
+    "tier": "gold",
+    "effect_id": "augment_DA_Staffsmith",
+    "params": {
+      "{2ce16abf}": 2.0
+    }
+  },
+  {
+    "id": "DA_StandUnited",
+    "display_name": "Stand United",
+    "tier": "silver",
+    "effect_id": "augment_DA_StandUnited",
+    "params": {
+      "{48edbb7f}": 0.014999999664723873,
+      "{744414c5}": 0.014999999664723873
+    }
+  },
+  {
+    "id": "DA_SweetTreats",
+    "display_name": "Sweet Treats",
+    "tier": "prismatic",
+    "effect_id": null,
+    "params": {
+      "health": 16.0
+    }
+  },
+  {
+    "id": "DA_SwordOverflow",
+    "display_name": "Sword Overflow",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_SwordOverflow",
+    "params": {
+      "{91c13e0c}": 0.03999999910593033,
+      "{a200424d}": 4.0
+    }
+  },
+  {
+    "id": "DA_Swordsmith",
+    "display_name": "Swordsmith",
+    "tier": "gold",
+    "effect_id": "augment_DA_Swordsmith",
+    "params": {
+      "{2ce16abf}": 2.0
+    }
+  },
+  {
+    "id": "DA_TacticiansKitchen",
+    "display_name": "Tactician's Kitchen",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_TacticiansKitchen",
+    "params": {
+      "rounds": 3.0
+    }
+  },
+  {
+    "id": "DA_TeamBuilding",
+    "display_name": "Team Building",
+    "tier": "silver",
+    "effect_id": "augment_DA_TeamBuilding",
+    "params": {
+      "{422a9dd1}": 5.0
+    }
+  },
+  {
+    "id": "DA_TheGoldenDragon",
+    "display_name": "The Golden Dragon",
+    "tier": "gold",
+    "effect_id": "augment_DA_TheGoldenDragon",
+    "params": {
+      "health": 600.0,
+      "BonusDurability": 0.15000000596046448,
+      "{857f7819}": 1.0
+    }
+  },
+  {
+    "id": "DA_TheTower",
+    "display_name": "The Tower",
+    "tier": "silver",
+    "effect_id": "augment_DA_TheTower",
+    "params": {
+      "{578c3ca8}": 3.0,
+      "{72eed94b}": 4.0,
+      "{d5b4831d}": 0.05000000074505806
+    }
+  },
+  {
+    "id": "DA_TheTraitTree",
+    "display_name": "The Trait Tree",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_TheTraitTree",
+    "params": {
+      "GoldAmount": 2.0,
+      "{bd12a44f}": 3.0
+    }
+  },
+  {
+    "id": "DA_TheTraitTreePlus",
+    "display_name": "The Trait Tree+",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_TheTraitTreePlus",
+    "params": {
+      "{1a129973}": 3.0,
+      "{c99cbe2b}": 4.0
+    }
+  },
+  {
+    "id": "DA_TimeSkip",
+    "display_name": "Time Skip",
+    "tier": "gold",
+    "effect_id": "augment_DA_TimeSkip",
+    "params": {
+      "{16aa0994}": 3.0,
+      "{80907c8b}": 32.0
+    }
+  },
+  {
+    "id": "DA_TonsOfStatsI",
+    "display_name": "Tons of Stats!",
+    "tier": "gold",
+    "effect_id": "augment_DA_TonsOfStatsI",
+    "params": {
+      "health": 44.0,
+      "mana": 4.0,
+      "attack_speed_pct": 0.0004,
+      "ADAP": 0.03999999910593033,
+      "Resists": 4.0
+    }
+  },
+  {
+    "id": "DA_TonsOfStatsII",
+    "display_name": "TONS of Stats!",
+    "tier": "gold",
+    "effect_id": "augment_DA_TonsOfStatsII",
+    "params": {
+      "health": 88.0,
+      "mana": 8.0,
+      "attack_speed_pct": 0.0008,
+      "ADAP": 0.07999999821186066,
+      "Resists": 8.0
+    }
+  },
+  {
+    "id": "DA_TradeSector",
+    "display_name": "Trade Sector",
+    "tier": "gold",
+    "effect_id": "augment_DA_TradeSector",
+    "params": {
+      "NumGold": 2.0
+    }
+  },
+  {
+    "id": "DA_TradeSectorPlus",
+    "display_name": "Trade Sector+",
+    "tier": "gold",
+    "effect_id": "augment_DA_TradeSectorPlus",
+    "params": {
+      "{96ce7ab1}": 8.0
+    }
+  },
+  {
+    "id": "DA_TraitLadder",
+    "display_name": "Trait Ladder",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_TraitLadder",
+    "params": {
+      "{b8fc0662}": 2.0
+    }
+  },
+  {
+    "id": "DA_TwinGuardians",
+    "display_name": "Twin Guardians",
+    "tier": "silver",
+    "effect_id": "augment_DA_TwinGuardians",
+    "params": {
+      "health": 100.0,
+      "{5705afa5}": 35.0,
+      "{6c230424}": 2.0,
+      "{aa79200f}": 35.0
+    }
+  },
+  {
+    "id": "DA_URF",
+    "display_name": "U.R.F",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "attack_speed_pct": 0.002,
+      "mana_regen": 3.0
+    }
+  },
+  {
+    "id": "DA_UpwardMobility",
+    "display_name": "Upward Mobility",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_UpwardMobility",
+    "params": {
+      "{0ef06055}": 2.0,
+      "{3e85783c}": 2.0,
+      "{9ba044dc}": 1.0
+    }
+  },
+  {
+    "id": "DA_UrfsGrabBag",
+    "display_name": "Urf's Grab Bag",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 5.0,
+      "NumComponents": 3.0,
+      "{fc476b32}": 1.0
+    }
+  },
+  {
+    "id": "DA_VerticalityI",
+    "display_name": "Verticality I",
+    "tier": "silver",
+    "effect_id": "augment_DA_VerticalityI",
+    "params": {
+      "ADAP": 0.014999999664723873,
+      "Resists": 1.5
+    }
+  },
+  {
+    "id": "DA_VerticalityII",
+    "display_name": "Verticality II",
+    "tier": "gold",
+    "effect_id": "augment_DA_VerticalityII",
+    "params": {
+      "ADAP": 0.019999999552965164,
+      "Resists": 2.0
+    }
+  },
+  {
+    "id": "DA_VerticalityIII",
+    "display_name": "Verticality III",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_VerticalityIII",
+    "params": {
+      "ADAP": 0.03500000014901161,
+      "Resists": 3.5
+    }
+  },
+  {
+    "id": "DA_WandOverflow",
+    "display_name": "Wand Overflow",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_WandOverflow",
+    "params": {
+      "{1b24e9f9}": 4.0,
+      "{60ed4c64}": 0.05000000074505806
+    }
+  },
+  {
+    "id": "DA_Warpath",
+    "display_name": "Warpath",
+    "tier": "gold",
+    "effect_id": "augment_DA_Warpath",
+    "params": {
+      "PlayerDamage": 80.0
+    }
+  },
+  {
+    "id": "DA_WeStickTogether",
+    "display_name": "We Stick Together",
+    "tier": "prismatic",
+    "effect_id": null,
+    "params": {
+      "attack_speed_pct": 0.003
+    }
+  },
+  {
+    "id": "DA_WorththeWait",
+    "display_name": "Worth the Wait",
+    "tier": "gold",
+    "effect_id": "augment_DA_WorththeWait",
+    "params": {}
+  },
+  {
+    "id": "DA_WorththeWaitII",
+    "display_name": "Worth the Wait II",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_WorththeWaitII",
+    "params": {}
+  },
+  {
+    "id": "DA_WovenMagic",
+    "display_name": "Woven Magic",
+    "tier": "prismatic",
+    "effect_id": "augment_DA_WovenMagic",
+    "params": {
+      "ManaPerComponent": 2200.0,
+      "{856d7d1d}": 3.0
+    }
+  },
+  {
+    "id": "DA_YoungAndWildAndFree",
+    "display_name": "Young and Wild and Free",
+    "tier": "silver",
+    "effect_id": "augment_DA_YoungAndWildAndFree",
+    "params": {
+      "InstantGold": 5.0
+    }
+  },
+  {
+    "id": "TFT10_Augment_CrashTestDummies",
+    "display_name": "Crash Test Dummies",
+    "tier": "gold",
+    "effect_id": "augment_TFT10_Augment_CrashTestDummies",
+    "params": {
+      "NumDummies": 2.0,
+      "SearchRange": 4.0,
+      "Stun": 1.0
+    }
+  },
+  {
+    "id": "TFT10_Augment_FullyAdapted",
+    "display_name": "Fully Adapted",
+    "tier": "gold",
+    "effect_id": "augment_TFT10_Augment_FullyAdapted",
+    "params": {}
+  },
+  {
+    "id": "TFT10_Augment_GoingLong",
+    "display_name": "Going Long",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 16.0,
+      "XP": 4.0
+    }
+  },
+  {
+    "id": "TFT10_Augment_GoodForSomethingSilver",
+    "display_name": "Good For Something I",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1.0,
+      "DropChance": 0.4000000059604645
+    }
+  },
+  {
+    "id": "TFT10_Augment_HeroicGrabBag",
+    "display_name": "Heroic Grab Bag",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 5.0,
+      "LesserDuplicatorAmount": 2.0
+    }
+  },
+  {
+    "id": "TFT10_Augment_LittleBuddies",
+    "display_name": "Little Buddies",
+    "tier": "gold",
+    "effect_id": "augment_TFT10_Augment_LittleBuddies",
+    "params": {
+      "health": 65.0,
+      "attack_speed_pct": 0.0007,
+      "{0d14760d}": 4.0,
+      "{82aeb8a7}": 2.0
+    }
+  },
+  {
+    "id": "TFT10_Augment_Scapegoat",
+    "display_name": "Scapegoat",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1.0,
+      "InitialGold": 4.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_AtWhatCost",
+    "display_name": "At What Cost",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 8.0,
+      "Level": 6.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_BloodBank",
+    "display_name": "Lunch Money",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2,
+      "Damage": 8.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_Buildabud",
+    "display_name": "Build a Bud",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 10.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_Calltochaos",
+    "display_name": "Call to Chaos",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 52.0,
+      "EggTurns": 11,
+      "NumEmblems": 5.0,
+      "Rerolls": 36.0,
+      "ThreeStarGold": 20.0,
+      "XP": 58.0,
+      "numtg": 3.0,
+      "{4ffe8c09}": 0.20000000298023224,
+      "{8c58ac06}": 3.0,
+      "{8f15cad2}": 3.0,
+      "{917f9e2f}": 0.20000000298023224,
+      "{927f9fc2}": 50.0,
+      "{96847027}": 40.0,
+      "{96f12d22}": 3,
+      "{b0384f7a}": 8,
+      "{c35cc688}": 6
+    }
+  },
+  {
+    "id": "TFT11_Augment_Epoch",
+    "display_name": "Epoch",
+    "tier": "gold",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 4.0,
+      "Rerolls": 2.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_EpochPlus",
+    "display_name": "Epoch+",
+    "tier": "gold",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 8.0,
+      "Rerolls": 2.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_OverEncumbered",
+    "display_name": "Over Encumbered",
+    "tier": "silver",
+    "effect_id": "augment_TFT11_Augment_OverEncumbered",
+    "params": {
+      "BenchSlots": 2.0,
+      "components": 2.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_Prizefighter",
+    "display_name": "Prizefighter",
+    "tier": "gold",
+    "effect_id": "augment_TFT11_Augment_Prizefighter",
+    "params": {
+      "WinsNeeded": 5.0,
+      "component": 2.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_RadiantRefactor",
+    "display_name": "Radiant Refactor",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT11_Augment_RadiantRefactor",
+    "params": {
+      "anvils": 1.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_RainingGold",
+    "display_name": "Raining Gold",
+    "tier": "gold",
+    "effect_id": "augment_TFT11_Augment_RainingGold",
+    "params": {
+      "InstantGold": 7.0,
+      "RoundGold": 1.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_RainingGoldPlus",
+    "display_name": "Raining Gold+",
+    "tier": "gold",
+    "effect_id": "augment_TFT11_Augment_RainingGoldPlus",
+    "params": {
+      "InstantGold": 18.0,
+      "RoundGold": 1.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_Reinfourcement",
+    "display_name": "ReinFOURcement",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_ScoreboardScrapper",
+    "display_name": "Scoreboard Scrapper",
+    "tier": "gold",
+    "effect_id": "augment_TFT11_Augment_ScoreboardScrapper",
+    "params": {
+      "BottomHalf": 4.0,
+      "LoserBoost": 0.014999999664723873,
+      "UpperHalf": 4.0,
+      "WinningStatBoost": 0.10000000149011612
+    }
+  },
+  {
+    "id": "TFT11_Augment_Slammin",
+    "display_name": "Slammin'",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0,
+      "XP": 2.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_Slammin_Plus",
+    "display_name": "Slammin'+",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0,
+      "XP": 2.0,
+      "XPNow": 10.0
+    }
+  },
+  {
+    "id": "TFT11_Augment_TinyButDeadly",
+    "display_name": "Tiny, but Deadly",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT11_Augment_TinyButDeadly",
+    "params": {
+      "attack_speed_pct": 0.0033,
+      "MoveSpeed": 0.75,
+      "TooltipSizeScale": 0.5,
+      "{858a62b6}": 0.30000001192092896
+    }
+  },
+  {
+    "id": "TFT16_Augment_UltraRapidFire",
+    "display_name": "U.R.F",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "mana_regen": 3.0,
+      "attack_speed_pct": 0.002
+    }
+  },
+  {
+    "id": "TFT6_Augment_BandOfThieves2",
+    "display_name": "Band of Thieves II",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_BandOfThieves2",
+    "params": {
+      "DelayTurns": 6.0,
+      "NumGloves": 2.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_BandOfThieves2Plus",
+    "display_name": "Band of Thieves II+",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_BandOfThieves2Plus",
+    "params": {
+      "DelayTurns": 5.0,
+      "NumGloves": 2.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_BandOfThieves2PlusPlus",
+    "display_name": "Band of Thieves II++",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_BandOfThieves2PlusPlus",
+    "params": {
+      "DelayTurns": 3.0,
+      "NumGloves": 2.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_CalculatedLoss",
+    "display_name": "Calculated Loss",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_ClearMind",
+    "display_name": "Clear Mind",
+    "tier": "gold",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 3.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_CyberneticImplants2",
+    "display_name": "Cybernetic Implants",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_CyberneticImplants2",
+    "params": {
+      "attack_damage_pct": 0.15,
+      "HP": 100.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_CyberneticUplink2",
+    "display_name": "Cybernetic Uplink",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "health": 100.0,
+      "mana_regen": 2.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_CyberneticUplink3",
+    "display_name": "Cybernetic Uplink III",
+    "tier": "prismatic",
+    "effect_id": null,
+    "params": {
+      "health": 275.0,
+      "mana_regen": 3.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_Distancing",
+    "display_name": "Exiles I",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_Distancing",
+    "params": {
+      "MaxHealthShield": 20.0,
+      "ShieldDuration": 10.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_Distancing2",
+    "display_name": "Exiles II",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_Distancing2",
+    "params": {
+      "MaxHealthShield": 30.0,
+      "ShieldDuration": 10.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_Diversify1",
+    "display_name": "Stand United",
+    "tier": "silver",
+    "effect_id": null,
+    "params": {
+      "attack_damage_pct": 0.015,
+      "ability_power": 1.5
+    }
+  },
+  {
+    "id": "TFT6_Augment_Electrocharge1",
+    "display_name": "Electrocharge I",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_Electrocharge1",
+    "params": {
+      "AttacksToProc": 4.0,
+      "Damage1": 30.0,
+      "Damage2": 50.0,
+      "Damage3": 70.0,
+      "Damage4": 90.0,
+      "ICD": 1.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_Electrocharge2",
+    "display_name": "Electrocharge II",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_Electrocharge2",
+    "params": {
+      "AttacksToProc": 4.0,
+      "Damage1": 50.0,
+      "Damage2": 80.0,
+      "Damage3": 110.0,
+      "Damage4": 140.0,
+      "ICD": 1.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_ForceOfNature",
+    "display_name": "New Recruit",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_ForceOfNature",
+    "params": {
+      "MaxArmySizeIncrease": 1.0,
+      "NumUnits": 1
+    }
+  },
+  {
+    "id": "TFT6_Augment_ForceOfNaturePlus",
+    "display_name": "New Recruit+",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_ForceOfNaturePlus",
+    "params": {
+      "MaxArmySizeIncrease": 1.0,
+      "NumUnits": 2
+    }
+  },
+  {
+    "id": "TFT6_Augment_GachaAddict",
+    "display_name": "Prismatic Ticket",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_GachaAddict",
+    "params": {
+      "RerollPercent": 45.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_HyperRoll",
+    "display_name": "Hustler",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3,
+      "InitialGold": 3
+    }
+  },
+  {
+    "id": "TFT6_Augment_ItemGrabBag1",
+    "display_name": "Item Grab Bag",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_ItemGrabBag1",
+    "params": {
+      "NumItems": 1.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_Keepers1",
+    "display_name": "Keepers I",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_Keepers1",
+    "params": {
+      "ShieldDuration": 8.0,
+      "ShieldHealth": 130.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_Keepers2",
+    "display_name": "Keepers II",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_Keepers2",
+    "params": {
+      "ShieldDuration": 8.0,
+      "ShieldHealth": 210.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_MakeshiftArmor1",
+    "display_name": "Makeshift Armor I",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_MakeshiftArmor1",
+    "params": {
+      "Resists": 30.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_MakeshiftArmor2",
+    "display_name": "Makeshift Armor II",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_MakeshiftArmor2",
+    "params": {
+      "Resists": 50.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_MaxLevel10",
+    "display_name": "Level Up!",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 2.0,
+      "InitialXP": 6.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_OneTwoFive",
+    "display_name": "One, Two, Five!",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "NumChamps": 1.0,
+      "NumComponents": 1.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_PandorasItems",
+    "display_name": "Pandora's Items",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_PandorasItems",
+    "params": {
+      "NumComponents": 1.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_PortableForge",
+    "display_name": "Portable Forge",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_PortableForge",
+    "params": {
+      "ArmoryChoiceCount": 4.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_RadiantRelics",
+    "display_name": "Radiant Relics",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_RadiantRelics",
+    "params": {
+      "ArmoryChoiceCount": 5.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_Recombobulator",
+    "display_name": "Recombobulator",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_Recombobulator",
+    "params": {
+      "FreeRerolls": 3,
+      "NumRemovers": 2.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_SalvageBin",
+    "display_name": "Salvage Bin",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_SalvageBin",
+    "params": {
+      "NumRounds": 8.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_SalvageBinHR",
+    "display_name": "Salvage Bin",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_SalvageBinHR",
+    "params": {
+      "NumRounds": 3.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_SecondWind1",
+    "display_name": "Second Wind",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_SecondWind1",
+    "params": {
+      "Delay": 10.0,
+      "HealPercent": 40.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_SecondWind2",
+    "display_name": "Second Wind II",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_SecondWind2",
+    "params": {
+      "Delay": 10.0,
+      "HealPercent": 60.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_SunfireBoard",
+    "display_name": "Sunfire Board",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_SunfireBoard",
+    "params": {
+      "Duration": 18.0,
+      "GrievousWoundsPercent": 33.0,
+      "TotalBurnPercent": 18.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_TheGoldenEgg",
+    "display_name": "The Golden Egg",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_TheGoldenEgg",
+    "params": {
+      "EggTurns": 11.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_ThriftShop",
+    "display_name": "Wise Spending",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1,
+      "Numrolls": 1,
+      "XP": 2.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_TinyTitans",
+    "display_name": "Tiny Titans",
+    "tier": "silver",
+    "effect_id": "augment_TFT6_Augment_TinyTitans",
+    "params": {
+      "Heal": 20.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_TradeSector",
+    "display_name": "Trade Sector",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "RerollCount": 1.0,
+      "RerollsNow": 1.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_TradeSector2",
+    "display_name": "Commerce Core",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT6_Augment_TradeSector2",
+    "params": {
+      "RerollCount": 3.0,
+      "RerollsNow": 16.0
+    }
+  },
+  {
+    "id": "TFT6_Augment_Twins2",
+    "display_name": "Double Trouble",
+    "tier": "gold",
+    "effect_id": "augment_TFT6_Augment_Twins2",
+    "params": {
+      "BonusStats": 30.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_AFK",
+    "display_name": "AFK",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 17.0,
+      "RoundsToSkip": 3.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_BandOfThieves1",
+    "display_name": "Band of Thieves",
+    "tier": "silver",
+    "effect_id": "augment_TFT7_Augment_BandOfThieves1",
+    "params": {
+      "NumGloves": 1.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_BestFriends1",
+    "display_name": "Best Friends I",
+    "tier": "silver",
+    "effect_id": null,
+    "params": {
+      "attack_speed_pct": 0.001,
+      "armor": 9.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_BestFriends2",
+    "display_name": "Best Friends II",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "attack_speed_pct": 0.0015,
+      "armor": 14.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_BigFriend",
+    "display_name": "Big Friend I",
+    "tier": "silver",
+    "effect_id": "augment_TFT7_Augment_BigFriend",
+    "params": {
+      "DamageReductionPercent": 10.0,
+      "RequiredHealth": 1750.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_BigFriend2",
+    "display_name": "Big Friend II",
+    "tier": "gold",
+    "effect_id": "augment_TFT7_Augment_BigFriend2",
+    "params": {
+      "DamageReductionPercent": 13.0,
+      "RequiredHealth": 1750.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_BirthdayPresents",
+    "display_name": "Birthday Present",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_ClutteredMind",
+    "display_name": "Cluttered Mind",
+    "tier": "gold",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 3.0,
+      "Units": 4.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_CursedCrown",
+    "display_name": "Cursed Crown",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT7_Augment_CursedCrown",
+    "params": {
+      "DurabilityBonus": 0.03999999910593033,
+      "MaxArmySizeIncrease": 2.0,
+      "PlayerCombatDamageIncrease": 100.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_LategameSpecialist",
+    "display_name": "Late Game Specialist",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 27.0,
+      "LevelReq": 9.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_LivingForge",
+    "display_name": "Living Forge",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT7_Augment_LivingForge",
+    "params": {
+      "Numberofcombats": 9.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_LuckyGloves",
+    "display_name": "Lucky Gloves",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4,
+      "NumGloves": 2.0,
+      "NumRounds": 9999.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_LuckyGlovesPlus",
+    "display_name": "Lucky Gloves+",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT7_Augment_LuckyGlovesPlus",
+    "params": {
+      "DelayTurns": 4.0,
+      "NumGloves": 2.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_PandorasBench",
+    "display_name": "Pandora's Bench",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 6.0,
+      "BenchSlots": 3.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_Preparation",
+    "display_name": "Preparation I",
+    "tier": "silver",
+    "effect_id": "augment_TFT7_Augment_Preparation",
+    "params": {
+      "HPBonus": 30.0,
+      "MaxStacks": 4.0,
+      "StartingStacks": 1.0,
+      "Stats": 3.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_Preparation2",
+    "display_name": "Preparation II",
+    "tier": "gold",
+    "effect_id": "augment_TFT7_Augment_Preparation2",
+    "params": {
+      "HPBonus": 50.0,
+      "MaxStacks": 4.0,
+      "StartingStacks": 1.0,
+      "Stats": 5.0
+    }
+  },
+  {
+    "id": "TFT7_Augment_UrfsGrabBag2",
+    "display_name": "Urf's Grab Bag",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT7_Augment_UrfsGrabBag2",
+    "params": {
+      "NumComponents": 3.0,
+      "NumGold": 5.0,
+      "NumSpatulas": 1.0
+    }
+  },
+  {
+    "id": "TFT8_Augment_SalvageBinPlus",
+    "display_name": "Salvage Bin+",
+    "tier": "gold",
+    "effect_id": "augment_TFT8_Augment_SalvageBinPlus",
+    "params": {
+      "NumRounds": 4.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_AllThatShimmers",
+    "display_name": "All That Shimmers",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_AllThatShimmers",
+    "params": {
+      "ArmoryChoiceCount": 3.0,
+      "InterestCap": 5.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_ArmyBuilding",
+    "display_name": "Team Building",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_ArmyBuilding",
+    "params": {
+      "PlayerCombatNum": 5.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_BardPlaybook1",
+    "display_name": "Caretaker's Ally",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_BardPlaybook1",
+    "params": {
+      "UnitTier": 2.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_BardPlaybook2",
+    "display_name": "Caretaker's Favor",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_BardPlaybook2",
+    "params": {
+      "levelreqa": 5.0,
+      "levelreqb": 6.0,
+      "levelreqc": 7.0,
+      "levelreqd": 8.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_BardPlaybook3",
+    "display_name": "Caretaker's Chosen",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT9_Augment_BardPlaybook3",
+    "params": {
+      "levelreqa": 4.0,
+      "levelreqb": 6.0,
+      "levelreqc": 8.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_BigGrabBag",
+    "display_name": "Big Grab Bag",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "NumItems": 3.0,
+      "NumReforgers": 1.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_BuildingACollectionPlusPlus",
+    "display_name": "Buried Treasures",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT9_Augment_BuildingACollectionPlusPlus",
+    "params": {
+      "UpfrontItems": 1.0,
+      "roundsofbonusitems": 5.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_Commander_Ascension",
+    "display_name": "Ascension",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_Commander_Ascension",
+    "params": {
+      "damage_amp": 35.0,
+      "Delay": 12.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_Commander_FinalAscension",
+    "display_name": "Final Ascension",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT9_Augment_Commander_FinalAscension",
+    "params": {
+      "damage_amp": 20.0,
+      "AscendedAmpTOOLTIPONLY": 60.0,
+      "Delay": 15.0,
+      "{bc570508}": 0.4000000059604645
+    }
+  },
+  {
+    "id": "TFT9_Augment_Commander_PartialAscension",
+    "display_name": "Partial Ascension",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_Commander_PartialAscension",
+    "params": {
+      "damage_amp": 20.0,
+      "Delay": 12.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_Commander_RollingForDays",
+    "display_name": "Rolling For Days I",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_Commander_RollingForDays",
+    "params": {
+      "Numrolls": 10.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_Commander_TeamingUp1",
+    "display_name": "Teaming Up",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_Commander_TeamingUp1",
+    "params": {
+      "NumChamps": 2.0,
+      "NumComponents": 1.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_CustomerIsAlwaysRight",
+    "display_name": "Component Buffet",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_CustomerIsAlwaysRight",
+    "params": {}
+  },
+  {
+    "id": "TFT9_Augment_DravenSpoilsOfWar",
+    "display_name": "Spoils of War I",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_DravenSpoilsOfWar",
+    "params": {
+      "LootDropChance": 0.25,
+      "{ac7ef35a}": 0.25
+    }
+  },
+  {
+    "id": "TFT9_Augment_DravenSpoilsOfWar2",
+    "display_name": "Spoils of War II",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_DravenSpoilsOfWar2",
+    "params": {
+      "LootDropChance": 0.30000001192092896,
+      "{ac7ef35a}": 0.30000001192092896
+    }
+  },
+  {
+    "id": "TFT9_Augment_DravenSpoilsOfWar3",
+    "display_name": "Spoils of War III",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT9_Augment_DravenSpoilsOfWar3",
+    "params": {
+      "LootDropChance": 0.4000000059604645,
+      "{ac7ef35a}": 0.4000000059604645
+    }
+  },
+  {
+    "id": "TFT9_Augment_GreaterJeweledLotus",
+    "display_name": "Jeweled Lotus II",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT9_Augment_GreaterJeweledLotus",
+    "params": {
+      "crit_chance": 0.25,
+      "CritDamage": 0.10000000149011612
+    }
+  },
+  {
+    "id": "TFT9_Augment_HealingOrbsI",
+    "display_name": "Healing Orbs I",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_HealingOrbsI",
+    "params": {
+      "Heal": 250.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_HealingOrbsII",
+    "display_name": "Healing Orbs II",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_HealingOrbsII",
+    "params": {
+      "Heal": 575.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_HedgeFund",
+    "display_name": "Hedge Fund",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 22.0,
+      "InterestCap": 10.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_HedgeFundPlus",
+    "display_name": "Hedge Fund+",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 30.0,
+      "InterestCap": 10.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_HighEndSector",
+    "display_name": "Shopping Spree",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "BonusRollPerLevel": 1,
+      "{a9ad6d1b}": 8.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_IronAssets",
+    "display_name": "Iron Assets",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_JeweledLotus",
+    "display_name": "Jeweled Lotus I",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "crit_chance": 0.1
+    }
+  },
+  {
+    "id": "TFT9_Augment_KnowYourEnemy",
+    "display_name": "Know Your Enemy",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_KnowYourEnemy",
+    "params": {
+      "BaseDamageAmp": 8.0,
+      "FullDamageAmp": 15.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_LearningFromExperience2",
+    "display_name": "Patient Study",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_LearningFromExperience2",
+    "params": {
+      "lossxp": 3.0,
+      "winxp": 2.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_Legend_HighEndSector",
+    "display_name": "Shopping Spree",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "BonusRollPerLevel": 1,
+      "{a9ad6d1b}": 8.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_LongTimeCrafting",
+    "display_name": "Latent Forge",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_LongTimeCrafting",
+    "params": {
+      "Numberofcombats": 8.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_MissedConnections",
+    "display_name": "Missed Connections",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_MissedConnections",
+    "params": {}
+  },
+  {
+    "id": "TFT9_Augment_OneTwosThree",
+    "display_name": "One Two Three",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_OneTwosThree",
+    "params": {
+      "NumChamps": 1.0,
+      "tier1champs": 2.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_PandorasItems2",
+    "display_name": "Pandora's Items II",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_PandorasItems2",
+    "params": {
+      "NumComponents": 2.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_PandorasRadiantBox",
+    "display_name": "Pandora's Items III",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT9_Augment_PandorasRadiantBox",
+    "params": {}
+  },
+  {
+    "id": "TFT9_Augment_PumpingUp",
+    "display_name": "Pumping Up I",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_PumpingUp",
+    "params": {
+      "BaseAS": 6.0,
+      "IncreasePerRound": 0.5
+    }
+  },
+  {
+    "id": "TFT9_Augment_PumpingUp2",
+    "display_name": "Pumping Up II",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_PumpingUp2",
+    "params": {
+      "BaseAS": 10.0,
+      "IncreasePerRound": 1.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_PumpingUp3",
+    "display_name": "Pumping Up III",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT9_Augment_PumpingUp3",
+    "params": {
+      "BaseAS": 16.0,
+      "IncreasePerRound": 2.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_RiskyMoves",
+    "display_name": "Risky Moves",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "health": 20.0,
+      "gold": 26.0,
+      "PlayerCombatNum": 7.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_RollTheDice",
+    "display_name": "Radiant Rascal",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT9_Augment_RollTheDice",
+    "params": {}
+  },
+  {
+    "id": "TFT9_Augment_SilverSpoon",
+    "display_name": "Silver Spoon",
+    "tier": "silver",
+    "effect_id": "augment_TFT9_Augment_SilverSpoon",
+    "params": {
+      "Experience": 10.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_StarsAreBorn",
+    "display_name": "Stars Are Born",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_StarterKit",
+    "display_name": "Starter Kit",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 8.0,
+      "FutureChampionCount": 2.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_TiniestTitanPlus",
+    "display_name": "Tiniest Titan",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "Heal": 2.0,
+      "InitialGold": 10.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_TonsOfStats",
+    "display_name": "Tons of Stats!",
+    "tier": "gold",
+    "effect_id": "augment_TFT9_Augment_TonsOfStats",
+    "params": {
+      "armor": 4.0,
+      "health": 44.0,
+      "mana": 4.0,
+      "attack_speed_pct": 0.04,
+      "AbilityPower": 4.0,
+      "AttackDamage": 4.0,
+      "MR": 4.0
+    }
+  },
+  {
+    "id": "TFT9_Augment_YouHaveMyBow",
+    "display_name": "You Have My Bow",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "attack_speed_pct": 0.12
+    }
+  },
+  {
+    "id": "TFT9_Augment_YoungAndWildAndFree",
+    "display_name": "Young and Wild and Free",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_AdvancedLoan",
+    "display_name": "Advanced Loan",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 20
+    }
+  },
+  {
+    "id": "TFT_Augment_AdvancedLoanPlus",
+    "display_name": "Advanced Loan+",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 33
+    }
+  },
+  {
+    "id": "TFT_Augment_AimForTheTop",
+    "display_name": "Aim For The Top!",
+    "tier": "gold",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 2,
+      "WinsPerComponent": 3
+    }
+  },
+  {
+    "id": "TFT_Augment_AllThatShimmersPlus",
+    "display_name": "All That Shimmers+",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_AllThatShimmersPlus",
+    "params": {
+      "ArmoryChoiceCount": 3.0,
+      "GoldGranted": 4.0,
+      "InterestCap": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_AnExaltedAdventure",
+    "display_name": "An Exalted Adventure",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_AnExaltedAdventure",
+    "params": {
+      "NumStages": 2,
+      "NumUnits": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_AnotherOne",
+    "display_name": "Another One!",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 5,
+      "NumItems": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_AnotherOnePlus",
+    "display_name": "Another One!+",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_AnotherOnePlus",
+    "params": {
+      "NumComponents": 1,
+      "NumItems": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_ArcaneViktory",
+    "display_name": "Arcane Viktor-y",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ArcaneViktory",
+    "params": {
+      "FirstStunSeconds": 8.0,
+      "SecondStunSeconds": 18.0,
+      "StunDuration": 1.5
+    }
+  },
+  {
+    "id": "TFT_Augment_AuraFarming",
+    "display_name": "Aura Farming",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_AuraFarming",
+    "params": {
+      "NumItems": 1.0,
+      "UnlockRound": 3,
+      "UnlockStage": 4,
+      "starLevel": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_AwakenedSoul",
+    "display_name": "Soul Awakening",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_AwakenedSoul",
+    "params": {
+      "BonusTrueDamage": 0.11999999731779099,
+      "MaxStacks": 10.0,
+      "StatsPerSecond": 1.5
+    }
+  },
+  {
+    "id": "TFT_Augment_BacklineBlueprint",
+    "display_name": "Backline Blueprint",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BacklineBlueprint",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_BackupDancers",
+    "display_name": "Backup Dancers",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BackupDancers",
+    "params": {
+      "AttackSpeedPerUnit": 0.029999999329447746,
+      "BenchSlots": 3,
+      "Period": 3
+    }
+  },
+  {
+    "id": "TFT_Augment_BeltOverflow",
+    "display_name": "Belt Overflow",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_BeltOverflow",
+    "params": {
+      "health": 85.0,
+      "NumItems": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BirthdayReunion",
+    "display_name": "Birthday Reunion",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1,
+      "FirstLevelBreakpoint": 7,
+      "InitialLevelBreakpoint": 5,
+      "SecondLevelBreakpoint": 9
+    }
+  },
+  {
+    "id": "TFT_Augment_BlazingSoul",
+    "display_name": "Blazing Soul I",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BlazingSoul",
+    "params": {
+      "attack_speed_pct": 0.002,
+      "AbilityPower": 20.0,
+      "TransferDuration": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BlazingSoul2",
+    "display_name": "Blazing Soul II",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_BlazingSoul2",
+    "params": {
+      "attack_speed_pct": 0.0035,
+      "AbilityPower": 35.0,
+      "TransferDuration": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BloodRage",
+    "display_name": "Blood Rage",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BloodRage",
+    "params": {
+      "BaseDamageAmp": 0.11999999731779099,
+      "DamageAmpCap": 0.25,
+      "MissingHealthCap": 30.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BodyguardTraining",
+    "display_name": "Bodyguard Training",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BodyguardTraining",
+    "params": {
+      "BaseResistGained": 15,
+      "ResistsPerLevel": 2
+    }
+  },
+  {
+    "id": "TFT_Augment_BoosterPack",
+    "display_name": "Booster Pack",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BoosterPack",
+    "params": {
+      "GuaranteedCost": 3.0,
+      "TotalValue": 12.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BoosterPackPlus",
+    "display_name": "Booster Pack+",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BoosterPackPlus",
+    "params": {
+      "GuaranteedCost": 4.0,
+      "TotalValue": 18.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BoosterPackPlusPlus",
+    "display_name": "Booster Pack++",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BoosterPackPlusPlus",
+    "params": {
+      "GuaranteedCost": 5.0,
+      "TotalValue": 26.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BoxingLessons",
+    "display_name": "Boxing Lessons",
+    "tier": "silver",
+    "effect_id": null,
+    "params": {
+      "health": 30.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BranchingOut",
+    "display_name": "Branching Out",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_BranchingOut",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_BranchingOutPlus",
+    "display_name": "Branching Out+",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_BranchingOutPlus",
+    "params": {
+      "NumReforgers": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_BronzeForLife2",
+    "display_name": "Bronze For Life II",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_BronzeForLife2",
+    "params": {
+      "DamageAmpBonus": 0.019999999552965164,
+      "Resists": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_BronzeForLifeI",
+    "display_name": "Bronze For Life I",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_BronzeForLifeI",
+    "params": {
+      "DamageAmpBonus": 0.019999999552965164
+    }
+  },
+  {
+    "id": "TFT_Augment_CalledShot",
+    "display_name": "Called Shot",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0,
+      "Streak": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ChaosEvolution",
+    "display_name": "Chaotic Evolution",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_ChaosEvolution",
+    "params": {
+      "attack_damage_pct": 0.1,
+      "ability_power": 10.0,
+      "health": 100.0,
+      "attack_speed_pct": 0.001,
+      "Durability": 0.05999999865889549
+    }
+  },
+  {
+    "id": "TFT_Augment_ChargeTransfer1",
+    "display_name": "Charge Transfer I",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_ChargeTransfer1",
+    "params": {
+      "damage_amp": 7.0,
+      "OverkillPercent": 0.5
+    }
+  },
+  {
+    "id": "TFT_Augment_ChargeTransfer2",
+    "display_name": "Charge Transfer II",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ChargeTransfer2",
+    "params": {
+      "damage_amp": 10.0,
+      "OverkillPercent": 0.800000011920929
+    }
+  },
+  {
+    "id": "TFT_Augment_ClimbTheLadder1",
+    "display_name": "Climb The Ladder I",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_ClimbTheLadder1",
+    "params": {
+      "BonusAD": 0.03500000014901161,
+      "BonusAP": 3.5,
+      "BonusArmor": 3.5,
+      "BonusMR": 3.5
+    }
+  },
+  {
+    "id": "TFT_Augment_ClimbTheLadder2",
+    "display_name": "Climb The Ladder II",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ClimbTheLadder2",
+    "params": {
+      "BonusAD": 0.07000000029802322,
+      "BonusAP": 7.0,
+      "BonusArmor": 6.0,
+      "BonusMR": 6.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ClockworkAccelerator",
+    "display_name": "Clockwork Accelerator",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ClockworkAccelerator",
+    "params": {
+      "attack_speed_pct": 0.001,
+      "Frequency": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_CloningFacility",
+    "display_name": "Cloning Facility",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_CloningFacility",
+    "params": {
+      "HealthPercent": 0.800000011920929,
+      "ManaPercent": 0.10000000149011612,
+      "{4074ec36}": 2.0,
+      "{d47f9a80}": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_CognitiveOverload",
+    "display_name": "Cognitive Overload",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7.0,
+      "FreeRolls": 1.0,
+      "OneCostCount": 1.0,
+      "ThreeCostCount": 2.0,
+      "TwoCostCount": 1.0,
+      "XP": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_CognitiveTax",
+    "display_name": "Cognitive Tax",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 8.0,
+      "XP": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_CognitiveTaxPlus",
+    "display_name": "Cognitive Tax+",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 12.0,
+      "XP": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ComebackStory",
+    "display_name": "Comeback Story",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_ComebackStory",
+    "params": {
+      "ASPerMissingHP": 0.4000000059604645,
+      "HPPerMissingHP": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ComponentQuestBow",
+    "display_name": "Backup Bows",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_ComponentQuestBow",
+    "params": {
+      "NumDelayed": 2,
+      "StacksForReward": 1000,
+      "{1ed24481}": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_ComponentQuestRod",
+    "display_name": "Continuous Conjuration",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_ComponentQuestRod",
+    "params": {
+      "NumDelayed": 2,
+      "StacksForReward": 42000,
+      "{1ed24481}": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_ComponentQuestSword",
+    "display_name": "Carve a Path",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_ComponentQuestSword",
+    "params": {
+      "NumDelayed": 2,
+      "StacksForReward": 65000,
+      "{1ed24481}": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_ComponentQuestTear",
+    "display_name": "Flowing Tears",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_ComponentQuestTear",
+    "params": {
+      "NumDelayed": 2,
+      "StacksForReward": 6500,
+      "{1ed24481}": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_ConstructACompanion",
+    "display_name": "Construct a Companion",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_CookingPot",
+    "display_name": "Cooking Pot",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_CookingPot",
+    "params": {
+      "health": 60.0,
+      "AbilityPower": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Coronation",
+    "display_name": "Coronation",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_Coronation",
+    "params": {
+      "BonusAD": 0.25,
+      "BonusAP": 30.0,
+      "BonusAS": 0.20000000298023224
+    }
+  },
+  {
+    "id": "TFT_Augment_Corrosion",
+    "display_name": "Corrosion",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_Corrosion",
+    "params": {
+      "ResistLoss": 4.0,
+      "Time": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_CosmicRestart",
+    "display_name": "Cosmic Restart",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_CosmicRestart",
+    "params": {
+      "Emblems": 2.0,
+      "Rerolls": 15.0
+    }
+  },
+  {
+    "id": "TFT_Augment_CraftedCrafting",
+    "display_name": "Crafted Crafting",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_CraftedCrafting",
+    "params": {
+      "Rerolls": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Crossfire2",
+    "display_name": "Piercing Sight",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Crossfire2",
+    "params": {
+      "BaseDamage": 0.009999999776482582,
+      "PercentInc": 0.009999999776482582,
+      "PercentMax": 0.20000000298023224
+    }
+  },
+  {
+    "id": "TFT_Augment_CrownguardSpirit",
+    "display_name": "Crown's Will",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "ability_power": 8.0,
+      "armor": 6.0
+    }
+  },
+  {
+    "id": "TFT_Augment_CryMeARiver",
+    "display_name": "Cry Me A River",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_CryMeARiver",
+    "params": {
+      "DelayTime": 12,
+      "RegenBonus": 1.0,
+      "UpgradedRegenBonus": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_DeadlierCaps",
+    "display_name": "Deadlier Caps",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_DeadlierCaps",
+    "params": {
+      "ManaRegenPerHat": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_Dhampyr1",
+    "display_name": "Vampiric Vitality I",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Dhampyr1",
+    "params": {
+      "Omnivamp": 0.11999999731779099,
+      "OmnivampStatBonus": 0.10000000149011612
+    }
+  },
+  {
+    "id": "TFT_Augment_Dummify",
+    "display_name": "Dummify",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_Dummify",
+    "params": {
+      "ChampCost": 2,
+      "HPPerStage": 1000,
+      "HealthPercent": 60.0
+    }
+  },
+  {
+    "id": "TFT_Augment_DuoQueue",
+    "display_name": "Duo Queue",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_DuoQueue",
+    "params": {
+      "NumComponents": 2.0,
+      "NumUnits": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_EarlyLearning",
+    "display_name": "Early Learnings",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_EarlyLearning",
+    "params": {
+      "IncPerPlayerCombat": 1.0,
+      "NumADAP": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_EfficientShopper",
+    "display_name": "Efficient Shopper",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0,
+      "NumStages": 4
+    }
+  },
+  {
+    "id": "TFT_Augment_EpicRolldown",
+    "display_name": "Epic Rolldown",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_EpicRolldown",
+    "params": {
+      "NumRerolls": 20
+    }
+  },
+  {
+    "id": "TFT_Augment_EvilBeyondMeasure",
+    "display_name": "Evil Beyond Measure",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_EvilBeyondMeasure",
+    "params": {
+      "BasePercentTrueDamage": 0.04500000178813934
+    }
+  },
+  {
+    "id": "TFT_Augment_ExclusiveCustomization",
+    "display_name": "Exclusive Customization",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7,
+      "NumRemovers": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_ExclusiveCustomization2",
+    "display_name": "Exclusive Customization II",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7,
+      "ItemCount": 2,
+      "NumRemovers": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_ExpectedUnexpectedness",
+    "display_name": "Expected Unexpectedness",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_ExpectedUnexpectedness",
+    "params": {
+      "NumReforgers": 3,
+      "NumStages": 2.0,
+      "{144f18ac}": 5,
+      "{36f24d98}": 9.0,
+      "{dae07608}": 18.0,
+      "{fcb8577b}": 12.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Expedition",
+    "display_name": "Expedition",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_Expedition",
+    "params": {
+      "BenchSlotCount": 1.0,
+      "CashoutCost": 33.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ExplosiveGrowth",
+    "display_name": "Explosive Growth",
+    "tier": "gold",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 7.0,
+      "rounds": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ExplosiveGrowthPlus",
+    "display_name": "Explosive Growth+",
+    "tier": "gold",
+    "effect_id": "augment_instant_xp",
+    "params": {
+      "xp": 10.0,
+      "rounds": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_EyeForAnEye",
+    "display_name": "Eye For An Eye",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_EyeForAnEye",
+    "params": {
+      "AllyDeaths": 15.0,
+      "NumComponents": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_EyeForAnEyePlus",
+    "display_name": "Eye For An Eye+",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_EyeForAnEyePlus",
+    "params": {
+      "AllyDeaths": 18.0,
+      "NumComponents": 2.0,
+      "{a6cb80ca}": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_FeedTheFlames",
+    "display_name": "Feed the Flames",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_FeedTheFlames",
+    "params": {
+      "Omnivamp": 0.11999999731779099
+    }
+  },
+  {
+    "id": "TFT_Augment_FeelingLucky",
+    "display_name": "Feeling Lucky",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_FeelingLucky",
+    "params": {
+      "BaseGold": 12.0,
+      "GoldForHeads": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_FindYourCenter",
+    "display_name": "Find Your Center",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_FindYourCenter",
+    "params": {
+      "health": 0.25,
+      "BonusDamage": 0.15000000596046448
+    }
+  },
+  {
+    "id": "TFT_Augment_FiresalePlus",
+    "display_name": "Firesale",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1.0,
+      "CostLimit": 3
+    }
+  },
+  {
+    "id": "TFT_Augment_Flexible",
+    "display_name": "Flexible",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Flexible",
+    "params": {
+      "BonusStages": 99.0,
+      "HPPerEmblem": 30.0,
+      "StartingEmblems": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_FoodfightTactics",
+    "display_name": "Mess Hall",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_FoodfightTactics",
+    "params": {
+      "attack_speed_pct": 0.0008,
+      "ADRatio": 1.0,
+      "APRatio": 1.0,
+      "BaseDamage": 25.0,
+      "EndSeconds": 10.0,
+      "ProjectileCount": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ForgeAFriend",
+    "display_name": "Forge a Friend",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ForgeRod",
+    "display_name": "Staffsmith",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ForgeRod",
+    "params": {
+      "NumItems": 2
+    }
+  },
+  {
+    "id": "TFT_Augment_ForgeSword",
+    "display_name": "Swordsmith",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ForgeSword",
+    "params": {
+      "NumItems": 2
+    }
+  },
+  {
+    "id": "TFT_Augment_ForgedInStrength",
+    "display_name": "Forged in Strength",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_ForgedInStrength",
+    "params": {
+      "HealthThreshold": 30,
+      "NumArtifacts": 1,
+      "NumMoreArtifacts": 3
+    }
+  },
+  {
+    "id": "TFT_Augment_ForwardThinking",
+    "display_name": "Forward Thinking",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ForwardThinking",
+    "params": {
+      "BaseGold": 62.0,
+      "rounds": 5.0,
+      "{8f9a1368}": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_FrontlineFoundation",
+    "display_name": "Frontline Foundation",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_FrontlineFoundation",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_FuriousBlows",
+    "display_name": "Kahunahuna",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_FuriousBlows",
+    "params": {
+      "NumAttacks": 5.0,
+      "PercentAD": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GainGold",
+    "display_name": "Gain @Gold@ Gold",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 21.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GiantAndMighty",
+    "display_name": "Giant and Mighty",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_GiantAndMighty",
+    "params": {
+      "FlatHealth": 200.0,
+      "PercentHealth": 0.10000000149011612,
+      "{858a62b6}": 0.11999999731779099
+    }
+  },
+  {
+    "id": "TFT_Augment_GildedSteel",
+    "display_name": "Gilded Steel",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_GildedSteel",
+    "params": {
+      "Durability": 0.07999999821186066,
+      "NumUnits": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GlassCannonI",
+    "display_name": "Glass Cannon I",
+    "tier": "silver",
+    "effect_id": null,
+    "params": {
+      "damage_amp": 0.16,
+      "health": 0.8
+    }
+  },
+  {
+    "id": "TFT_Augment_GlassCannonII",
+    "display_name": "Glass Cannon II",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "damage_amp": 0.25,
+      "health": 0.8
+    }
+  },
+  {
+    "id": "TFT_Augment_GoldDestiny",
+    "display_name": "Gold Destiny",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GoldDestinyPlus",
+    "display_name": "Gold Destiny+",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 6.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GoldForDummies",
+    "display_name": "Gold For Dummies",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_GoldForDummies",
+    "params": {
+      "GoldAmount": 1.0,
+      "GoldDuration": 10.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GoldenGamble",
+    "display_name": "Golden Gamble",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "CompletedAnvils": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GoldenGamblePlus",
+    "display_name": "Golden Gamble+",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0,
+      "CompletedAnvils": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GoldenGamblePlusPlus",
+    "display_name": "Golden Gamble++",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 6.0,
+      "CompletedAnvils": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GoldenQuest",
+    "display_name": "A Golden Quest",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_GoldenQuest",
+    "params": {
+      "goldrequired": 165.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Golemify",
+    "display_name": "Golemify",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Golemify",
+    "params": {
+      "ADPercent": 33.0,
+      "ChampCost": 2,
+      "HPPerStage": 1200,
+      "HealthPercent": 60.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GroupHug1",
+    "display_name": "Group Hug I",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_GroupHug1",
+    "params": {
+      "Resists": 6.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GroupHug2",
+    "display_name": "Group Hug II",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_GroupHug2",
+    "params": {
+      "Resists": 9.0
+    }
+  },
+  {
+    "id": "TFT_Augment_GuardbreakerSpirit",
+    "display_name": "Mace's Will",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "crit_chance": 0.0025
+    }
+  },
+  {
+    "id": "TFT_Augment_HardBargain",
+    "display_name": "Hard Bargain",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 8.0,
+      "PlayerHealth": 6
+    }
+  },
+  {
+    "id": "TFT_Augment_HardCommit",
+    "display_name": "Hard Commit",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_HardCommit",
+    "params": {
+      "GoldPerStage": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_HeadStart",
+    "display_name": "Delayed Start",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_HeadStart",
+    "params": {
+      "NumUnits": 4.0,
+      "RoundsToSkip": 3.0,
+      "Tier": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_HeavyIsTheCrown",
+    "display_name": "Heavy Is the Crown",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_HeavyIsTheCrown",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_HeftyRolls",
+    "display_name": "Hefty Rolls",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 5,
+      "Size": 0.019999999552965164,
+      "{3a4f45ba}": 0.800000011920929
+    }
+  },
+  {
+    "id": "TFT_Augment_HeroicGrabBagPlus",
+    "display_name": "Heroic Grab Bag+",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 8.0,
+      "LesserDuplicatorAmount": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_HeroicGrabBagPlusPlus",
+    "display_name": "Heroic Grab Bag++",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 14.0,
+      "LesserDuplicatorAmount": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_HighVoltage",
+    "display_name": "High Voltage",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_HighVoltage",
+    "params": {
+      "effectincrease": 0.25,
+      "hexincreasetooltip": 3.0,
+      "{f5a91c3a}": 680.0
+    }
+  },
+  {
+    "id": "TFT_Augment_HoldTheLine",
+    "display_name": "Hold the Line",
+    "tier": "prismatic",
+    "effect_id": null,
+    "params": {
+      "attack_damage_pct": 0.08,
+      "ability_power": 9.0
+    }
+  },
+  {
+    "id": "TFT_Augment_HomeCooking",
+    "display_name": "Care Package",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "health": 4.0,
+      "gold": 1,
+      "NumStages": 2,
+      "component": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_HowlingGale",
+    "display_name": "Howling Gale",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_HowlingGale",
+    "params": {
+      "KnockupRadius": 360.0,
+      "ManaPerWhirlwind": 550.0,
+      "StunDuration": 1.5
+    }
+  },
+  {
+    "id": "TFT_Augment_Incoming",
+    "display_name": "Lit Fuse",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_Incoming",
+    "params": {
+      "mana": 60.0,
+      "DelaySeconds": 6
+    }
+  },
+  {
+    "id": "TFT_Augment_InfinityProtection",
+    "display_name": "Infinity Protection",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_InfinityProtection",
+    "params": {
+      "GoldAmount": 3.0,
+      "HealthPercent": 12.0
+    }
+  },
+  {
+    "id": "TFT_Augment_InvestedPlus",
+    "display_name": "Invested+",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 26.0,
+      "GoldPerReroll": 10.0,
+      "GoldThreshold": 50.0,
+      "MaxGold": 80.0
+    }
+  },
+  {
+    "id": "TFT_Augment_InvestedPlusPlus",
+    "display_name": "Invested++",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 40.0,
+      "GoldPerReroll": 10.0,
+      "GoldThreshold": 50.0,
+      "MaxGold": 80.0
+    }
+  },
+  {
+    "id": "TFT_Augment_InvestmentStrategy1",
+    "display_name": "Investment Strategy I",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_InvestmentStrategy1",
+    "params": {
+      "HealthPerInterest": 8.0
+    }
+  },
+  {
+    "id": "TFT_Augment_InvestmentStrategy2",
+    "display_name": "Investment Strategy II",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0,
+      "HealthPerInterest": 8.0,
+      "MaxInterest": 7.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ItemCollector1",
+    "display_name": "Item Collector I",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_ItemCollector1",
+    "params": {
+      "attack_damage_pct": 0.01,
+      "ability_power": 1.0,
+      "MaxCap": 99.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ItemCollector2",
+    "display_name": "Item Collector II",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ItemCollector2",
+    "params": {
+      "attack_damage_pct": 0.01,
+      "ability_power": 1.0,
+      "health": 5.0,
+      "BaseHP": 20.0,
+      "MaxCap": 99.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ItemGargoyleStoneplate",
+    "display_name": "Solo Plate",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ItemGargoyleStoneplate",
+    "params": {
+      "HealthIncrease": 0.17000000178813934
+    }
+  },
+  {
+    "id": "TFT_Augment_ItemSpiritVisage",
+    "display_name": "Spirit of Redemption",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ItemSpiritVisage",
+    "params": {
+      "Frequency": 5.0,
+      "HexRadius": 1,
+      "Missinghealth": 7.5
+    }
+  },
+  {
+    "id": "TFT_Augment_JustSlayer",
+    "display_name": "Indiscriminate Killer",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_JustSlayer",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_KickStart",
+    "display_name": "Kick Start",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_LastSecondSave",
+    "display_name": "Last Second Save",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_LastSecondSave",
+    "params": {
+      "HealPercent": 0.20000000298023224,
+      "HealthThreshold": 0.3499999940395355
+    }
+  },
+  {
+    "id": "TFT_Augment_LateGameScaling",
+    "display_name": "Late Game Scaling",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_LateGameScaling",
+    "params": {
+      "attack_speed_pct": 0.0012,
+      "health": 0.12,
+      "XPGain": 2
+    }
+  },
+  {
+    "id": "TFT_Augment_LegionOfThrees",
+    "display_name": "Legion of Threes",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_LegionOfThrees",
+    "params": {
+      "attack_speed_pct": 0.0012,
+      "HealthAmount": 150.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Lineup",
+    "display_name": "Lineup",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_Lineup",
+    "params": {
+      "Resistances": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_LuxurySubscription",
+    "display_name": "Luxury Subscription",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7.0,
+      "FutureChampionCount": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_MagicRoll",
+    "display_name": "A Magic Roll",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_MagicRoll",
+    "params": {
+      "EggTurns": 3.0,
+      "NumComponents": 2.0,
+      "{3b0ef232}": 250.0,
+      "{95ed8271}": 3,
+      "{9a58ced6}": 4.0,
+      "{b0892e64}": 1.0,
+      "{c726cd82}": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_MagicRollMinus",
+    "display_name": "Slightly Magic Roll",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 8.0,
+      "NumRerolls": 6,
+      "{3b0ef232}": 160.0,
+      "{88f01f60}": 1,
+      "{f3bceefa}": 3
+    }
+  },
+  {
+    "id": "TFT_Augment_MarksMan",
+    "display_name": "Focused Fire",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_MarksMan",
+    "params": {
+      "ADPerProc": 0.05000000074505806,
+      "BaselineAD": 0.10000000149011612,
+      "ProcDelay": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_MaxBuild",
+    "display_name": "Max Build",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4,
+      "{831bb748}": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_MinMaxer",
+    "display_name": "Min-Max",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_MinMaxer",
+    "params": {
+      "NumItems": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_MirroredMonetization",
+    "display_name": "Malicious Monetization",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_MirroredMonetization",
+    "params": {
+      "GoldContained": 4,
+      "PercCost": 2.0,
+      "rounds": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Misfits",
+    "display_name": "Misfits",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "health": 55.0
+    }
+  },
+  {
+    "id": "TFT_Augment_MoneyHungry",
+    "display_name": "Money Hungry",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_MoneyHungry",
+    "params": {
+      "InstantGold": 7.0,
+      "StageGold": 7.0
+    }
+  },
+  {
+    "id": "TFT_Augment_MoneyMonsoon",
+    "display_name": "Money Monsoon",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_MoneyMonsoon",
+    "params": {
+      "RoundGold": 7.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Moonlight",
+    "display_name": "Moonlight",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Moonlight",
+    "params": {
+      "ADBonus": 0.4000000059604645,
+      "APBonus": 40.0,
+      "NumUnits": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_MuseumHeist",
+    "display_name": "Component Heist",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_MuseumHeist",
+    "params": {
+      "Numberofcombats": 6
+    }
+  },
+  {
+    "id": "TFT_Augment_NineLives",
+    "display_name": "Nine Lives",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_NineLives",
+    "params": {
+      "HealthLoss": 1,
+      "NumberOfLives": 9
+    }
+  },
+  {
+    "id": "TFT_Augment_NoScoutNoPivot",
+    "display_name": "NO SCOUT NO PIVOT",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_NoScoutNoPivot",
+    "params": {
+      "ADScale": 0.009999999776482582,
+      "APScale": 1.0,
+      "HPScale": 0.009999999776482582,
+      "MaxUnits": 99.0
+    }
+  },
+  {
+    "id": "TFT_Augment_NobleSacrifice",
+    "display_name": "Noble Sacrifice",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_NobleSacrifice",
+    "params": {
+      "BaseResists": 25.0,
+      "SharePerc": 0.10000000149011612
+    }
+  },
+  {
+    "id": "TFT_Augment_OneBuffTwoBuff",
+    "display_name": "One Buff, Two Buff",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_OneBuffTwoBuff",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_Overheal",
+    "display_name": "Overheal",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Overheal",
+    "params": {
+      "BonusDamage": 1.100000023841858,
+      "Duration": 3.0,
+      "MaxShield": 400.0,
+      "NumAttacks": 3.0,
+      "PercentHeal": 0.6000000238418579
+    }
+  },
+  {
+    "id": "TFT_Augment_PatienceIsAVirtue",
+    "display_name": "Patience is a Virtue",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_PatienceIsAVirtue",
+    "params": {
+      "FreeRerolls": 1.0,
+      "InitialRerolls": 4
+    }
+  },
+  {
+    "id": "TFT_Augment_Pilfer",
+    "display_name": "Pilfer",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Pilfer",
+    "params": {
+      "goldrequired": 19.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Placebo",
+    "display_name": "Placebo",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "attack_speed_pct": 0.0001,
+      "gold": 8.0
+    }
+  },
+  {
+    "id": "TFT_Augment_PlaceboPlus",
+    "display_name": "Placebo+",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "attack_speed_pct": 0.0001,
+      "gold": 14.0
+    }
+  },
+  {
+    "id": "TFT_Augment_PlotArmor",
+    "display_name": "Plot Armor",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_PlotArmor",
+    "params": {
+      "BaseResists": 8.0,
+      "EnhancedTotalResists": 40.0,
+      "HealthThreshold": 0.5
+    }
+  },
+  {
+    "id": "TFT_Augment_PocketRecombobulator",
+    "display_name": "Pocket Recombobulator",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_PocketRecombobulator",
+    "params": {
+      "NumRecombobulator": 2,
+      "NumReforgers": 2
+    }
+  },
+  {
+    "id": "TFT_Augment_PowerUp",
+    "display_name": "Augmented Power",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_PowerUp",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_PrismaticDestiny",
+    "display_name": "Prismatic Destiny",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Protagonist",
+    "display_name": "Protagonist",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_Protagonist",
+    "params": {
+      "TurnDelay": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_PsychicForge",
+    "display_name": "Psychic Forge",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_PsychicForge",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_Pyromaniac",
+    "display_name": "Pyromaniac",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Pyromaniac",
+    "params": {
+      "BurnIncrease": 0.5
+    }
+  },
+  {
+    "id": "TFT_Augment_QualityOverQuantity",
+    "display_name": "Quality Over Quantity",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_QualityOverQuantity",
+    "params": {
+      "health": 0.07,
+      "MaxUnits": 99.0,
+      "NumRemovers": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_QuietQuitting",
+    "display_name": "Quiet Quitting",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 24,
+      "NumRounds": 3,
+      "{f75fda1e}": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_Replication",
+    "display_name": "Replication",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Replication",
+    "params": {
+      "roundsofbonusitems": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_RerollTransfer",
+    "display_name": "Reroll Transfer",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1,
+      "AugmentRerollTracked": 1.0,
+      "ShopRerollToGrant": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_RestartMission",
+    "display_name": "Restart Mission",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_RestartMission",
+    "params": {
+      "1Cost": 1.0,
+      "2Cost": 2.0,
+      "3Cost": 2.0,
+      "NumUnits": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Retribution",
+    "display_name": "Retribution",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_Retribution",
+    "params": {
+      "crit_chance": 0.0025,
+      "ItemCount": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_RiggedShopPlus",
+    "display_name": "Rigged Shop+",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_RiggedShopPlus",
+    "params": {
+      "Numrolls": 4.0,
+      "Rerolls": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SavingsAccount",
+    "display_name": "Savings Account",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_SavingsAccount",
+    "params": {
+      "GoldNow": 2.0,
+      "GoldToGain": 25,
+      "InterestCap": 7.0,
+      "goldrequired": 50.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SeraphimsStaff",
+    "display_name": "Seraphim's Staff",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_SeraphimsStaff",
+    "params": {
+      "APThreshold": 90.0,
+      "IncreasedMana": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ShimmerscaleEssence",
+    "display_name": "Shimmerscale Essence",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_ShimmerscaleEssence",
+    "params": {
+      "CombatNum": 7.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ShojinSpirit",
+    "display_name": "Spear's Will",
+    "tier": "gold",
+    "effect_id": null,
+    "params": {
+      "attack_damage_pct": 0.08,
+      "mana": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SideEffects",
+    "display_name": "Side Effects",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_SideEffects",
+    "params": {
+      "HealConversionPct": 0.5,
+      "HealInterval": 5.0,
+      "HealPct": 0.03999999910593033
+    }
+  },
+  {
+    "id": "TFT_Augment_SilverDestiny",
+    "display_name": "Silver Destiny",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SilverDestinyPlus",
+    "display_name": "Silver Destiny+",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SilverDestinyPlusPlus",
+    "display_name": "Silver Destiny++",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 7.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SizeMatters",
+    "display_name": "Size Matters",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_SizeMatters",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_SliceOfLife",
+    "display_name": "Slice of Life",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_SliceOfLife",
+    "params": {
+      "Max5Costs": 1,
+      "{5ca21683}": 4,
+      "{8422d0b8}": 3,
+      "{8c017039}": 2,
+      "{a562cde4}": 1,
+      "{ab8c0482}": 5,
+      "{b0e84f56}": 1,
+      "{d867370f}": 1,
+      "{e46f7955}": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_SmallGrabBag",
+    "display_name": "Small Grab Bag",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_SmallGrabBag",
+    "params": {
+      "NumComponents": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SoloLeveling",
+    "display_name": "Solo Leveling",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_SoloLeveling",
+    "params": {
+      "ADBonus": 0.5,
+      "APBonus": 50.0,
+      "ASBonus": 0.5,
+      "DamageAmpBonus": 0.30000001192092896,
+      "DurabilityBonus": 0.20000000298023224,
+      "FlatHealthBonus": 525.0,
+      "NumCombats": 5,
+      "NumComponents": 2,
+      "OmnivampBonus": 0.20000000298023224,
+      "XPPerKill": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_SpeedyDoubleKill",
+    "display_name": "Speedy Double Kill",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_SpeedyDoubleKill",
+    "params": {
+      "GoldAmount": 40
+    }
+  },
+  {
+    "id": "TFT_Augment_SpiritLink1",
+    "display_name": "Spirit Link",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_SpiritLink1",
+    "params": {
+      "BaseRegenBonus": 0.05000000074505806,
+      "RegenPerMissingHP": 0.5,
+      "RegenPeriod": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SpreadingRoots",
+    "display_name": "Spreading Roots",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1.0,
+      "NumOfEmblems": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SpreadingRootsPlus",
+    "display_name": "Spreading Roots+",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "NumOfEmblems": 2.0,
+      "NumReforgers": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_StoryOfSeven",
+    "display_name": "A Story of Seven",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_StoryOfSeven",
+    "params": {
+      "WinsPerReward": 7.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SubscriptionService",
+    "display_name": "Subscription Service",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_SubscriptionService",
+    "params": {
+      "ChampionTier": 4.0,
+      "GoldPerStage": 6.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Survivor",
+    "display_name": "Survivor",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 100.0,
+      "InitialGold": 4.0,
+      "PlayersDead": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SweetTreats",
+    "display_name": "Sweet Treats",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_SweetTreats",
+    "params": {
+      "HealthPerItem": 16.0
+    }
+  },
+  {
+    "id": "TFT_Augment_SwordOverflow",
+    "display_name": "Sword Overflow",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_SwordOverflow",
+    "params": {
+      "BonusStat": 0.03999999910593033,
+      "NumItems": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TableScraps",
+    "display_name": "Table Scraps",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 1.0,
+      "NumStages": 2
+    }
+  },
+  {
+    "id": "TFT_Augment_TacticiansKitchen",
+    "display_name": "Tactician's Kitchen",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_TacticiansKitchen",
+    "params": {
+      "NumFryingPan": 1.0,
+      "NumItemAnvils": 1.0,
+      "NumSpatula": 1.0,
+      "TurnDelay": 3
+    }
+  },
+  {
+    "id": "TFT_Augment_TeslaCoil",
+    "display_name": "Tesla Coil",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TeslaCoil",
+    "params": {
+      "Frequency": 5.0,
+      "MinItems": 3,
+      "NumArcs": 2,
+      "Stage2Damage": 240,
+      "Stage6Damage": 270
+    }
+  },
+  {
+    "id": "TFT_Augment_TheBaronsLair",
+    "display_name": "Baron's Lair",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_TheBaronsLair",
+    "params": {
+      "IntervalSeconds": 1.0,
+      "StartSeconds": 8.0,
+      "Stats": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TheDarkinBlade",
+    "display_name": "Blood Offering",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TheDarkinBlade",
+    "params": {
+      "BonusAD": 0.11999999731779099,
+      "HPLossPercent": 0.15000000596046448,
+      "HPShieldPercent": 0.20000000298023224,
+      "ShieldDuration": 60.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TheGoldenDragon",
+    "display_name": "The Golden Dragon",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TheGoldenDragon",
+    "params": {
+      "health": 700.0,
+      "DurabilityPct": 0.20000000298023224
+    }
+  },
+  {
+    "id": "TFT_Augment_TheTower",
+    "display_name": "The Tower",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_TheTower",
+    "params": {
+      "MaxHealthPct": 0.05000000074505806,
+      "ZapCount": 3.0,
+      "ZapInterval": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TheVidalion",
+    "display_name": "Woven Magic",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_TheVidalion",
+    "params": {
+      "ComponentMax": 3,
+      "ManaPerComponent": 2200.0
+    }
+  },
+  {
+    "id": "TFT_Augment_ThornPlatedArmor",
+    "display_name": "Thorn-Plated Armor",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_ThornPlatedArmor",
+    "params": {
+      "DamageAmp1": 0.20000000298023224,
+      "DamageAmp2": 0.4000000059604645,
+      "DamageAmp3": 1.0,
+      "DamageAmp4": 1.7000000476837158
+    }
+  },
+  {
+    "id": "TFT_Augment_TimeSkip",
+    "display_name": "Time Skip",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TimeSkip",
+    "params": {
+      "Experience": 32.0,
+      "PenaltyTurns": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TitanicTitan",
+    "display_name": "Titanic Titan",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_TitanicTitan",
+    "params": {
+      "Heal": 25.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TombRaider1",
+    "display_name": "Tomb Raider I",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TombRaider1",
+    "params": {
+      "NumDead": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TombRaider2",
+    "display_name": "Tomb Raider II",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_TombRaider2",
+    "params": {
+      "NumDead": 9.0,
+      "NumInitialItems": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_TragicalBlade",
+    "display_name": "Deadlier Blades",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TragicalBlade",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_TraitTree",
+    "display_name": "The Trait Tree",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 2.0,
+      "NumOfEmblems": 3.0,
+      "NumReforgers": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TraitTreePlus",
+    "display_name": "The Trait Tree+",
+    "tier": "prismatic",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 4.0,
+      "NumOfEmblems": 3.0,
+      "NumReforgers": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TreasureHunt",
+    "display_name": "Treasure Hunt",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TreasureHunt",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_Trifecta1",
+    "display_name": "Trifecta I",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Trifecta1",
+    "params": {
+      "health": 220.0,
+      "attack_speed_pct": 0.002,
+      "BuffedNumber": 3.0,
+      "NumUnits": 2.0,
+      "Tier": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Trifecta2",
+    "display_name": "Trifecta II",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_Trifecta2",
+    "params": {
+      "health": 300.0,
+      "attack_speed_pct": 0.0025,
+      "BuffedNumber": 3.0,
+      "NumUnits": 3.0,
+      "TeamAttackSpeed": 0.05000000074505806,
+      "Tier": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TwinGuardians",
+    "display_name": "Twin Guardians",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_TwinGuardians",
+    "params": {
+      "health": 100.0,
+      "BonusAR": 35.0,
+      "BonusMR": 35.0,
+      "NumUnits": 2,
+      "{2b04af7e}": 1
+    }
+  },
+  {
+    "id": "TFT_Augment_TwoMuchValue",
+    "display_name": "Two Much Value",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TwoMuchValue",
+    "params": {
+      "FreeRerolls": 1.0,
+      "NumChampsToGrant": 1.0,
+      "UnitCost": 2.0,
+      "UnitCount": 2.0,
+      "{d5279bbe}": 2.0,
+      "{e0965628}": 2.0
+    }
+  },
+  {
+    "id": "TFT_Augment_TwoTanky",
+    "display_name": "Two Tanky",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TwoTanky",
+    "params": {
+      "health": 375.0,
+      "HealDuration": 12.0,
+      "OnDeathPercHeal": 0.3499999940395355
+    }
+  },
+  {
+    "id": "TFT_Augment_TwoTrick",
+    "display_name": "Two Trick",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_TwoTrick",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_Underdogs",
+    "display_name": "Underdogs",
+    "tier": "silver",
+    "effect_id": "augment_TFT_Augment_Underdogs",
+    "params": {
+      "HealCap": 150.0,
+      "MissingHeal": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Unforgotten",
+    "display_name": "Warlord's Honor",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Unforgotten",
+    "params": {
+      "MaxStacks": 4.0,
+      "StartingStacks": 1.0,
+      "Stats": 5.0
+    }
+  },
+  {
+    "id": "TFT_Augment_UnlimitedPower",
+    "display_name": "Unlimited Power",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_UnlimitedPower",
+    "params": {}
+  },
+  {
+    "id": "TFT_Augment_UpwardMobility",
+    "display_name": "Upward Mobility",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_UpwardMobility",
+    "params": {
+      "health": 2.0,
+      "Rerolls": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_UrfsGambit",
+    "display_name": "Urf's Gambit",
+    "tier": "gold",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 3.0
+    }
+  },
+  {
+    "id": "TFT_Augment_WandOverflow",
+    "display_name": "Wand Overflow",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_WandOverflow",
+    "params": {
+      "BonusStat": 0.05000000074505806,
+      "NumItems": 4.0
+    }
+  },
+  {
+    "id": "TFT_Augment_WarmogsBuckle",
+    "display_name": "Heart of Steel",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_WarmogsBuckle",
+    "params": {
+      "SecondsPerGain": 10
+    }
+  },
+  {
+    "id": "TFT_Augment_Warpath",
+    "display_name": "Warpath",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_Warpath",
+    "params": {
+      "PlayerDamage": 80.0,
+      "{3dc22ab3}": 3.0,
+      "{6cf88c79}": 1.0,
+      "{7c96bf44}": 2
+    }
+  },
+  {
+    "id": "TFT_Augment_WaterLotus1",
+    "display_name": "Water Lotus I",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_WaterLotus1",
+    "params": {
+      "crit_chance": 0.0005,
+      "ManaDuration": 3.0,
+      "ManaOnCrit": 9.0
+    }
+  },
+  {
+    "id": "TFT_Augment_WaterLotus2",
+    "display_name": "Water Lotus II",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_WaterLotus2",
+    "params": {
+      "crit_chance": 0.002,
+      "ManaDuration": 3.0,
+      "ManaOnCrit": 15.0
+    }
+  },
+  {
+    "id": "TFT_Augment_Waverider",
+    "display_name": "On a Roll",
+    "tier": "silver",
+    "effect_id": "augment_instant_gold",
+    "params": {
+      "gold": 6,
+      "Numrolls": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_WeStickTogether",
+    "display_name": "We Stick Together",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_WeStickTogether",
+    "params": {
+      "ASPercent": 30.0
+    }
+  },
+  {
+    "id": "TFT_Augment_WinOut",
+    "display_name": "Win Out",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_WinOut",
+    "params": {
+      "InstantXP": 10.0,
+      "LevelReq": 9.0,
+      "RerollCount": 8.0
+    }
+  },
+  {
+    "id": "TFT_Augment_WorthTheWaitGold",
+    "display_name": "Worth the Wait",
+    "tier": "gold",
+    "effect_id": "augment_TFT_Augment_WorthTheWaitGold",
+    "params": {
+      "AdditionalCopies": 99.0,
+      "InitialCopies": 1.0,
+      "UnitTier": 1.0
+    }
+  },
+  {
+    "id": "TFT_Augment_WorthTheWaitPrismatic",
+    "display_name": "Worth the Wait II",
+    "tier": "prismatic",
+    "effect_id": "augment_TFT_Augment_WorthTheWaitPrismatic",
+    "params": {
+      "AdditionalCopies": 99.0,
+      "InitialCopies": 2.0,
+      "UnitTier": 2.0
+    }
+  }
+]

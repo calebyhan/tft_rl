@@ -1,0 +1,997 @@
+[
+  {
+    "id": "DA_18_Adaptor",
+    "display_name": "Adaptor",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Adaptor_2",
+        "params": {
+          "ADAPGain": 0.25
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Adaptor_3",
+        "params": {
+          "ADAPGain": 0.3499999940395355
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Adaptor_4",
+        "params": {
+          "ADAPGain": 0.5
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_ApexPredator",
+    "display_name": "Apex Predator",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_18_ApexPredator_1",
+        "params": {}
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Battlemage",
+    "display_name": "Monolith",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_18_Battlemage_1",
+        "params": {
+          "Resists": 10.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Blackthorn",
+    "display_name": "Blackthorn",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Blackthorn_2",
+        "params": {
+          "Health": 175.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Blackthorn_4",
+        "params": {
+          "Health": 350.0,
+          "StatMultiplier": 0.2999999523162842
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_DA_18_Blackthorn_6",
+        "params": {
+          "Health": 600.0,
+          "StatMultiplier": 0.6000000238418579
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Blossom",
+    "display_name": "Blossom",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Blossom_3",
+        "params": {
+          "ADAP": 0.11999999731779099,
+          "BonusHealth": 0.10000002384185791
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Blossom_5",
+        "params": {
+          "ADAP": 0.30000001192092896,
+          "BonusHealth": 0.10000002384185791
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_DA_18_Blossom_7",
+        "params": {
+          "ADAP": 0.44999998807907104,
+          "BonusHealth": 0.10000002384185791,
+          "GoldPerCharmPurchased": 4.0
+        }
+      },
+      {
+        "count": 9,
+        "effect_id": "trait_DA_18_Blossom_9",
+        "params": {
+          "ADAP": 0.5,
+          "BonusHealth": 0.10000002384185791,
+          "GoldPerCharmPurchased": 4.0
+        }
+      },
+      {
+        "count": 11,
+        "effect_id": "trait_DA_18_Blossom_11",
+        "params": {
+          "ADAP": 1.0,
+          "BonusHealth": 0.10000002384185791,
+          "GoldPerCharmPurchased": 4.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Brawler",
+    "display_name": "Brawler",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Brawler_2",
+        "params": {
+          "BrawlerTeamHealth": 120.0,
+          "BrawlerHealthPercent": 0.25
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Brawler_4",
+        "params": {
+          "BrawlerTeamHealth": 120.0,
+          "BrawlerHealthPercent": 0.4000000059604645
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_DA_18_Brawler_6",
+        "params": {
+          "BrawlerTeamHealth": 120.0,
+          "BrawlerHealthPercent": 0.6499999761581421
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Caustic",
+    "display_name": "Caustic",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_18_Caustic_1",
+        "params": {
+          "ShredDuration": 4.0,
+          "ShredPercent": 30.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Coven",
+    "display_name": "Coven",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Coven_3",
+        "params": {
+          "EssencePerDeath": 2.0,
+          "EssenceForRitualTooltip": 40.0,
+          "EssencePerLoss": 22.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Coven_4",
+        "params": {
+          "EssencePerDeath": 2.0,
+          "EssenceForRitualTooltip": 40.0,
+          "EssencePerLoss": 28.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Coven_5",
+        "params": {
+          "EssencePerDeath": 3.0,
+          "EssenceForRitualTooltip": 40.0,
+          "EssencePerLoss": 35.0
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_DA_18_Coven_7",
+        "params": {
+          "EssencePerDeath": 10.0,
+          "EssenceForRitualTooltip": 40.0,
+          "EssencePerLoss": 60.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Defender",
+    "display_name": "Defender",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Defender_2",
+        "params": {
+          "NonDefenderDefenseGain": 12.0,
+          "DefenderDefenseGain": 25.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Defender_4",
+        "params": {
+          "NonDefenderDefenseGain": 12.0,
+          "DefenderDefenseGain": 60.0
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_DA_18_Defender_6",
+        "params": {
+          "NonDefenderDefenseGain": 12.0,
+          "DefenderDefenseGain": 115.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Elderwood",
+    "display_name": "Elderwood",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Elderwood_3",
+        "params": {
+          "{0f90e7a4}": 0.25,
+          "{4013f48e}": 0.10000000149011612
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Elderwood_5",
+        "params": {
+          "{0f90e7a4}": 0.25,
+          "{4013f48e}": 0.10000000149011612,
+          "StonebarkTreeBonusHealth": 200.0
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_DA_18_Elderwood_7",
+        "params": {
+          "{0f90e7a4}": 0.25,
+          "{4013f48e}": 0.10000000149011612,
+          "StonebarkTreeBonusHealth": 200.0
+        }
+      },
+      {
+        "count": 9,
+        "effect_id": "trait_DA_18_Elderwood_9",
+        "params": {
+          "{0f90e7a4}": 0.25,
+          "{4013f48e}": 0.10000000149011612,
+          "StonebarkTreeBonusHealth": 200.0
+        }
+      },
+      {
+        "count": 11,
+        "effect_id": "trait_DA_18_Elderwood_11",
+        "params": {
+          "{0f90e7a4}": 0.25,
+          "{4013f48e}": 0.10000000149011612,
+          "StonebarkTreeBonusHealth": 200.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Executioner",
+    "display_name": "Executioner",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Executioner_2",
+        "params": {
+          "CritChance": 0.15000000596046448
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Executioner_3",
+        "params": {
+          "CritChance": 0.15000000596046448,
+          "BleedDuration": 3.0,
+          "BonusBleedPercent": 0.30000001192092896
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Executioner_4",
+        "params": {
+          "CritChance": 0.15000000596046448,
+          "BleedDuration": 3.0,
+          "BonusBleedPercent": 0.4000000059604645
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Fae",
+    "display_name": "Fae",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Fae_2",
+        "params": {
+          "ADAP": 5.0,
+          "Heal": 2.5,
+          "HealThreshold": 0.5
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Fae_4",
+        "params": {
+          "ADAP": 8.0,
+          "Heal": 4.0,
+          "HealThreshold": 0.5
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Greenfather",
+    "display_name": "Greenfather",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_18_Greenfather_1",
+        "params": {
+          "SeedsPerCast": 1.0,
+          "CombatStartSeeds": 3.0,
+          "SeedsToGrowHex": 5.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Hunter",
+    "display_name": "Hunter",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Hunter_2",
+        "params": {
+          "DamageAmp": 0.10000000149011612,
+          "HunterAD": 0.20000000298023224,
+          "HunterDuration": 3.0
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Hunter_3",
+        "params": {
+          "DamageAmp": 0.10000000149011612,
+          "HunterAD": 0.30000001192092896,
+          "HunterDuration": 3.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Hunter_4",
+        "params": {
+          "DamageAmp": 0.10000000149011612,
+          "HunterAD": 0.4,
+          "HunterDuration": 3.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Hunter_5",
+        "params": {
+          "DamageAmp": 0.10000000149011612,
+          "HunterAD": 0.6,
+          "HunterDuration": 3.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Inferno",
+    "display_name": "Inferno",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Inferno_2",
+        "params": {
+          "Duration": 3.0,
+          "WoundPercent": 33.0,
+          "HPBurnPerSecond": 1.0
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Inferno_3",
+        "params": {
+          "Duration": 3.0,
+          "WoundPercent": 33.0,
+          "HPBurnPerSecond": 1.0,
+          "LuckySlotCount": 1.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Inferno_5",
+        "params": {
+          "Duration": 3.0,
+          "WoundPercent": 33.0,
+          "HPBurnPerSecond": 3.0,
+          "LuckySlotCount": 2.0
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_DA_18_Inferno_7",
+        "params": {
+          "Duration": 3.0,
+          "WoundPercent": 33.0,
+          "HPBurnPerSecond": 4.0,
+          "LuckySlotCount": 4.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Invoker",
+    "display_name": "Invoker",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Invoker_2",
+        "params": {
+          "TeamManaRegen": 1.0,
+          "InvokerManaBonus": 3.0
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Invoker_3",
+        "params": {
+          "TeamManaRegen": 1.0,
+          "InvokerManaBonus": 4.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Invoker_4",
+        "params": {
+          "TeamManaRegen": 2.0,
+          "InvokerManaBonus": 6.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Invoker_5",
+        "params": {
+          "TeamManaRegen": 2.0,
+          "InvokerManaBonus": 8.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Lunar",
+    "display_name": "Lunar",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Lunar_2",
+        "params": {
+          "AbilityPower": 0.07000000029802322,
+          "AttackSpeed": 0.0700000524520874,
+          "LunarMultiplier": 1.0
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Lunar_3",
+        "params": {
+          "AbilityPower": 0.10000000149011612,
+          "AttackSpeed": 0.10000002384185791,
+          "LunarMultiplier": 1.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Lunar_4",
+        "params": {
+          "AbilityPower": 0.14000000059604645,
+          "AttackSpeed": 0.13999998569488525,
+          "LunarMultiplier": 1.0
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Lunar_5",
+        "params": {
+          "AbilityPower": 0.18000000715255737,
+          "AttackSpeed": 0.1799999475479126,
+          "LunarMultiplier": 1.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_LuxUniqueTrait",
+    "display_name": "Avatar",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_18_LuxUniqueTrait_1",
+        "params": {}
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Maokai_UniqueTrait",
+    "display_name": "Old Growth",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_18_Maokai_UniqueTrait_1",
+        "params": {
+          "UniqueTraitHealthPerStack": 30.0,
+          "UniqueTraitHexRange": 3.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Rapidfire",
+    "display_name": "Rapidfire",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Rapidfire_2",
+        "params": {
+          "ASperAttack": 0.029999971389770508,
+          "MaxStacks": 10.0,
+          "TeamAS": 0.10000002384185791
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Rapidfire_3",
+        "params": {
+          "ASperAttack": 0.04999995231628418,
+          "MaxStacks": 10.0,
+          "TeamAS": 0.10000002384185791
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Rapidfire_4",
+        "params": {
+          "ASperAttack": 0.08,
+          "MaxStacks": 10.0,
+          "TeamAS": 0.10000002384185791
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Rapidfire_5",
+        "params": {
+          "ASperAttack": 0.12,
+          "MaxStacks": 10.0,
+          "TeamAS": 0.10000002384185791
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Rival",
+    "display_name": "Rival",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_18_Rival_1",
+        "params": {}
+      },
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Rival_2",
+        "params": {}
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Slayer",
+    "display_name": "Ravager",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Slayer_2",
+        "params": {
+          "Omnivamp": 0.10000000149011612,
+          "BonusDamagePercentBase": 0.11999999731779099,
+          "EnemyHealthThreshold": 0.5
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Slayer_4",
+        "params": {
+          "Omnivamp": 0.10000000149011612,
+          "BonusDamagePercentBase": 0.25,
+          "EnemyHealthThreshold": 0.5
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_DA_18_Slayer_6",
+        "params": {
+          "Omnivamp": 0.10000000149011612,
+          "BonusDamagePercentBase": 0.4000000059604645,
+          "EnemyHealthThreshold": 0.5
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Solar",
+    "display_name": "Solar",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Solar_3",
+        "params": {
+          "BonusMagicDamage": 0.07999999821186066,
+          "ShieldRatio": 0.05000000074505806,
+          "NumThreeStarThreshold1": 3.0,
+          "NumThreeStarThreshold2": 5.0,
+          "NumThreeStarThreshold3": 8.0,
+          "Threshold2TrueDamageConversion": 0.4000000059604645,
+          "Threshold1AttackSpeed": 0.1499999761581421,
+          "Threshold1ArmorMagicResist": 12.0,
+          "PercentIncreasePer3Star": 0.009999999776482582,
+          "Threshold3StarUpPeriod": 4.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Spellweaver",
+    "display_name": "Spellweaver",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Spellweaver_2",
+        "params": {
+          "APPerCast": 0.009999999776482582,
+          "TeamwideAP": 0.10000000149011612,
+          "SpellweaverAP": 0.10000000149011612
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Spellweaver_4",
+        "params": {
+          "APPerCast": 0.009999999776482582,
+          "TeamwideAP": 0.10000000149011612,
+          "SpellweaverAP": 0.30000001192092896
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_DA_18_Spellweaver_6",
+        "params": {
+          "APPerCast": 0.019999999552965164,
+          "TeamwideAP": 0.10000000149011612,
+          "SpellweaverAP": 0.550000011920929
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Sprykin",
+    "display_name": "Sprykin",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Sprykin_3",
+        "params": {
+          "AttackSpeedIncrease": 0.1499999761581421,
+          "HealthIncrease": 0.1499999761581421
+        }
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_18_Sprykin_5",
+        "params": {
+          "AttackSpeedIncrease": 0.3500000238418579,
+          "HealthIncrease": 0.3999999761581421,
+          "TeamwideRatio": 0.5
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_DA_18_Sprykin_7",
+        "params": {
+          "AttackSpeedIncrease": 0.4500000476837158,
+          "HealthIncrease": 0.4500000476837158,
+          "TeamwideRatio": 1.0
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Summoner",
+    "display_name": "Summoner",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Summoner_2",
+        "params": {
+          "DamageMult": 0.4500000476837158,
+          "NumExtraAttacks": 4.0,
+          "HealthMult": 0.2999999523162842,
+          "AzirDamageMult": 0.20000004768371582
+        }
+      },
+      {
+        "count": 3,
+        "effect_id": "trait_DA_18_Summoner_3",
+        "params": {
+          "DamageMult": 0.4500000476837158,
+          "NumExtraAttacks": 4.0,
+          "HealthMult": 0.2999999523162842,
+          "AzirDamageMult": 0.20000004768371582
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_Vanguard",
+    "display_name": "Vanguard",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_18_Vanguard_2",
+        "params": {
+          "HealthThreshold": 0.5,
+          "MaxHealthShield": 0.18000000715255737,
+          "ShieldDuration": 10.0
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_18_Vanguard_4",
+        "params": {
+          "HealthThreshold": 0.5,
+          "MaxHealthShield": 0.30000001192092896,
+          "ShieldDuration": 10.0
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_DA_18_Vanguard_6",
+        "params": {
+          "HealthThreshold": 0.5,
+          "MaxHealthShield": 0.4000000059604645,
+          "ShieldDuration": 10.0,
+          "DurabilityIncrease": 0.050000011920928955
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_18_ZyraUniqueTrait",
+    "display_name": "Thornmaiden",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_18_ZyraUniqueTrait_1",
+        "params": {
+          "BaseDurability": 0.050000011920928955,
+          "PlantNumThreshold": 6.0,
+          "IncreasedDurability": 0.10000002384185791
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_AluneUniqueTrait18",
+    "display_name": "Attuned",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_AluneUniqueTrait18_1",
+        "params": {
+          "DamageAmp": 0.07000000029802322,
+          "Durability": 0.06999999284744263
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_DravenUniqueTrait18",
+    "display_name": "Bounty Seeker",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_DravenUniqueTrait18_1",
+        "params": {}
+      }
+    ]
+  },
+  {
+    "id": "DA_Emerald18",
+    "display_name": "Emerald Aspect",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_Emerald18_1",
+        "params": {}
+      }
+    ]
+  },
+  {
+    "id": "DA_FloraFatalis18",
+    "display_name": "Flora Fatalis",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 1,
+        "effect_id": "trait_DA_FloraFatalis18_1",
+        "params": {
+          "Mana": 10.0
+        }
+      },
+      {
+        "count": 2,
+        "effect_id": "trait_DA_FloraFatalis18_2",
+        "params": {
+          "Mana": 10.0,
+          "PercentHeal": 0.07999999821186066
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_Juggernaut18",
+    "display_name": "Juggernaut",
+    "category": "class",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_Juggernaut18_2",
+        "params": {
+          "JuggernautDurability": 0.19999998807907104,
+          "TeamDurability": 0.04000002145767212
+        }
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_Juggernaut18_4",
+        "params": {
+          "JuggernautDurability": 0.32999998331069946,
+          "TeamDurability": 0.06000000238418579
+        }
+      },
+      {
+        "count": 6,
+        "effect_id": "trait_DA_Juggernaut18_6",
+        "params": {
+          "JuggernautDurability": 0.44999998807907104,
+          "TeamDurability": 0.07999998331069946
+        }
+      }
+    ]
+  },
+  {
+    "id": "DA_Primal18",
+    "display_name": "Primal",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 2,
+        "effect_id": "trait_DA_Primal18_2",
+        "params": {}
+      },
+      {
+        "count": 4,
+        "effect_id": "trait_DA_Primal18_4",
+        "params": {}
+      }
+    ]
+  },
+  {
+    "id": "DA_Riftbeast18",
+    "display_name": "Riftbeast",
+    "category": "origin",
+    "breakpoints": [
+      {
+        "count": 3,
+        "effect_id": "trait_DA_Riftbeast18_3",
+        "params": {}
+      },
+      {
+        "count": 5,
+        "effect_id": "trait_DA_Riftbeast18_5",
+        "params": {
+          "OverrunCombats": 3.0
+        }
+      },
+      {
+        "count": 7,
+        "effect_id": "trait_DA_Riftbeast18_7",
+        "params": {
+          "OverrunCombats": 3.0,
+          "CapstoneAP": 0.05000000074505806,
+          "CapstoneHealth": 50.0,
+          "CapstoneMR": 5.0,
+          "CapstoneAD": 0.05000000074505806,
+          "CapstoneManaRegen": 1.0,
+          "CapstoneAspd": 0.04999995231628418,
+          "CapstoneArmor": 5.0
+        }
+      },
+      {
+        "count": 10,
+        "effect_id": "trait_DA_Riftbeast18_10",
+        "params": {
+          "OverrunCombats": 3.0,
+          "CapstoneAP": 0.05000000074505806,
+          "CapstoneHealth": 50.0,
+          "CapstoneMR": 5.0,
+          "CapstoneAD": 0.05000000074505806,
+          "CapstoneManaRegen": 1.0,
+          "CapstoneAspd": 0.04999995231628418,
+          "CapstoneArmor": 5.0,
+          "TeamSize": 2.0
+        }
+      }
+    ]
+  }
+]

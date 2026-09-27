@@ -1,0 +1,3280 @@
+[
+  {
+    "id": "DA_18_Akali_AD",
+    "display_name": "Akali",
+    "cost": 1,
+    "traits": [
+      "DA_18_Inferno",
+      "DA_18_Adaptor",
+      "DA_18_Slayer"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 25.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Kunai Strike",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Akali_AD",
+      "params": {
+        "Damage": [
+          145.0,
+          220.0,
+          380.0
+        ],
+        "BonusDamage": [
+          35.0,
+          52.0,
+          80.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Camille",
+    "display_name": "Camille",
+    "cost": 1,
+    "traits": [
+      "DA_18_Coven",
+      "DA_18_Slayer"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 25.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Defensive Sweep",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Camille",
+      "params": {
+        "Damage": [
+          160.0,
+          240.0,
+          410.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Kobuko",
+    "display_name": "Kobuko",
+    "cost": 1,
+    "traits": [
+      "DA_18_Sprykin",
+      "DA_18_Brawler"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        55.0,
+        82.5,
+        123.75
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 90.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Dance of Life",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Kobuko",
+      "params": {
+        "Heal": [
+          350.0,
+          400.0,
+          475.0
+        ],
+        "Damage": [
+          70.0,
+          105.0,
+          150.0
+        ],
+        "PermanentHealthPerInterest": [
+          10.0,
+          12.0,
+          20.0
+        ],
+        "Duration": 2.0,
+        "DamageHPPercent": 0.15,
+        "HRHealthPerRound": [
+          60.0,
+          80.0,
+          200.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Leona",
+    "display_name": "Leona",
+    "cost": 1,
+    "traits": [
+      "DA_18_Solar",
+      "DA_18_Defender"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        750.0,
+        1350.0,
+        2430.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 90.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Shield Bash",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Leona",
+      "params": {
+        "DecayingResists": [
+          60.0,
+          80.0,
+          100.0
+        ],
+        "Damage": [
+          1.5,
+          2.7,
+          4.05
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Ornn",
+    "display_name": "Ornn",
+    "cost": 1,
+    "traits": [
+      "DA_18_Elderwood",
+      "DA_18_Defender"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Bellows Breath",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Shield": [
+          400.0,
+          460.0,
+          550.0
+        ],
+        "Damage": [
+          200.0,
+          300.0,
+          450.0
+        ],
+        "shield": [
+          400.0,
+          460.0,
+          550.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Rakan",
+    "display_name": "Rakan",
+    "cost": 1,
+    "traits": [
+      "DA_18_Fae",
+      "DA_Juggernaut18",
+      "DA_18_Vanguard"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 35.0,
+      "max_mana": 105.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Entrancing Dance",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Shield": [
+          270.0,
+          320.0,
+          415.0
+        ],
+        "AttackSpeed": [
+          1.9,
+          2.0,
+          2.3
+        ],
+        "shield": [
+          270.0,
+          320.0,
+          415.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_RekSai",
+    "display_name": "Rek'Sai",
+    "cost": 1,
+    "traits": [
+      "DA_18_Blackthorn",
+      "DA_18_Brawler"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.55,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Uproot",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_RekSai",
+      "params": {
+        "Heal": [
+          10.0,
+          14.0,
+          20.0
+        ],
+        "Damage": [
+          70.0,
+          105.0,
+          160.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Sentry",
+    "display_name": "Pebbles",
+    "cost": 1,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_18_Invoker"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        500.0,
+        900.0,
+        1620.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        35.0,
+        52.5,
+        78.75
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 30.0,
+      "max_mana": 70.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Azure Laser",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Sentry",
+      "params": {
+        "Damage": [
+          160.0,
+          240.0,
+          360.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Varus",
+    "display_name": "Varus",
+    "cost": 1,
+    "traits": [
+      "DA_18_Inferno",
+      "DA_18_Rapidfire"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        500.0,
+        900.0,
+        1620.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 30.0,
+      "max_mana": 120.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Piercing Arrow",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Varus",
+      "params": {
+        "Damage": [
+          415.0,
+          625.0,
+          1000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Veigar",
+    "display_name": "Veigar",
+    "cost": 1,
+    "traits": [
+      "DA_18_Blackthorn",
+      "DA_18_Sprykin",
+      "DA_18_Spellweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        500.0,
+        900.0,
+        1620.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        25.0,
+        37.5,
+        56.25
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Primordial Burst",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Veigar",
+      "params": {
+        "Damage": [
+          200.0,
+          300.0,
+          450.0
+        ],
+        "LowHealthDamage": [
+          300.0,
+          450.0,
+          675.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Xayah",
+    "display_name": "Xayah",
+    "cost": 1,
+    "traits": [
+      "DA_18_Elderwood",
+      "DA_18_Fae",
+      "DA_18_Rapidfire"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        450.0,
+        810.0,
+        1458.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Deadly Plumage",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Xayah",
+      "params": {
+        "Damage": [
+          68.0,
+          102.0,
+          155.0
+        ],
+        "ArmorReduction": 2.0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Yorick",
+    "display_name": "Yorick",
+    "cost": 1,
+    "traits": [
+      "DA_18_Blossom",
+      "DA_Juggernaut18",
+      "DA_18_Summoner"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 50.0,
+      "max_mana": 110.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Last Rites",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Yorick",
+      "params": {
+        "SpiritWalkerHealth": [
+          200.0,
+          400.0,
+          750.0
+        ],
+        "Damage": [
+          150.0,
+          225.0,
+          340.0
+        ],
+        "Heal": [
+          280.0,
+          325.0,
+          435.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Cinderling18",
+    "display_name": "Cinderling",
+    "cost": 1,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_18_Hunter"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        500.0,
+        900.0,
+        1620.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Razor Leaves",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Cinderling18",
+      "params": {
+        "Damage": [
+          310.0,
+          465.0,
+          700.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Karma18",
+    "display_name": "Karma",
+    "cost": 1,
+    "traits": [
+      "DA_18_Blossom",
+      "DA_18_Spellweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        500.0,
+        900.0,
+        1620.0
+      ],
+      "armor": 25.0,
+      "magic_resist": 25.0,
+      "attack_damage": [
+        25.0,
+        37.5,
+        56.25
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Karmic Bond",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Karma18",
+      "params": {
+        "Damage": [
+          280.0,
+          420.0,
+          630.0
+        ],
+        "BurstDamage": [
+          125.0,
+          185.0,
+          300.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Alistar",
+    "display_name": "Alistar",
+    "cost": 2,
+    "traits": [
+      "DA_18_Elderwood",
+      "DA_18_Brawler"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        950.0,
+        1710.0,
+        3078.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 90.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Triumphant Roar",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Alistar",
+      "params": {
+        "Heal": [
+          230.0,
+          300.0,
+          400.0
+        ],
+        "AllyHeal": [
+          80.0,
+          105.0,
+          130.0
+        ],
+        "Damage": [
+          180.0,
+          270.0,
+          420.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Caitlyn",
+    "display_name": "Caitlyn",
+    "cost": 2,
+    "traits": [
+      "DA_18_Coven",
+      "DA_18_Hunter"
+    ],
+    "role": "Specialist",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 3.0,
+      "mana_per_attack": 0.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Headshot",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Caitlyn",
+      "params": {
+        "Damage": [
+          190.0,
+          285.0,
+          470.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Elise",
+    "display_name": "Elise",
+    "cost": 2,
+    "traits": [
+      "DA_18_Coven",
+      "DA_18_Vanguard"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        20.0,
+        30.0,
+        45.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 20.0,
+      "max_mana": 70.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Spider Queen",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Elise",
+      "params": {
+        "Damage": [
+          35.0,
+          50.0,
+          80.0
+        ],
+        "Heal": [
+          55.0,
+          90.0,
+          170.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Kayle",
+    "display_name": "Kayle",
+    "cost": 2,
+    "traits": [
+      "DA_18_Solar",
+      "DA_18_Rapidfire"
+    ],
+    "role": "Specialist",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        1.0,
+        1.5,
+        2.25
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 0.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Solar Judgement",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Kayle",
+      "params": {
+        "Damage": [
+          62.0,
+          92.0,
+          105.0
+        ],
+        "SecondaryDamage": 35.0
+      }
+    }
+  },
+  {
+    "id": "DA_18_LeBlanc",
+    "display_name": "LeBlanc",
+    "cost": 2,
+    "traits": [
+      "DA_18_Elderwood",
+      "DA_18_Spellweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Mirror Image",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_LeBlanc",
+      "params": {
+        "Damage": [
+          260.0,
+          390.0,
+          615.0
+        ],
+        "SecondaryDamage": [
+          100.0,
+          150.0,
+          230.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Sejuani",
+    "display_name": "Sejuani",
+    "cost": 2,
+    "traits": [
+      "DA_18_Solar",
+      "DA_Juggernaut18"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Sun's Wrath",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Shield": [
+          225.0,
+          250.0,
+          275.0
+        ],
+        "ConeDamage": [
+          90.0,
+          135.0,
+          205.0
+        ],
+        "LineDamage": [
+          120.0,
+          180.0,
+          270.0
+        ],
+        "shield": [
+          225.0,
+          250.0,
+          275.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Shen",
+    "display_name": "Shen",
+    "cost": 2,
+    "traits": [
+      "DA_18_Inferno",
+      "DA_18_Defender"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 90.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Ki Barrier",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Shen",
+      "params": {
+        "SelfShield": [
+          350.0,
+          430.0,
+          550.0
+        ],
+        "AllyShield": [
+          200.0,
+          275.0,
+          375.0
+        ],
+        "Damage": [
+          35.0,
+          55.0,
+          80.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Teemo",
+    "display_name": "Teemo",
+    "cost": 2,
+    "traits": [
+      "DA_18_Sprykin",
+      "DA_18_Invoker"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        35.0,
+        52.5,
+        78.75
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Fungus Among Us",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Teemo",
+      "params": {
+        "Damage": [
+          60.0,
+          90.0,
+          135.0
+        ],
+        "GiantDamage": [
+          135.0,
+          200.0,
+          310.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Warwick",
+    "display_name": "Warwick",
+    "cost": 2,
+    "traits": [
+      "DA_18_Blackthorn",
+      "DA_18_Slayer"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        750.0,
+        1350.0,
+        2430.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Jaws of The Beast",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Warwick",
+      "params": {
+        "Damage": [
+          230.0,
+          345.0,
+          535.0
+        ],
+        "Heal": 0.25
+      }
+    }
+  },
+  {
+    "id": "DA_18_Yunara",
+    "display_name": "Yunara",
+    "cost": 2,
+    "traits": [
+      "DA_18_Blossom",
+      "DA_18_Executioner"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        42.0,
+        63.0,
+        94.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 35.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Cultivation of Spirit",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Yunara",
+      "params": {
+        "Damage": [
+          160.0,
+          240.0,
+          370.0
+        ],
+        "SecondaryDamage": 0.35
+      }
+    }
+  },
+  {
+    "id": "DA_Gromp18_AP",
+    "display_name": "Gromp",
+    "cost": 2,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_18_Adaptor"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        550.0,
+        990.0,
+        1782.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 45.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Belchy Bubble",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Gromp18_AP",
+      "params": {
+        "Damage": [
+          225.0,
+          340.0,
+          535.0
+        ],
+        "AreaDamage": [
+          175.0,
+          265.0,
+          410.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Murkwolf18",
+    "display_name": "Murkwolf",
+    "cost": 2,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_18_Slayer"
+    ],
+    "role": "Assassin",
+    "stats": {
+      "health": [
+        700.0,
+        1260.0,
+        2268.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Rending Claws",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Murkwolf18",
+      "params": {
+        "Damage": [
+          100.0,
+          150.0,
+          225.0
+        ],
+        "EmpoweredDamage": [
+          65.0,
+          100.0,
+          160.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Scuttlecrab18",
+    "display_name": "Scuttlecrab",
+    "cost": 2,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_Juggernaut18"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        950.0,
+        1710.0,
+        3078.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Can You Dig It?",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Scuttlecrab18",
+      "params": {
+        "Damage": [
+          50.0,
+          75.0,
+          112.5
+        ],
+        "Heal": [
+          325.0,
+          400.0,
+          675.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Azir",
+    "display_name": "Azir",
+    "cost": 3,
+    "traits": [
+      "DA_18_Blackthorn",
+      "DA_18_Executioner",
+      "DA_18_Summoner"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 35.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Arise!",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Azir",
+      "params": {
+        "Damage": [
+          46.0,
+          69.0,
+          110.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Cassiopeia",
+    "display_name": "Cassiopeia",
+    "cost": 3,
+    "traits": [
+      "DA_18_Coven",
+      "DA_18_Spellweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Noxious Blast",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Cassiopeia",
+      "params": {
+        "Damage": [
+          425.0,
+          630.0,
+          1020.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Diana",
+    "display_name": "Diana",
+    "cost": 3,
+    "traits": [
+      "DA_18_Lunar",
+      "DA_18_Slayer",
+      "DA_18_Vanguard"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 50.0,
+      "magic_resist": 50.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Pale Barrier",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Damage": [
+          75.0,
+          115.0,
+          180.0
+        ],
+        "Shield": [
+          150.0,
+          275.0,
+          500.0
+        ],
+        "shield": [
+          150.0,
+          275.0,
+          500.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Hecarim",
+    "display_name": "Hecarim",
+    "cost": 3,
+    "traits": [
+      "DA_18_Elderwood",
+      "DA_18_Vanguard"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 50.0,
+      "magic_resist": 50.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 110.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Spirit of Dread",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Hecarim",
+      "params": {
+        "Heal": [
+          375.0,
+          475.0,
+          685.0
+        ],
+        "Damage": [
+          80.0,
+          120.0,
+          195.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_KhaZix",
+    "display_name": "Kha'Zix",
+    "cost": 3,
+    "traits": [
+      "DA_18_Rival"
+    ],
+    "role": "Assassin",
+    "stats": {
+      "health": [
+        950.0,
+        1710.0,
+        3078.0
+      ],
+      "armor": 55.0,
+      "magic_resist": 55.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.85,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 25.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Taste Their Fear",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_KhaZix",
+      "params": {
+        "Damage": [
+          265.0,
+          370.0,
+          535.0
+        ],
+        "IsolatedDamage": [
+          285.0,
+          410.0,
+          605.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_MasterYi_AD",
+    "display_name": "Master Yi",
+    "cost": 3,
+    "traits": [
+      "DA_18_Blossom",
+      "DA_18_Adaptor"
+    ],
+    "role": "Specialist",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 55.0,
+      "magic_resist": 55.0,
+      "attack_damage": [
+        62.0,
+        93.0,
+        139.5
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 3.0,
+      "mana_per_attack": 0.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Wuju Style",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_MasterYi_AD",
+      "params": {
+        "AttackSpeed": 0.03
+      }
+    }
+  },
+  {
+    "id": "DA_18_Rammus",
+    "display_name": "Rammus",
+    "cost": 3,
+    "traits": [
+      "DA_18_Sprykin",
+      "DA_18_Defender"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 50.0,
+      "magic_resist": 50.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Defensive Ball Curl",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Shield": [
+          400.0,
+          550.0,
+          725.0
+        ],
+        "Damage": [
+          0.5,
+          0.75,
+          1.2
+        ],
+        "shield": [
+          400.0,
+          550.0,
+          725.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Rengar",
+    "display_name": "Rengar",
+    "cost": 3,
+    "traits": [
+      "DA_18_Rival"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 55.0,
+      "magic_resist": 55.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 10.0,
+      "max_mana": 50.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Savagery",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Rengar",
+      "params": {
+        "Damage": [
+          255.0,
+          385.0,
+          615.0
+        ],
+        "MinimumHeal": [
+          60.0,
+          90.0,
+          150.0
+        ],
+        "MaximumHeal": [
+          120.0,
+          180.0,
+          300.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Tristana",
+    "display_name": "Tristana",
+    "cost": 3,
+    "traits": [
+      "DA_18_Fae",
+      "DA_18_Sprykin",
+      "DA_18_Hunter"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        55.0,
+        82.5,
+        123.75
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 60.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Explosive Charge",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Tristana",
+      "params": {
+        "AttackSpeed": 0.2,
+        "Damage": [
+          160.0,
+          240.0,
+          385.0
+        ],
+        "BonusDamagePerAttack": [
+          10.0,
+          15.0,
+          25.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_CrimsonRaptor18",
+    "display_name": "Mama Beak",
+    "cost": 3,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_18_Summoner",
+      "DA_18_Rapidfire"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        55.0,
+        82.5,
+        123.75
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 20.0,
+      "max_mana": 60.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Flock Family",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_CrimsonRaptor18",
+      "params": {
+        "Duration": 5.0,
+        "Damage": [
+          22.0,
+          33.0,
+          48.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Fiddlesticks18",
+    "display_name": "Fiddlesticks",
+    "cost": 3,
+    "traits": [
+      "DA_FloraFatalis18",
+      "DA_18_Defender",
+      "DA_18_Spellweaver"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1000.0,
+        1800.0,
+        3240.0
+      ],
+      "armor": 55.0,
+      "magic_resist": 55.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 90.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Harvest",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Fiddlesticks18",
+      "params": {
+        "Heal": [
+          410.0,
+          485.0,
+          850.0
+        ],
+        "Damage": [
+          70.0,
+          105.0,
+          170.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_KogMaw18_AD",
+    "display_name": "Kog'Maw",
+    "cost": 3,
+    "traits": [
+      "DA_18_Caustic",
+      "DA_18_Adaptor",
+      "DA_18_Invoker"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        650.0,
+        1170.0,
+        2106.0
+      ],
+      "armor": 35.0,
+      "magic_resist": 35.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 15.0,
+      "max_mana": 55.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Raining Artillery",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_KogMaw18_AD",
+      "params": {
+        "Damage": [
+          145.0,
+          220.0,
+          375.0
+        ],
+        "LowHealthDamage": 1.4
+      }
+    }
+  },
+  {
+    "id": "DA_Krug18",
+    "display_name": "Krug",
+    "cost": 3,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_18_Brawler"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        55.0,
+        82.5,
+        123.75
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 80.0,
+      "max_mana": 135.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Rock and Roll",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Krug18",
+      "params": {
+        "KrugletteHealth": [
+          50.0,
+          100.0,
+          180.0
+        ],
+        "BonusHealth": [
+          175.0,
+          225.0,
+          325.0
+        ],
+        "Damage": [
+          135.0,
+          200.0,
+          335.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Vi18",
+    "display_name": "Vi",
+    "cost": 3,
+    "traits": [
+      "DA_Primal18",
+      "DA_Juggernaut18"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 50.0,
+      "magic_resist": 50.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 60.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Furious Fists",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Vi18",
+      "params": {
+        "PassiveHeal": 0.02,
+        "Heal": [
+          200.0,
+          265.0,
+          360.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Ahri",
+    "display_name": "Ahri",
+    "cost": 4,
+    "traits": [
+      "DA_18_Blossom",
+      "DA_18_Spellweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 20.0,
+      "max_mana": 100.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Spirit Bomb",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Ahri",
+      "params": {
+        "Damage": [
+          455.0,
+          685.0,
+          3500.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Aphelios",
+    "display_name": "Aphelios",
+    "cost": 4,
+    "traits": [
+      "DA_18_Lunar",
+      "DA_18_Rapidfire"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 20.0,
+      "max_mana": 70.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Moonlight's Onslaught",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Aphelios",
+      "params": {
+        "Swipes": 5.0,
+        "SwipeDamage": [
+          70.0,
+          105.0,
+          850.0
+        ],
+        "BlastDamage": [
+          450.0,
+          675.0,
+          5000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Ezreal",
+    "display_name": "Ezreal",
+    "cost": 4,
+    "traits": [
+      "DA_18_Elderwood",
+      "DA_18_Executioner"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Forest's Flurry",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Ezreal",
+      "params": {
+        "Damage": [
+          250.0,
+          375.0,
+          1200.0
+        ],
+        "AttackSpeed": [
+          0.3,
+          0.3,
+          1.0
+        ],
+        "EmpoweredDamage": [
+          385.0,
+          580.0,
+          2500.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Lillia",
+    "display_name": "Lillia",
+    "cost": 4,
+    "traits": [
+      "DA_18_Fae",
+      "DA_18_Defender"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 40.0,
+      "max_mana": 140.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Lilting Lullaby",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Lillia",
+      "params": {
+        "Heal": [
+          350.0,
+          525.0,
+          800.0
+        ],
+        "Damage": [
+          90.0,
+          135.0,
+          2000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Malphite",
+    "display_name": "Malphite",
+    "cost": 4,
+    "traits": [
+      "DA_18_Blackthorn",
+      "DA_18_Battlemage"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 70.0,
+      "magic_resist": 70.0,
+      "attack_damage": [
+        70.0,
+        105.0,
+        157.5
+      ],
+      "attack_speed": 0.55,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Petrified Bark",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Shield": [
+          700.0,
+          850.0,
+          2000.0
+        ],
+        "Damage": [
+          0.3,
+          0.45,
+          9.99
+        ],
+        "shield": [
+          700.0,
+          850.0,
+          2000.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Morgana",
+    "display_name": "Morgana",
+    "cost": 4,
+    "traits": [
+      "DA_18_Coven",
+      "DA_18_Invoker"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        45.0,
+        67.5,
+        101.25
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 2,
+      "starting_mana": 0.0,
+      "max_mana": 65.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Withering Curse",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Morgana",
+      "params": {
+        "InitialDamage": [
+          60.0,
+          90.0,
+          500.0
+        ],
+        "ZoneDamage": [
+          33.0,
+          50.0,
+          500.0
+        ],
+        "CurseBonusDamage": [
+          22.0,
+          33.0,
+          240.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Sett",
+    "display_name": "Sett",
+    "cost": 4,
+    "traits": [
+      "DA_18_Blossom",
+      "DA_18_Brawler"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1200.0,
+        2160.0,
+        3888.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        80.0,
+        120.0,
+        180.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 60.0,
+      "max_mana": 135.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Haymaker",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Sett",
+      "params": {
+        "Heal": [
+          225.0,
+          275.0,
+          2000.0
+        ],
+        "Damage": [
+          150.0,
+          225.0,
+          5000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Sivir",
+    "display_name": "Sivir",
+    "cost": 4,
+    "traits": [
+      "DA_Primal18",
+      "DA_18_Hunter"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Boomerang Blade",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Sivir",
+      "params": {
+        "Damage": [
+          190.0,
+          285.0,
+          1050.0
+        ],
+        "BounceDamage": [
+          0.2,
+          0.2,
+          0.4
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Soraka",
+    "display_name": "Soraka",
+    "cost": 4,
+    "traits": [
+      "DA_FloraFatalis18",
+      "DA_18_Executioner"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        30.0,
+        45.0,
+        67.5
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 30.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Starcall",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Soraka",
+      "params": {
+        "Damage": [
+          225.0,
+          335.0,
+          1000.0
+        ],
+        "SecondaryDamage": [
+          100.0,
+          150.0,
+          1000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Zyra",
+    "display_name": "Zyra",
+    "cost": 4,
+    "traits": [
+      "DA_18_ZyraUniqueTrait",
+      "DA_18_Summoner"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 45.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Rampant Growth",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Zyra",
+      "params": {
+        "Damage": [
+          35.0,
+          53.0,
+          225.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Amumu18",
+    "display_name": "Amumu",
+    "cost": 4,
+    "traits": [
+      "DA_18_Inferno",
+      "DA_Juggernaut18"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        70.0,
+        105.0,
+        157.5
+      ],
+      "attack_speed": 0.7,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 125.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Tantrum",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Amumu18",
+      "params": {
+        "Heal": [
+          20.0,
+          25.0,
+          100.0
+        ],
+        "PassiveDamage": [
+          12.0,
+          18.0,
+          150.0
+        ],
+        "Damage": [
+          100.0,
+          150.0,
+          2000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Brambleback18",
+    "display_name": "Brambleback",
+    "cost": 4,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_18_Slayer"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1100.0,
+        1980.0,
+        3564.0
+      ],
+      "armor": 65.0,
+      "magic_resist": 65.0,
+      "attack_damage": [
+        120.0,
+        180.0,
+        270.0
+      ],
+      "attack_speed": 0.55,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Crimson Fury",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Brambleback18",
+      "params": {
+        "LeapDamage": [
+          155.0,
+          235.0,
+          1000.0
+        ],
+        "BonusAttackDamage": [
+          0.8,
+          0.8,
+          3.0
+        ],
+        "ArmorIgnore": [
+          0.3,
+          0.3,
+          0.7
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Nidalee18_AP",
+    "display_name": "Nidalee",
+    "cost": 4,
+    "traits": [
+      "DA_Primal18",
+      "DA_18_Adaptor"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        850.0,
+        1530.0,
+        2754.0
+      ],
+      "armor": 30.0,
+      "magic_resist": 30.0,
+      "attack_damage": [
+        35.0,
+        52.5,
+        78.75
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 45.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Javelin Toss",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Nidalee18_AP",
+      "params": {
+        "Damage": [
+          170.0,
+          255.0,
+          2000.0
+        ],
+        "FinalDamage": [
+          330.0,
+          500.0,
+          3000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Sentinel18",
+    "display_name": "Sentinel",
+    "cost": 4,
+    "traits": [
+      "DA_Riftbeast18",
+      "DA_18_Vanguard",
+      "DA_18_Invoker"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        75.0,
+        112.5,
+        168.75
+      ],
+      "attack_speed": 0.6,
+      "attack_range": 1,
+      "starting_mana": 60.0,
+      "max_mana": 150.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Azure Shockwave",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Shield": [
+          350.0,
+          450.0,
+          2000.0
+        ],
+        "Damage": [
+          100.0,
+          150.0,
+          3500.0
+        ],
+        "shield": [
+          350.0,
+          450.0,
+          2000.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Alune",
+    "display_name": "Alune",
+    "cost": 5,
+    "traits": [
+      "DA_AluneUniqueTrait18",
+      "DA_18_Lunar",
+      "DA_18_Spellweaver"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 4,
+      "starting_mana": 0.0,
+      "max_mana": 35.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Moonfall",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Alune",
+      "params": {
+        "Damage": [
+          55.0,
+          83.0,
+          500.0
+        ],
+        "FullMoonDamage": [
+          2350.0,
+          3600.0,
+          7500.0
+        ],
+        "MagicDamage": [
+          380.0,
+          570.0,
+          900.0
+        ],
+        "ShredDuration": 6.0,
+        "ShredPercent": 20.0,
+        "PrimaryMagicDamage": [
+          160.0,
+          240.0,
+          380.0
+        ],
+        "AttackSpeed": [
+          0.2,
+          0.25,
+          0.3
+        ],
+        "AttackSpeedDuration": 5.0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Ashe",
+    "display_name": "Ashe",
+    "cost": 5,
+    "traits": [
+      "DA_18_Blossom",
+      "DA_18_Hunter"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        75.0,
+        112.5,
+        168.75
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 6,
+      "starting_mana": 20.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Spirit Rift",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Ashe",
+      "params": {
+        "Damage": [
+          465.0,
+          700.0,
+          1000.0
+        ],
+        "RiftDamage": [
+          5.0,
+          8.0,
+          200.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_ElderDragon",
+    "display_name": "Elder Dragon",
+    "cost": 5,
+    "traits": [
+      "DA_18_ApexPredator",
+      "DA_Riftbeast18"
+    ],
+    "role": "Fighter",
+    "stats": {
+      "health": [
+        1800.0,
+        3240.0,
+        5832.0
+      ],
+      "armor": 75.0,
+      "magic_resist": 75.0,
+      "attack_damage": [
+        125.0,
+        187.5,
+        281.25
+      ],
+      "attack_speed": 0.5,
+      "attack_range": 2,
+      "starting_mana": 20.0,
+      "max_mana": 60.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Heat Without Equal",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_ElderDragon",
+      "params": {
+        "Damage": [
+          285.0,
+          435.0,
+          7000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_GnarSmall",
+    "display_name": "Gnar",
+    "cost": 5,
+    "traits": [
+      "DA_18_Elderwood",
+      "DA_18_Sprykin",
+      "DA_18_Brawler"
+    ],
+    "role": "Specialist",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 55.0,
+      "magic_resist": 55.0,
+      "attack_damage": [
+        100.0,
+        150.0,
+        225.0
+      ],
+      "attack_speed": 0.9,
+      "attack_range": 2,
+      "starting_mana": 0.0,
+      "max_mana": 70.0,
+      "mana_per_attack": 0.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Rage Gene",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_GnarSmall",
+      "params": {
+        "LeapDamage": [
+          100.0,
+          150.0,
+          2000.0
+        ],
+        "ResistanceReduction": [
+          15.0,
+          20.0,
+          250.0
+        ],
+        "TransformHealth": [
+          400.0,
+          600.0,
+          15000.0
+        ],
+        "Damage": [
+          380.0,
+          570.0,
+          9000.0
+        ],
+        "SecondaryDamage": [
+          135.0,
+          205.0,
+          4500.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_18_Ivern",
+    "display_name": "Ivern",
+    "cost": 5,
+    "traits": [
+      "DA_18_Greenfather"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        1000.0,
+        1800.0,
+        3240.0
+      ],
+      "armor": 55.0,
+      "magic_resist": 55.0,
+      "attack_damage": [
+        60.0,
+        90.0,
+        135.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 3,
+      "starting_mana": 50.0,
+      "max_mana": 80.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Triggerseed",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "ShieldAmount": [
+          185.0,
+          350.0,
+          3000.0
+        ],
+        "DamageAmp": [
+          0.1,
+          0.15,
+          1.0
+        ],
+        "Damage": [
+          155.0,
+          235.0,
+          2000.0
+        ],
+        "shield": [
+          185.0,
+          350.0,
+          3000.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Kennen",
+    "display_name": "Kennen",
+    "cost": 5,
+    "traits": [
+      "DA_18_Inferno",
+      "DA_18_Executioner"
+    ],
+    "role": "Assassin",
+    "stats": {
+      "health": [
+        1200.0,
+        2160.0,
+        3888.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        50.0,
+        75.0,
+        112.5
+      ],
+      "attack_speed": 0.85,
+      "attack_range": 2,
+      "starting_mana": 0.0,
+      "max_mana": 40.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Firestorm",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Shield": [
+          250.0,
+          350.0,
+          3000.0
+        ],
+        "Damage": [
+          80.0,
+          120.0,
+          1500.0
+        ],
+        "FirestormDamage": [
+          475.0,
+          715.0,
+          5000.0
+        ],
+        "shield": [
+          250.0,
+          350.0,
+          3000.0
+        ],
+        "duration": 0
+      }
+    }
+  },
+  {
+    "id": "DA_18_Maokai",
+    "display_name": "Maokai",
+    "cost": 5,
+    "traits": [
+      "DA_18_Maokai_UniqueTrait",
+      "DA_Juggernaut18"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1150.0,
+        2070.0,
+        3726.0
+      ],
+      "armor": 60.0,
+      "magic_resist": 60.0,
+      "attack_damage": [
+        80.0,
+        120.0,
+        180.0
+      ],
+      "attack_speed": 0.65,
+      "attack_range": 1,
+      "starting_mana": 30.0,
+      "max_mana": 90.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Sow the Seeds",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_18_Maokai",
+      "params": {
+        "SaplingDamage": [
+          0.07,
+          0.07,
+          0.75
+        ],
+        "ActiveDamage": [
+          0.06,
+          0.06,
+          1.0
+        ],
+        "Heal": [
+          330.0,
+          400.0,
+          2000.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Draven18",
+    "display_name": "Draven",
+    "cost": 5,
+    "traits": [
+      "DA_DravenUniqueTrait18"
+    ],
+    "role": "Marksman",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 45.0,
+      "magic_resist": 45.0,
+      "attack_damage": [
+        48.0,
+        72.0,
+        108.0
+      ],
+      "attack_speed": 0.85,
+      "attack_range": 6,
+      "starting_mana": 0.0,
+      "max_mana": 110.0,
+      "mana_per_attack": 10.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Whirling Death",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Draven18",
+      "params": {
+        "BleedDamage": [
+          140.0,
+          210.0,
+          3000.0
+        ],
+        "OutgoingAxeDamage": [
+          100.0,
+          150.0,
+          400.0
+        ],
+        "ReturningAxeDamage": [
+          30.0,
+          45.0,
+          100.0
+        ]
+      }
+    }
+  },
+  {
+    "id": "DA_Lux18_Base",
+    "display_name": "Lux",
+    "cost": 5,
+    "traits": [
+      "DA_18_LuxUniqueTrait"
+    ],
+    "role": "Caster",
+    "stats": {
+      "health": [
+        900.0,
+        1620.0,
+        2916.0
+      ],
+      "armor": 40.0,
+      "magic_resist": 40.0,
+      "attack_damage": [
+        40.0,
+        60.0,
+        90.0
+      ],
+      "attack_speed": 0.8,
+      "attack_range": 6,
+      "starting_mana": 20.0,
+      "max_mana": 70.0,
+      "mana_per_attack": 7.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Final Spark",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "ability_DA_Lux18_Base",
+      "params": {}
+    }
+  },
+  {
+    "id": "DA_Taric18",
+    "display_name": "Taric",
+    "cost": 5,
+    "traits": [
+      "DA_Emerald18",
+      "DA_18_Vanguard"
+    ],
+    "role": "Tank",
+    "stats": {
+      "health": [
+        1300.0,
+        2340.0,
+        4212.0
+      ],
+      "armor": 65.0,
+      "magic_resist": 65.0,
+      "attack_damage": [
+        55.0,
+        82.5,
+        123.75
+      ],
+      "attack_speed": 0.75,
+      "attack_range": 1,
+      "starting_mana": 0.0,
+      "max_mana": 65.0,
+      "mana_per_attack": 5.0,
+      "crit_chance": 0.25,
+      "crit_damage": 1.4
+    },
+    "ability": {
+      "name": "Emerald Radiance",
+      "cast_mode": "mana",
+      "cooldown_seconds": null,
+      "effect_id": "shield_self",
+      "params": {
+        "Shield": [
+          75.0,
+          150.0,
+          10000.0
+        ],
+        "Heal": [
+          275.0,
+          450.0,
+          3000.0
+        ],
+        "Damage": [
+          100.0,
+          150.0,
+          1000.0
+        ],
+        "shield": [
+          75.0,
+          150.0,
+          10000.0
+        ],
+        "duration": 0
+      }
+    }
+  }
+]
