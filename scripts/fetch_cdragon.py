@@ -33,7 +33,7 @@ from typing import Any, Iterable, Mapping, Sequence
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from engine.schema import ITEM_STAT_KEYS, STAR_LEVELS  # noqa: E402
+from engine.schema import ITEM_STAT_KEYS, STAR_LEVELS, TRAIT_CATEGORIES  # noqa: E402
 
 log = logging.getLogger("fetch_cdragon")
 
@@ -554,17 +554,35 @@ def _ability_params(variables: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     return params
 
 
+def _overlay_params(overlay: Mapping[str, Any] | None) -> dict[str, Any]:
+    """An overlay's named variables in `_ability_params`' shape.
+
+    Names lose their spaces ("Minimum Heal" -> "MinimumHeal") to read like
+    Riot's own variable names. Where each value came from stays in the overlay
+    file itself (doc 99 entry 161.12).
+    """
+    params: dict[str, Any] = {}
+    for name, value in ((overlay or {}).get("variables") or {}).items():
+        stars = [round(float(v), 4) for v in value["stars"][:3]]
+        params[re.sub(r"\W+", "", name)] = stars[0] if len(set(stars)) == 1 else stars
+    return params
+
+
 def normalise_champion(
     entry: Mapping[str, Any],
     *,
     cost: int,
     trait_ids: Mapping[str, str],
     role_mana: Mapping[str, float],
+    overlay: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     stats = entry.get("stats") or {}
     api_name = entry["apiName"]
 
     role = ROLE_MAP.get(entry.get("role") or "")
+    if role is None and overlay and overlay.get("role"):
+        # Set 18 ships role: null on 63 of 65 units (doc 99 entry 161.2).
+        role = ROLE_MAP.get(overlay["role"])
     if role is None:
         # One Set 17 unit ships role: null. Range is the best available proxy.
         role = "Fighter" if _num(stats.get("range"), 1) <= 1 else "Caster"
@@ -579,7 +597,9 @@ def normalise_champion(
         traits.append(tid)
 
     ability = entry.get("ability") or {}
-    raw_params = _ability_params(ability.get("variables") or [])
+    # CDragon's own variables win wherever it ships them; the overlay only
+    # fills what the payload leaves out.
+    raw_params = {**_overlay_params(overlay), **_ability_params(ability.get("variables") or [])}
     effect_id, canonical = classify_ability(ability.get("desc") or "", raw_params)
     if effect_id is None:
         # Unclassifiable: keep a stable per-champion id so the params survive
@@ -627,7 +647,50 @@ def normalise_champion(
 # --------------------------------------------------------------------------
 
 
-def normalise_trait(entry: Mapping[str, Any]) -> dict[str, Any]:
+def _fnv1a(name: str) -> str:
+    """Riot's hashed-variable key: 32-bit FNV-1a of the lower-cased name."""
+    h = 0x811C9DC5
+    for byte in name.lower().encode():
+        h = ((h ^ byte) * 0x01000193) & 0xFFFFFFFF
+    return f"{{{h:08x}}}"
+
+
+def restore_hashed_names(params: Mapping[str, Any], desc: str) -> dict[str, Any]:
+    """Rename ``{xxxxxxxx}`` keys to the name the description prints for them.
+
+    Riot ships some variables under the hash of their name, but a trait's text
+    still refers to them by name (``@HunterAD*100@``), so hashing every name
+    the text mentions recovers them exactly (doc 99 entry 161.15). A hash no
+    printed name explains keeps its hashed key.
+    """
+    names = {_fnv1a(n): n for n in re.findall(r"@([A-Za-z_][A-Za-z0-9_]*)", desc or "")}
+    return {names.get(k, k): v for k, v in params.items()}
+
+
+def normalise_trait(
+    entry: Mapping[str, Any],
+    *,
+    category: str | None = None,
+    restore_names: bool = False,
+    deltas: Sequence[Mapping[str, Any]] = (),
+) -> dict[str, Any]:
+    """``category`` overrides the Set 17 ``CLASS_TRAITS`` table when a source gives it.
+
+    ``restore_names`` is the Set 18 behaviour, off for Set 17 so a Set 17
+    refetch stays as it was (its shipped hooks read hashed keys, Voyager's
+    ``{2ad3e251}``). It does two things (doc 99 entry 161.15):
+
+    * un-hashes variable names from the description;
+    * makes breakpoints cumulative. Set 18 ships only the variables a tier
+      *changes*, and its text is cumulative ("Additionally"), but the engine
+      applies only the highest tier's params -- so each tier inherits what the
+      tiers below it set and does not restate.
+
+    ``deltas`` are the overlay's patch-note corrections, applied before
+    inheritance so a tier above inherits the corrected value. One whose
+    ``old`` is not CDragon's value is refused: the snapshot is not what the
+    note was written against.
+    """
     api_name = entry["apiName"]
     display = entry.get("name") or api_name
     breakpoints = []
@@ -640,6 +703,8 @@ def normalise_trait(entry: Mapping[str, Any]) -> dict[str, Any]:
             for k, v in (effect.get("variables") or {}).items()
             if v is not None
         }
+        if restore_names:
+            params = restore_hashed_names(params, entry.get("desc") or "")
         breakpoints.append(
             {
                 "count": count,
@@ -656,10 +721,24 @@ def normalise_trait(entry: Mapping[str, Any]) -> dict[str, Any]:
             continue
         seen.add(bp["count"])
         deduped.append(bp)
+    by_count = {bp["count"]: bp for bp in deduped}
+    for d in deltas:
+        bp = by_count.get(d["count"])
+        shipped = (bp or {}).get("params", {}).get(d["key"])
+        if not isinstance(shipped, (int, float)) or abs(shipped - d["old"]) > 1e-4:
+            log.warning("trait %s %s delta %s->%s refused: CDragon has %r at %s",
+                        api_name, d["key"], d["old"], d["new"], shipped, d["count"])
+            continue
+        bp["params"][d["key"]] = d["new"]
+    if restore_names:
+        inherited: dict[str, Any] = {}
+        for bp in deduped:
+            inherited = {**inherited, **bp["params"]}
+            bp["params"] = dict(inherited)
     return {
         "id": api_name,
         "display_name": display,
-        "category": "class" if display in CLASS_TRAITS else "origin",
+        "category": category or ("class" if display in CLASS_TRAITS else "origin"),
         "breakpoints": deduped,
     }
 
@@ -706,30 +785,37 @@ def normalise_item(
     category: str,
     emblem_trait_id: str | None = None,
     radiant_of: str | None = None,
+    behaviour_of: str | None = None,
 ) -> dict[str, Any]:
+    """``behaviour_of`` names the id whose known behaviour this item shares --
+    a live `DA_*` item's legacy twin (doc 99 entry 161.12). Its behaviour id
+    is the twin's, because that is the id the engine's hook is registered
+    under; the magnitudes stay this item's own."""
     api_name = entry["apiName"]
+    known = behaviour_of or api_name
     stats, leftovers = _split_item_effects(entry.get("effects") or {})
 
     if emblem_trait_id is not None:
         effect_id: str | None = f"emblem_{emblem_trait_id}"
-    elif api_name in IMPLEMENTED_ITEM_EFFECTS:
-        effect_id = IMPLEMENTED_ITEM_EFFECTS[api_name]
-    elif api_name in KEYWORD_ITEM_EFFECTS:
-        effect_id = f"item_{api_name}"
+    elif known in IMPLEMENTED_ITEM_EFFECTS:
+        effect_id = IMPLEMENTED_ITEM_EFFECTS[known]
+    elif known in KEYWORD_ITEM_EFFECTS:
+        effect_id = f"item_{known}"
     elif leftovers:
         # Riot variables we do not model yet. A stable per-item id keeps the
         # numbers in the data file and makes the gap visible as a single
         # warn-once, rather than silently discarding them; the item's stats
         # still apply regardless (doc 02 sec 2).
-        effect_id = f"item_{api_name}"
+        effect_id = f"item_{known}"
     else:
         # Nothing to model at all -- an explicit no-op, so the item is not
         # mistaken for an unimplemented effect.
         effect_id = "no_effect"
 
-    # The schema forbids params without an effect_id; emblems read their trait
-    # from the effect_id itself and take no params.
-    params = leftovers if (leftovers and emblem_trait_id is None) else {}
+    # Every branch above sets an effect_id, which the schema requires of any
+    # item with params. Emblems read their trait from the effect_id; their
+    # params are the passive Set 18 emblems add beyond it (doc 99 entry 161.14).
+    params = leftovers
 
     return {
         "id": api_name,
@@ -749,19 +835,71 @@ def collect_items(
     payload: Mapping[str, Any],
     set_entry: Mapping[str, Any],
     trait_ids: Mapping[str, str],
+    *,
+    item_prefix: str | None = None,
+    overlay_items: Mapping[str, Mapping[str, Any]] | None = None,
+    overlay_emblems: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Select the craftable item pool: components, advanced items and emblems.
 
     Radiant/artifact/consumable and set-mechanic items are out of scope for
     now -- they need mechanics the engine does not model.
+
+    ``item_prefix`` keeps only the ids live games use. Set 18 lists every item
+    twice: a `DA_*` id with empty effects, which is what match data carries,
+    and a `TFT_Item_*` twin with pre-18.2 numbers (doc 99 entries 161.2,
+    161.5). An empty live entry takes its effects from ``overlay_items``
+    first, then from its same-named twin, whose base stats 161.11 confirmed
+    unchanged on every item the notes do not touch.
     """
     by_api = {it["apiName"]: it for it in payload.get("items") or [] if it.get("apiName")}
     set_item_ids = [a for a in (set_entry.get("items") or []) if a in by_api]
+    behaviour_of: dict[str, str] = {}
+    if item_prefix:
+        # Twin names differ in case and punctuation ("Tear Of The Goddess"
+        # against "Tear of the Goddess"), so match on letters and digits.
+        def name_key(entry: Mapping[str, Any]) -> str:
+            return re.sub(r"[^a-z0-9]", "", (entry.get("name") or "").lower())
+
+        twins = {
+            name_key(by_api[a]): by_api[a] for a in set_item_ids
+            if not a.startswith(item_prefix) and by_api[a].get("effects")
+        }
+        set_item_ids = [a for a in set_item_ids if a.startswith(item_prefix)]
+        sources: dict[str, int] = {}
+        for api in set_item_ids:
+            entry = by_api[api]
+            if name_key(entry) in twins:
+                behaviour_of[api] = twins[name_key(entry)]["apiName"]
+            if entry.get("effects"):
+                source = "cdragon"
+            elif overlay_items and api in overlay_items:
+                # The overlay has the current stat line but not the passive's
+                # parameters; without the twin's, an item with a passive would
+                # normalise to `no_effect` and be silently inert (161.12).
+                twin = (twins.get(name_key(entry)) or {}).get("effects") or {}
+                entry = {**entry, "effects": {**twin, **overlay_items[api]["effects"]}}
+                source = "overlay+twin" if twin else "overlay"
+            elif overlay_emblems and entry.get("name") in overlay_emblems:
+                # Emblem stats are keyed by display name: vntft has no ids.
+                entry = {**entry, "effects": overlay_emblems[entry["name"]]["effects"]}
+                source = "overlay emblem"
+            elif name_key(entry) in twins:
+                entry = {**entry, "effects": twins[name_key(entry)]["effects"]}
+                source = "legacy twin"
+            else:
+                source = "none"
+            by_api[api] = entry
+            sources[source] = sources.get(source, 0) + 1
+        log.info("%s items by effect source: %s", item_prefix, sources)
 
     components = {
         a for a in set_item_ids if COMPONENT_TAG in (by_api[a].get("tags") or [])
     }
-    out = [normalise_item(by_api[a], category="component") for a in sorted(components)]
+    out = [
+        normalise_item(by_api[a], category="component", behaviour_of=behaviour_of.get(a))
+        for a in sorted(components)
+    ]
 
     trait_by_display = {name: tid for name, tid in trait_ids.items()}
     for api in sorted(set_item_ids):
@@ -783,7 +921,9 @@ def collect_items(
                 continue
             out.append(normalise_item(entry, category="emblem", emblem_trait_id=tid))
         else:
-            out.append(normalise_item(entry, category="advanced"))
+            out.append(
+                normalise_item(entry, category="advanced", behaviour_of=behaviour_of.get(api))
+            )
     return out
 
 
@@ -959,15 +1099,35 @@ def build_dataset(
     teamplanner: Mapping[str, Any],
     set_number: int,
     role_mana: Mapping[str, float],
+    *,
+    overlay: Mapping[str, Any] | None = None,
+    item_prefix: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
+    """``overlay`` fills what the payload leaves out (doc 99 entry 161.12):
+    roles, ability variables, trait categories and live item effects. It never
+    overrules a value the payload ships."""
     set_entry = select_set(payload, set_number)
     costs = playable_champion_ids(teamplanner, set_number)
     trait_ids = trait_name_to_id(teamplanner, set_number)
+    overlay = overlay or {}
+    overlay_champions = overlay.get("champions") or {}
+    overlay_traits = overlay.get("traits") or {}
 
     # Traits with no breakpoints are placeholders, not real traits (Set 17's
     # "Choose Trait" marker on Miss Fortune). Drop them before champions are
     # normalised so no champion is left referencing one.
-    all_traits = [normalise_trait(t) for t in set_entry.get("traits") or []]
+    def overlay_category(api_name: str) -> str | None:
+        # tftraits also says `unique` for one-unit traits, which the schema does
+        # not know; those fall back to origin, as Set 17's one-unit traits were.
+        category = (overlay_traits.get(api_name.lower()) or {}).get("category")
+        return category if category in TRAIT_CATEGORIES else None
+
+    all_traits = [
+        normalise_trait(t, category=overlay_category(t["apiName"]),
+                        restore_names=set_number >= 18,
+                        deltas=(overlay_traits.get(t["apiName"].lower()) or {}).get("deltas") or ())
+        for t in set_entry.get("traits") or []
+    ]
     valid_trait_ids = {t["id"] for t in all_traits if t["breakpoints"]}
     for t in all_traits:
         if not t["breakpoints"]:
@@ -991,7 +1151,8 @@ def build_dataset(
                 api, declared, costs[api],
             )
         champion = normalise_champion(
-            entry, cost=costs[api], trait_ids=trait_ids, role_mana=role_mana
+            entry, cost=costs[api], trait_ids=trait_ids, role_mana=role_mana,
+            overlay=overlay_champions.get(api),
         )
         champion["traits"] = [t for t in champion["traits"] if t in valid_trait_ids]
         if not champion["traits"]:
@@ -1007,7 +1168,11 @@ def build_dataset(
         (t for t in all_traits if t["id"] in used_trait_ids), key=lambda t: t["id"]
     )
 
-    items = collect_items(payload, set_entry, trait_ids)
+    items = collect_items(
+        payload, set_entry, trait_ids,
+        item_prefix=item_prefix, overlay_items=overlay.get("items"),
+        overlay_emblems=overlay.get("emblems"),
+    )
     summons = collect_summons(set_entry, trait_ids, role_mana)
     augments = normalise_augments(payload, set_entry)
     return {
@@ -1086,6 +1251,18 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--source", type=Path, help="local en_us.json instead of fetching")
     parser.add_argument("--teamplanner", type=Path, help="local teamplanner json")
     parser.add_argument("--dry-run", action="store_true", help="report, write nothing")
+    parser.add_argument(
+        "--config", type=Path, default=REPO_ROOT / "data" / "config.json",
+        help="read-only source of role mana; never written (doc 99 entry 161.2)",
+    )
+    parser.add_argument(
+        "--overlay", type=Path,
+        help="magnitudes CDragon lacks, from scripts/build_set18_overlay.py",
+    )
+    parser.add_argument(
+        "--item-prefix",
+        help="keep only item ids with this prefix -- Set 18's live ids are DA_ (161.5)",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(list(argv) if argv is not None else None)
 
@@ -1109,11 +1286,15 @@ def main(argv: Iterable[str] | None = None) -> int:
         log.error("could not load source data: %s", exc)
         return 1
 
-    config = json.loads((args.out / "config.json").read_text(encoding="utf-8"))
+    config = json.loads(args.config.read_text(encoding="utf-8"))
     role_mana = config["role_mana_per_attack"]
+    overlay = json.loads(args.overlay.read_text(encoding="utf-8")) if args.overlay else None
 
     try:
-        dataset = build_dataset(payload, teamplanner, args.set_number, role_mana)
+        dataset = build_dataset(
+            payload, teamplanner, args.set_number, role_mana,
+            overlay=overlay, item_prefix=args.item_prefix,
+        )
     except FetchError as exc:
         log.error("%s", exc)
         return 1
