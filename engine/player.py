@@ -31,8 +31,10 @@ from engine.unit import UnitInstance
 # than matched by item id, so a fourth such item needs no code change.
 MAX_ARMY_SIZE_PARAM = "MaxArmySizeIncrease"
 
-# The one item that grants other items; it occupies all three slots.
-THIEFS_GLOVES_ID = "TFT_Item_ThiefsGloves"
+# The one item that grants other items; it occupies all three slots. Matched
+# by behaviour id, not item id: Set 18's live `DA_ThiefsGloves` shares its
+# legacy twin's behaviour (doc 99 entry 161.13).
+THIEFS_GLOVES_EFFECT = "item_TFT_Item_ThiefsGloves"
 
 MAX_STAR_LEVEL = 3
 COPIES_TO_UPGRADE = 3
@@ -628,11 +630,11 @@ class PlayerState:
         if not completed:
             return
         for unit in self.all_units:
-            if not any(i.id == THIEFS_GLOVES_ID for i in unit.items):
+            gloves = next((i for i in unit.items if i.effect_id == THIEFS_GLOVES_EFFECT), None)
+            if gloves is None:
                 continue
-            gloves = next(i for i in unit.items if i.id == THIEFS_GLOVES_ID)
             for held in list(unit.items):
-                if held.id != THIEFS_GLOVES_ID:
+                if held.id != gloves.id:
                     unit.unequip(held.id)
             # Rebuild the loadout directly: the granted pair routinely breaks
             # the slot cap and the unique rule, which `equip` rightly forbids.
@@ -647,6 +649,16 @@ class PlayerState:
         else:
             self.streak_type = streak_type
             self.streak_count = 1
+
+    def gain_hp(self, amount: int) -> None:
+        """Restore player health, capped at the starting total.
+
+        A player already at 0 stays eliminated: health earned in the fight
+        that knocked them out does not revive them (doc 99 entry 161.14).
+        """
+        if amount <= 0 or self.hp <= 0:
+            return
+        self.hp = min(self.hp + amount, self.config.starting_hp)
 
     def take_damage(self, amount: int) -> int:
         """Apply HP loss, returning the amount actually lost."""
