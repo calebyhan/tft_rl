@@ -23555,3 +23555,121 @@ and a leaked legacy twin by the loader itself.
 - Rival's duplicate breakpoint.
 - Verifying the 10 generic classifications.
 
+### 161.13 Items: live ids reach their hooks; the 18.2 passives land
+
+This is item 4a of 161.7. **The core is done. The emblem passives are not
+modelled; they are counted below and gated, not accepted.**
+
+**A judgement call: the hooks were not re-keyed.** 161.7 wrote "re-key the
+38 item hooks to `DA_*` ids". Instead, the fetcher gives each live item its
+legacy twin's behaviour id: `DA_Bloodthirster` carries
+`item_TFT_Item_Bloodthirster`, and Edge of Night carries
+`item_TFT_Item_GuardianAngel`. An `effect_id` names a behaviour, not an
+item. One id serves both datasets, so `data/` keeps working until the gate
+in 161.7 swaps it. The magnitudes stay the live item's own.
+
+**One id-keyed behaviour was found and fixed.** Thief's Gloves re-rolled
+only for a held item whose *id* was `TFT_Item_ThiefsGloves`, so on the live
+ids the gloves would have held nothing, with no warning. `engine/player.py`
+now matches the behaviour id. A grep found no other item id in `engine/` or
+`rl/`.
+
+**The 18.2 passive changes.** tactics.tools gives the current stat line but
+not the passive's variables, which come from the pre-18.2 twin. An audit of
+all 39 advanced items compared each inherited variable with the current
+tooltip. It contradicted the twin on exactly the three items the 18.2 notes
+change, and on no other item. The builder's `ITEM_DELTAS` dates those
+forward:
+
+| item | variable | twin | now |
+|---|---|---|---|
+| Bloodthirster | HealthThreshold | 40 | 50 |
+| Bloodthirster | ShieldHealthPercent | 25 | 30 |
+| Edge of Night | HealthThreshold | 60 | 40 |
+| Edge of Night | MissingHealthRestore | 0.20 | 0.15 |
+| Hand of Justice | AD_NotStatBar | 0.15 | 0.18 |
+| Hand of Justice | AP_NotStatBar | 15 | 18 |
+| Hand of Justice | StatOmnivamp_NotStatBar | 0.12 | 0.15 |
+
+A delta is applied only if the current tooltip also prints its new value,
+so every value has two sources. One the tooltip does not print is skipped
+with a warning. All seven applied.
+
+**Rebuilt dataset.** Before copying, the stated prediction was that only
+item behaviour ids and the three items' variables would move. The diff
+matched it:
+
+- 3 items changed variables and id;
+- 35 changed id only;
+- champions, traits, augments and summons were byte-identical.
+
+**Evidence that the hooks run, not just resolve:**
+
+- Five Set 18 smoke games warned on 0 item ids, against 50 ability and 82
+  augment ids. The run used a scratch copy of `data/set18` carrying Set 17's
+  creep waves, because Set 18 PvE is item 4d. All invariants held.
+- 27 of the 40 live item behaviours fired in those games. The bots never
+  built the other 13.
+- Equipped one at a time in 1v1 fights, **all 40 fired.**
+
+**Coverage by the 161.3 predicates:** items 65/65, up from 27/65. That
+figure overstates it, as the next paragraph says. Abilities, traits and
+augments are unchanged from 161.12.
+
+**Emblems: nine passives are unmodelled.** Set 18 emblems grant their trait
+*and* a passive. An `emblem_*` id counts as implemented because it grants
+the trait, so these nine would be inert without a warning, which is the
+161.3 failure mode:
+
+1. Brawler: attacks deal 2.5% of max Health as magic damage.
+2. Executioner: execute below 8% max Health.
+3. Hunter: takedowns grant 18% AD.
+4. Invoker: on cast, AP equal to 8% of mana spent.
+5. Rapidfire: attacks deal 1% of the target's max Health as true damage.
+6. Ravager: 3% damage amp per 300 Health restored.
+7. Spellweaver: 2 mana whenever an ally casts.
+8. Sprykin: bonus stats while riding the BFF.
+9. Vanguard: 1 player health for surviving 22 seconds.
+
+Every figure is vntft's 18.2 text and unverified for 18.3; 18.3 changed
+Hunter's passive (161.11). Modelling them needs:
+
+- the dispatch to look up hooks for `emblem_*` ids, which it currently
+  skips (`engine/effects.py`);
+- the fetcher to keep emblem params;
+- the builder to source the magnitudes.
+
+`tests/test_set18_dataset.py` pins the count at exactly nine. More fails as
+a new gap; fewer fails until the constant is lowered.
+
+**Tests.**
+
+- `test_set18_dataset.py`:
+  - every live non-emblem item's behaviour is registered;
+  - no hook reads only keys its item lacks (the Set 17 check, now shared
+    with `test_item_effects.py`);
+  - live Thief's Gloves re-roll;
+  - every `ITEM_DELTAS` value reached the dataset, pinned to the builder's
+    list rather than to a number;
+  - the emblem count.
+- The builder's delta, cross-check, ratio and `build()` wiring each have a
+  test.
+- **Mutations: 13 non-equivalent mutants were run and all were killed.**
+  Two were on the fetcher's id, two on the gloves (the Set 17 gloves test
+  kills a wrong behaviour id alone), four on the builder, three on dataset
+  copies, and two on the emblem gate's pattern. One more mutant, widening
+  the emblem gate to every item category, was equivalent.
+
+**Still open:**
+
+- The nine emblem passives above.
+- Giant Slayer: the hook reads `{abb9f4ce}` = 25, but the tooltip says
+  "15% additional Damage Amp against Tanks". The variable is unchanged from
+  Set 17 and no note settles it.
+- Red Buff: `BonusDamage` = 0.06 against a 3% damage amp stat line. This is
+  the 161.11 question, still unsettled.
+- vntft's Brawler Emblem text names a "Bruiser" trait.
+- Spirit Visage `{cd951938}` = 0.08: possibly the unmapped "Damage
+  Reduction" label. No hook reads it.
+- 161.12's other open items, except the stale passives, which are now closed.
+
