@@ -23385,3 +23385,173 @@ level-11 rule stay flagged 🟠.
 - The starting level.
 - The augment and Wisp sections, which are item 4e's decision.
 
+### 161.12 Set 18 constants in `config.json`; the overlay; the fetcher reads it
+
+This is items 3 and 2 of 161.7, in that order. No engine file changed.
+
+**`config.json` now carries the Set 18 constants 161.11 sourced**, edited by
+hand, never by a script:
+
+| constant | was | now | source |
+|---|---|---|---|
+| level 7 odds | 19/30/40/10/1 | 16/30/43/10/1 | tftflow 18.2, esportstales |
+| XP 7→8, 8→9, 9→10 | 60/68/68 | 56/64/64 | official 18.2 notes |
+| streak gold | none at 2, +1 at 3–4 | +1 at 2–4 | op.gg, tft-lab |
+| stage 5 and 6 damage | 9/11 | 10/12 | op.gg, tftflow |
+
+Four `unverified` entries were added or corrected:
+
+- stage 3, 4 and 8+ damage;
+- the level cap;
+- the realm schedule, which Set 18 replaces with a carousel;
+- the stale augments text (17.1, corrected to 152.4 and 161.9).
+
+The provenance comment names the sources. `tests/test_set18_config.py`
+pins each value and the flags on a copy-free load of `data/`. Three
+mutations, each applied to a temporary copy of the data and never to
+`data/config.json`, were each killed: streak back to 3, stage 6 back to 11,
+and the stage-damage flag dropped.
+
+**This leaves `data/` a hybrid by design:** Set 17 content with Set 18
+economy constants. Every Set 17 figure was already void for Set 18 (161);
+this makes them non-reproducible on `main` as well. They stay reproducible
+from any commit before this one.
+
+**Suite on the change: 1,291 passed and 1 failed, of 1,292.**
+`test_warm_start::test_value_head_rewinds_but_the_policy_does_not` failed on
+its own non-vacuity guard. The new constants change the two expert games its
+data comes from, and on that data the value head's held-out peak landed on
+the last of 12 epochs, so a rewind was a no-op. This is the same class as
+161.9's `test_pivot`: a fixture that stopped building its case, not an
+engine regression.
+
+A scan of the epoch budget gives peaks of 12 of 12, 16 of 20 and 28 of 30.
+The docstring's "peaks at epoch 1–3" was measured on full-size data (§59)
+and does not hold for 596 states. The test now runs 20 epochs, with the
+reason in a comment. The mutation its docstring names, snapshotting the
+whole network rather than the value head, is still killed.
+
+**A process failure of mine, recorded as one.** The first run of that
+epoch scan was a scratch script with no `__main__` guard around a `spawn`
+pool. That is lesson 15 exactly. It fork-bombed for about 10 hours, much of
+it through machine sleep, and wrote a 156 MB log before it was noticed. It
+touched nothing in the repository. The fits themselves take about 3 seconds
+each.
+
+**The overlay (`scripts/build_set18_overlay.py`).** It reconciles four
+sources into `overlay.json`, and each ability variable carries its source:
+
+| source | what it gives | as of |
+|---|---|---|
+| tftraits | 18.3 text, roles, trait categories | 18.3 |
+| tactics.tools units | named variables | 18.2 |
+| tactics.tools items | item stats | current |
+| vntft | emblem stats | 18.2 |
+| official 18.3/18.3b notes | hand-entered deltas | 18.3b |
+
+The real build gives **65/65 units with roles, 35/35 traits, and 159 named
+variables**:
+
+| provenance | variables |
+|---|---:|
+| both sources agree | 116 |
+| notes 18.3 | 16 |
+| notes 18.3b | 2 |
+| single source | 10 |
+| **disagree** | 2 |
+
+The two disagreements are Rengar's heals: 60/90/150 against 60/90/90 at
+3-star, with no note to settle them. They are kept and flagged, not resolved.
+
+The prototype missed Warwick's 20%⇒25% heal, because a ratio delta did not
+match a per-star rule. That case is now a test. Parsers are pinned on
+trimmed copies of the real pages (`tests/fixtures/set18_sources/`).
+Twelve mutations were run on the builder; the one that first survived (a
+dropped percentage rendering) exposed a fixture gap, now covered by two
+in-memory cases, and every mutation is now killed.
+
+**The fetcher (`scripts/fetch_cdragon.py`).**
+
+- `--config` reads role mana from the repository config, so fetching into a
+  fresh directory works. This fixes 161.2's `--out` coupling.
+- `--overlay` fills what the payload leaves out. **It never overrules a
+  value CDragon ships:** Kobuko's shipped role and heal stand.
+- `--item-prefix DA_` keeps the live ids (161.5). Effects come from CDragon,
+  then the overlay's stat line with the twin's passive parameters, then the
+  overlay's emblem line by display name, then the same-named legacy twin.
+  Twin names match on letters and digits only (`Tear Of The Goddess`).
+
+Categories outside the schema, tftraits' `unique`, fall back to origin, as
+Set 17's one-unit traits did. `tests/test_fetch_cdragon_set18.py` pins all
+of it, and every one of 14 mutations is killed. The one that first
+survived, ignoring the overlay's role, did so because the fixture's role
+matched the range fallback; the fixture now uses a role the fallback cannot
+produce.
+
+**Two silent-inertness defects were caught by loading the first real build,
+not by the unit tests:**
+
+1. **36 of 39 live advanced items normalised to `no_effect`.** The overlay
+   has the stat line and not the passive, so Bloodthirster read as having
+   nothing to model. It now keeps its twin's parameters under its own
+   `item_DA_*` id, which warns until item 4a keys a hook to it.
+2. **Infinity Edge, Jeweled Gauntlet and Thief's Gloves still did.** Their
+   behaviour is a keyword the fetcher knows by the *legacy* id. It now
+   carries across through `behaviour_of`.
+
+Both are the failure mode 161.3 named, and both would have passed every
+coverage count that treats `no_effect` as done.
+
+**The Set 18 dataset, now in `data/set18/`:**
+
+- It loads with 0 schema errors.
+- Roles: 23 Tank, 20 Caster, 8 Fighter, 7 Marksman, 4 Specialist and 3
+  Assassin, where CDragon alone gave 32/32/1 (161.2).
+- Abilities: 64/65 have parameters.
+- Items: 39 advanced items all carry a behaviour id, and 16/16 craftable
+  emblems carry stats.
+
+Coverage by the 161.3 predicates:
+
+| kind | now | 161.3 |
+|---|---|---|
+| abilities | 10 / 65 | 0 |
+| traits | 0 / 35 | 0 |
+| items | 27 / 65 | nominal 114/114, real 0 |
+| augments | 118 hooked / 72 stat-only / 402 inert | same |
+
+The 10 abilities are generic classifications of overlay variables, **and are
+unverified**: the classifier reads CDragon's damage-type markup, and whether
+Set 18's markup carries the same meaning has not been checked. Treat them as
+pending under item 4c, not as done.
+
+**Layout decision:** the dataset lives in `data/set18/`, with `config.json`
+symlinked to the single hand-curated file. It replaces `data/` only when
+161.7's gate passes. Replacing `data/` now would turn every real-data test
+red, which the constraint that the suite stay green forbids.
+
+The raw source pages are cached in `runs/set18_sources/`, which is
+gitignored; the overlay is rebuilt from them with `--cache`.
+`tests/test_set18_dataset.py` pins the properties the first build broke:
+
+- no live advanced item is `no_effect`;
+- every craftable emblem carries stats;
+- every role comes from a source;
+- every champion but Lux's base form has ability parameters;
+- `DA_` ids only;
+- the config is the symlink.
+
+Six mutations on copies of the dataset were each caught: five by the test,
+and a leaked legacy twin by the loader itself.
+
+**Still open:**
+
+- Rengar's two heals.
+- Executioner Emblem's "8% Critical Damage", which has no schema stat.
+- Spirit Visage's "Damage Reduction", an unknown label.
+- The stale passive parameters on the three items 18.2 changed (item 4a).
+- Summons: Set 18 has several summoning units and `SUMMON_UNIT_IDS` is still
+  Set 17's.
+- Rival's duplicate breakpoint.
+- Verifying the 10 generic classifications.
+
