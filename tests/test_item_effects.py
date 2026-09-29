@@ -315,6 +315,33 @@ def test_weaker_burn_does_not_overwrite_a_stronger_one(data, registry):
     assert sim.burns[enemy.uid].pct_max_hp_per_tick == pytest.approx(strong)
 
 
+def test_a_burn_tick_never_critically_strikes(data, registry):
+    """Regression (doc 99 entry 161.16): a tick is dealt in the source's name
+    with a non-attack label, which read as ability damage, so a Precision
+    holder's burn ticks rolled crits. Found by the Set 18 bleed test."""
+    from engine.combat import EventKind
+    from engine.unit import StatusEffect
+
+    board = Board()
+    hexes = sorted(board.hexes)
+    names = sorted(data.champions)
+    unit = UnitInstance(data.champions[names[0]], 1, registry=registry)
+    enemy = UnitInstance(data.champions[names[1]], 3, registry=registry)
+    unit.position, unit.team = hexes[0], 0
+    enemy.position, enemy.team = hexes[-1], 1
+    sim = CombatSimulator([unit], [enemy], data, seed=1, board=board)
+    from engine.stats import StatBonuses
+
+    unit.add_status(StatusEffect("precision", remaining=None, precision=True,
+                                 bonuses=StatBonuses({"crit_chance": 1.0})))
+    assert unit.has_precision and unit.derived_stats().crit_chance >= 1.0
+    sim.apply_burn(unit, enemy, 0.05, 3.0, source_label="probe_burn")
+    for _ in range(int(3.0 / data.config.combat.tick_seconds) + 2):
+        sim._advance_burns(data.config.combat.tick_seconds)
+    ticks = [e for e in sim.log.of_kind(EventKind.DAMAGE) if e.detail.get("via") == "probe_burn"]
+    assert ticks and not any(e.detail["crit"] for e in ticks)
+
+
 # --- the second batch of item effects ------------------------------------
 
 
@@ -815,19 +842,10 @@ def test_mana_regen_is_a_stat_and_ticks_in_combat(data, registry):
 # --- the check that would have caught three dead item effects ------------
 
 
-def test_every_param_key_an_item_effect_reads_actually_exists(data):
-    """An effect reading a key its item lacks silently gets 0.0.
+def item_effects_reading_only_absent_keys(data) -> list[str]:
+    """Every item whose registered hook reads none of the keys it declares.
 
-    That is how Spear of Shojin shipped granting no mana (it read `"mana"`, a
-    starter-fixture key the real dataset does not have) and how Rapid Fire
-    Cannon shipped reading `"ADOnAttack"` and falling through to the item's
-    flat attack speed *per attack* (doc 99 entry 36.1).
-
-    Extracts every literal `ctx.number("X")` / `ctx.param("X")` key from each
-    registered item effect and asserts the item declares at least one of them.
-    Alternatives are allowed -- an implementation may read a Riot name with a
-    fixture name as fallback -- so this asserts the effect is not *entirely*
-    reading absent keys.
+    Shared with the Set 18 dataset tests, which run it on the live `DA_*` ids.
     """
     import inspect
     import re
@@ -857,6 +875,24 @@ def test_every_param_key_an_item_effect_reads_actually_exists(data):
                         f"{item.id} ({item.display_name}) -> {fn.__name__} "
                         f"reads {sorted(keys)}, item has {sorted(available)}"
                     )
+    return dead
+
+
+def test_every_param_key_an_item_effect_reads_actually_exists(data):
+    """An effect reading a key its item lacks silently gets 0.0.
+
+    That is how Spear of Shojin shipped granting no mana (it read `"mana"`, a
+    starter-fixture key the real dataset does not have) and how Rapid Fire
+    Cannon shipped reading `"ADOnAttack"` and falling through to the item's
+    flat attack speed *per attack* (doc 99 entry 36.1).
+
+    Extracts every literal `ctx.number("X")` / `ctx.param("X")` key from each
+    registered item effect and asserts the item declares at least one of them.
+    Alternatives are allowed -- an implementation may read a Riot name with a
+    fixture name as fallback -- so this asserts the effect is not *entirely*
+    reading absent keys.
+    """
+    dead = item_effects_reading_only_absent_keys(data)
     assert not dead, "item effects reading only absent keys:\n  " + "\n  ".join(dead)
 
 
