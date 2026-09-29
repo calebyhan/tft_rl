@@ -478,6 +478,7 @@ class Match:
                     min(self.round_id.stage, max(self.config.stage_base_damage)), 0
                 )
             taken = me.take_damage(damage)
+            me.gain_hp(result.player_health_earned[side])
             reports.append(
                 RoundReport(
                     round_id=self.round_id,
@@ -510,6 +511,7 @@ class Match:
         won = result.winner == 0
         damage = self._damage_from(result, 1) if result.winner == 1 else 0
         taken = player.take_damage(damage)
+        player.gain_hp(result.player_health_earned[0])
         return RoundReport(
             round_id=self.round_id,
             player_id=player.player_id,
