@@ -37,6 +37,15 @@ class EffectTrigger(str, Enum):
     # Fires on every living enemy of a unit that just cast, with the mana it
     # spent in ``ctx.amount``. Ionic Spark is the case this exists for.
     ON_ENEMY_CAST = "on_enemy_cast"
+    # The Set 18 emblem passives (doc 99 entry 161.14). ON_TAKEDOWN fires on
+    # the killer, with the dead unit as ``ctx.target``. ON_ALLY_CAST fires on
+    # every living ally of a caster, the caster as ``ctx.target``; an item's
+    # ON_CAST fires on the caster itself. Both carry the mana spent in
+    # ``ctx.amount``. ON_HEALED fires on the healed unit with the health
+    # actually restored.
+    ON_TAKEDOWN = "on_takedown"
+    ON_ALLY_CAST = "on_ally_cast"
+    ON_HEALED = "on_healed"
     # Unlike every other trigger, a DAMAGE_MODIFIER implementation *returns* a
     # multiplier applied to the damage being dealt (``None`` or 0 meaning "no
     # opinion"). It fires from the attacker's side inside ``deal_damage``, which
@@ -1370,3 +1379,153 @@ def thiefs_gloves(ctx) -> None:
     grant itself is not a combat behaviour.
     """
     return None
+
+
+# =========================================================================
+# Set 18 emblem passives (doc 99 entry 161.14)
+#
+# A Set 18 emblem grants its trait *and* a passive. The trait needs no hook
+# (``is_emblem_effect``), which is exactly why an unmodelled passive was
+# silent: nothing warned. Registered under the emblem's own ``emblem_<TraitId>``
+# id, the same way item hooks use the item's behaviour id.
+#
+# CDragon stubs Set 18's variables, so the param names are ours, not Riot's;
+# ``scripts/build_set18_overlay.py`` (``EMBLEM_PASSIVES``) is where each is
+# sourced and cross-checked against the emblem's text.
+# =========================================================================
+
+
+@register("emblem_DA_18_Brawler", EffectTrigger.ON_ATTACK)
+def brawler_emblem(ctx) -> None:
+    """Attacks deal a share of the holder's max Health as magic damage."""
+    from engine.combat import DamageType
+
+    share = ctx.number("MaxHealthMagicDamage")
+    if share <= 0 or ctx.target is None or not ctx.target.alive:
+        return
+    ctx.sim.deal_damage(
+        ctx.source,
+        ctx.target,
+        share * ctx.source.derived_stats().max_health,
+        DamageType.MAGIC,
+        source_label="brawler_emblem",
+        trigger_effects=False,
+    )
+
+
+@register("emblem_DA_18_Rapidfire", EffectTrigger.ON_ATTACK)
+def rapidfire_emblem(ctx) -> None:
+    """Attacks deal a share of the target's max Health as true damage."""
+    from engine.combat import DamageType
+
+    share = ctx.number("TargetMaxHealthTrueDamage")
+    if share <= 0 or ctx.target is None or not ctx.target.alive:
+        return
+    ctx.sim.deal_damage(
+        ctx.source,
+        ctx.target,
+        share * ctx.target.derived_stats().max_health,
+        DamageType.TRUE,
+        source_label="rapidfire_emblem",
+        trigger_effects=False,
+    )
+
+
+@register("emblem_DA_18_Executioner", EffectTrigger.ON_HIT)
+def executioner_emblem(ctx) -> None:
+    """Damage executes an enemy left below a share of its max Health.
+
+    ON_HIT runs before ``deal_damage`` resolves a lethal hit, so a target the
+    hit itself killed (``current_hp <= 0``) is left to that path.
+    """
+    threshold = ctx.number("ExecuteThreshold")
+    target = ctx.target
+    if threshold <= 0 or target is None or not target.alive or target.current_hp <= 0:
+        return
+    if target.health_fraction < threshold:
+        ctx.sim.execute(ctx.source, target, source_label="executioner_emblem")
+
+
+@register("emblem_DA_18_Hunter", EffectTrigger.ON_TAKEDOWN)
+def hunter_emblem(ctx) -> None:
+    """Each takedown grants attack damage for the rest of combat, stacking."""
+    from engine.stats import StatBonuses
+    from engine.unit import StatusEffect
+
+    bonus = ctx.number("TakedownAD")
+    if bonus <= 0:
+        return
+    ctx.source.add_status(
+        StatusEffect(
+            "hunter_emblem", remaining=None,
+            bonuses=StatBonuses({"attack_damage_pct": bonus}),
+        )
+    )
+
+
+@register("emblem_DA_18_Invoker", EffectTrigger.ON_CAST)
+def invoker_emblem(ctx) -> None:
+    """Each cast grants ability power equal to a share of the mana spent."""
+    from engine.stats import StatBonuses
+    from engine.unit import StatusEffect
+
+    gain = ctx.number("ManaSpentToAP") * ctx.amount
+    if gain <= 0:
+        return
+    ctx.source.add_status(
+        StatusEffect(
+            "invoker_emblem", remaining=None,
+            bonuses=StatBonuses({"ability_power": gain}),
+        )
+    )
+
+
+@register("emblem_DA_18_Spellweaver", EffectTrigger.ON_ALLY_CAST)
+def spellweaver_emblem(ctx) -> None:
+    """Gain mana whenever an ally casts."""
+    ctx.sim.grant_mana(ctx.source, ctx.number("ManaOnAllyCast"), reason="spellweaver_emblem")
+
+
+@register("emblem_DA_18_Slayer", EffectTrigger.ON_HEALED)
+def ravager_emblem(ctx) -> None:
+    """Damage amp for every full step of health restored this combat.
+
+    Stepwise, reading "3% Damage Amp per 300 Health restored" literally;
+    whether Riot's is continuous is unverified.
+    """
+    from engine.stats import StatBonuses
+    from engine.unit import StatusEffect
+
+    per_step = ctx.number("HealingPerStep")
+    amp = ctx.number("AmpPerStep")
+    if per_step <= 0 or amp <= 0:
+        return
+    before = ctx.source.counters.get("ravager_healed", 0.0)
+    after = before + ctx.amount
+    ctx.source.counters["ravager_healed"] = after
+    steps = int(after // per_step)
+    if steps == int(before // per_step):
+        return
+    _replace_status(
+        ctx.source,
+        "ravager_emblem",
+        StatusEffect(
+            "ravager_emblem", remaining=None,
+            bonuses=StatBonuses({"damage_amp": steps * amp}),
+        ),
+    )
+
+
+@register("emblem_DA_18_Vanguard", EffectTrigger.PERIODIC)
+def vanguard_emblem(ctx) -> None:
+    """Earn player health once the holder has survived long enough.
+
+    Only the living are dispatched PERIODIC, so reaching the time alive is
+    the survival. A fight that ends earlier earns nothing: the unverified,
+    conservative reading of "survives 22 seconds".
+    """
+    seconds = ctx.number("SurviveSeconds")
+    if seconds <= 0 or ctx.sim.t < seconds:
+        return
+    if _once(ctx.source, "vanguard_emblem"):
+        ctx.sim.player_health_earned[ctx.source.team] += int(ctx.number("PlayerHealth"))
