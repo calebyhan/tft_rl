@@ -163,6 +163,7 @@ class CombatResult:
     ticks: int
     log: CombatLog
     timed_out: bool
+    player_health_earned: tuple[int, int] = (0, 0)
 
     @property
     def survivor_summary(self) -> list[tuple[str, int, float]]:
@@ -235,6 +236,9 @@ class Burn:
     tick_interval: float
     until_next_tick: float
     source_label: str = ""
+    # A fixed amount per tick, for a bleed that is a share of a hit rather
+    # than of the target's max health (Executioner, doc 99 entry 161.16).
+    flat_per_tick: float = 0.0
 
 
 # --- effect plumbing -----------------------------------------------------
@@ -302,7 +306,19 @@ class CombatSimulator:
         # rebuilt ~344k times per game (doc 99 entry 95).
         self._uid_ordered: list[UnitInstance] | None = None
         self.projectiles: list[Projectile] = []
+        # Player health each team's units earned in this fight (Vanguard
+        # Emblem, doc 99 entry 161.14). The match applies it after a player
+        # combat; creep rounds ignore it.
+        self.player_health_earned: list[int] = [0, 0]
         self.burns: dict[int, Burn] = {}
+        # Damage-over-time that stacks with ``burns`` rather than competing
+        # with them, keyed (target uid, slot): Inferno's burn ("stacks with
+        # other Burns") and Executioner's bleeds (doc 99 entry 161.16).
+        self.stacking_burns: dict[tuple[int, str], Burn] = {}
+        self._bleed_seq = 0
+        # (team, trigger) -> the active traits hooked on a per-unit trigger,
+        # so an attack on a board with none costs one dict lookup.
+        self._unit_trigger_traits: dict[tuple[int, EffectTrigger], list[str]] = {}
 
         self.t = 0.0
         self.tick_index = 0
@@ -643,6 +659,7 @@ class CombatSimulator:
         self._fire_ability_triggers(
             unit, EffectTrigger.ON_ATTACK, target=target, is_crit=is_crit
         )
+        self._fire_unit_trait_triggers(unit, EffectTrigger.ON_ATTACK, target=target, is_crit=is_crit)
 
     def _advance_projectiles(self, dt: float) -> None:
         still_flying: list[Projectile] = []
@@ -686,6 +703,7 @@ class CombatSimulator:
             if unit.current_mana < stats.max_mana:
                 return False
 
+        spent = unit.derived_stats().max_mana
         fn = effects.resolve(ability.effect_id)
         if fn is None:
             # Unimplemented ability: consume the resource and log, but do not
@@ -701,6 +719,13 @@ class CombatSimulator:
                 effect_id=ability.effect_id,
                 reason="effect_not_implemented",
             )
+            # The mana was still spent, so the cast still counts for items
+            # (doc 99 entry 161.14) and traits (161.16). Replicator re-runs
+            # the ability's own hooks, and an unimplemented one has none.
+            self._fire_trait_triggers(
+                unit.team, EffectTrigger.ON_CAST, unit=unit, target=target
+            )
+            self._fire_cast_items(unit, target, spent)
             return False
 
         self._consume_cast_resource(unit)
@@ -726,7 +751,18 @@ class CombatSimulator:
         self._fire_trait_triggers(
             unit.team, EffectTrigger.ON_CAST, unit=unit, target=target
         )
+        self._fire_cast_items(unit, target, spent)
         return True
+
+    def _fire_cast_items(self, unit: UnitInstance, target: UnitInstance, spent: float) -> None:
+        """Items that react to a cast (doc 99 entry 161.14): the caster's own,
+        then every living ally's, each told the mana spent."""
+        self._fire_item_triggers(unit, EffectTrigger.ON_CAST, target=target, amount=spent)
+        for ally in self.living(unit.team):
+            if ally is not unit:
+                self._fire_item_triggers(
+                    ally, EffectTrigger.ON_ALLY_CAST, target=unit, amount=spent
+                )
 
     def _consume_cast_resource(self, unit: UnitInstance) -> None:
         ability = unit.champion.ability
@@ -858,8 +894,13 @@ class CombatSimulator:
         is_crit: bool = False,
         source_label: str = "",
         trigger_effects: bool = True,
+        can_crit: bool = True,
     ) -> float:
         """Apply damage through mitigation, amp, shields and HP.
+
+        ``can_crit=False`` is for damage that is not a hit at all -- burn and
+        bleed ticks, riders on another hit -- which Precision must not let
+        crit (doc 99 entry 161.16).
 
         Returns the HP actually lost (shield absorption excluded).
         """
@@ -872,6 +913,7 @@ class CombatSimulator:
         # non-attack damage is rolled here (doc 99 entry 36.2).
         if (
             source is not None
+            and can_crit
             and not is_crit
             and source_label not in ("auto", "")
             and source.has_precision
@@ -946,6 +988,9 @@ class CombatSimulator:
                     amount=mitigated,
                     is_crit=is_crit,
                 )
+                self._fire_unit_trait_triggers(
+                    source, EffectTrigger.ON_HIT, target=target, amount=mitigated, is_crit=is_crit
+                )
 
         # Omnivamp: heal the attacker for a fraction of damage dealt. Sources
         # are the wearer's items plus their role's innate share (Fighters get
@@ -1002,7 +1047,29 @@ class CombatSimulator:
                 hp=round(target.current_hp, 2),
                 via=source_label,
             )
+            self._fire_item_triggers(target, EffectTrigger.ON_HEALED, amount=healed)
         return healed
+
+    def execute(self, source: UnitInstance | None, target: UnitInstance, source_label: str = "") -> None:
+        """Kill ``target`` outright: an execute ignores shields and durability."""
+        if not target.alive:
+            return
+        self.log.add(
+            self.t,
+            self.tick_index,
+            EventKind.DAMAGE,
+            source,
+            target,
+            amount=round(target.current_hp, 3),
+            pre_mitigation=round(target.current_hp, 3),
+            absorbed=0.0,
+            hp_lost=round(target.current_hp, 3),
+            type=DamageType.TRUE.value,
+            crit=False,
+            via=source_label,
+            hp=0.0,
+        )
+        self._kill(target, source)
 
     def apply_shield(
         self,
@@ -1165,8 +1232,12 @@ class CombatSimulator:
         *,
         ticks_per_second: float = 1.0,
         source_label: str = "",
+        stacks: bool = False,
     ) -> None:
         """Apply or refresh a max-health burn (doc 99 entry 34.2).
+
+        ``stacks`` puts it in its own slot, keyed by ``source_label``, where it
+        runs alongside whatever burn the target already has (Inferno).
 
         Burns do not stack: a second application replaces the first only if it
         is at least as strong, so a Sunfire carrier does not overwrite a
@@ -1176,10 +1247,12 @@ class CombatSimulator:
             return
         interval = 1.0 / ticks_per_second if ticks_per_second > 0 else 1.0
         per_tick = pct_max_hp_per_second * interval
-        existing = self.burns.get(target.uid)
+        store: dict = self.stacking_burns if stacks else self.burns
+        key = (target.uid, source_label) if stacks else target.uid
+        existing = store.get(key)
         if existing is not None and existing.pct_max_hp_per_tick > per_tick:
             return
-        self.burns[target.uid] = Burn(
+        store[key] = Burn(
             source_uid=source.uid if source else None,
             target_uid=target.uid,
             remaining=duration,
@@ -1204,29 +1277,66 @@ class CombatSimulator:
             ),
         )
 
+    def apply_bleed(
+        self,
+        source: UnitInstance | None,
+        target: UnitInstance,
+        total: float,
+        duration: float,
+        source_label: str = "bleed",
+    ) -> None:
+        """True damage totalling ``total``, spread over ``duration`` seconds in
+        one-second ticks. Every bleed is its own stack (doc 99 entry 161.16)."""
+        if not target.alive or total <= 0 or duration <= 0:
+            return
+        ticks = max(1, round(duration))
+        self._bleed_seq += 1
+        self.stacking_burns[(target.uid, f"{source_label}#{self._bleed_seq}")] = Burn(
+            source_uid=source.uid if source else None,
+            target_uid=target.uid,
+            # Half a tick of slack, so float drift cannot drop the last tick.
+            remaining=ticks + 0.5,
+            pct_max_hp_per_tick=0.0,
+            tick_interval=1.0,
+            until_next_tick=1.0,
+            source_label=source_label,
+            flat_per_tick=total / ticks,
+        )
+
     def _advance_burns(self, dt: float) -> None:
         """Tick every active burn, dealing true damage on its own cadence."""
+        for key in sorted(self.stacking_burns):
+            self._advance_one_burn(self.stacking_burns, key, dt)
         for uid in sorted(self.burns):
-            burn = self.burns[uid]
-            target = self.by_uid.get(uid)
-            if target is None or not target.alive:
-                del self.burns[uid]
-                continue
-            burn.remaining -= dt
-            burn.until_next_tick -= dt
-            while burn.until_next_tick <= 0 and target.alive:
-                burn.until_next_tick += burn.tick_interval
-                damage = target.derived_stats().max_health * burn.pct_max_hp_per_tick
-                self.deal_damage(
-                    self.by_uid.get(burn.source_uid) if burn.source_uid else None,
-                    target,
-                    damage,
-                    DamageType.TRUE,
-                    source_label=burn.source_label or "burn",
-                    trigger_effects=False,
-                )
-            if burn.remaining <= 0:
-                del self.burns[uid]
+            self._advance_one_burn(self.burns, uid, dt)
+
+    def _advance_one_burn(self, store: dict, key, dt: float) -> None:
+        # A tick can kill, and a kill runs hooks that may clear burns, so the
+        # key is looked up rather than trusted.
+        burn = store.get(key)
+        if burn is None:
+            return
+        target = self.by_uid.get(burn.target_uid)
+        if target is None or not target.alive:
+            del store[key]
+            return
+        burn.remaining -= dt
+        burn.until_next_tick -= dt
+        while burn.until_next_tick <= 0 and target.alive:
+            burn.until_next_tick += burn.tick_interval
+            damage = (target.derived_stats().max_health * burn.pct_max_hp_per_tick
+                      + burn.flat_per_tick)
+            self.deal_damage(
+                self.by_uid.get(burn.source_uid) if burn.source_uid else None,
+                target,
+                damage,
+                DamageType.TRUE,
+                source_label=burn.source_label or "burn",
+                trigger_effects=False,
+                can_crit=False,
+            )
+        if burn.remaining <= 0:
+            store.pop(key, None)
 
     def apply_stun(self, target: UnitInstance, duration: float, source_label: str = "") -> None:
         self.apply_status(target, StatusEffect(source_label or "stun", duration, stun=True))
@@ -1249,6 +1359,11 @@ class CombatSimulator:
         )
         self._fire_item_triggers(unit, EffectTrigger.ON_DEATH)
         self._fire_ability_triggers(unit, EffectTrigger.ON_DEATH)
+        # A takedown is the kill or an assist; only the kill is modelled, so
+        # assists earn nothing (doc 99 entry 161.14).
+        if killer is not None and killer.alive:
+            self._fire_item_triggers(killer, EffectTrigger.ON_TAKEDOWN, target=unit)
+            self._fire_unit_trait_triggers(killer, EffectTrigger.ON_TAKEDOWN, target=unit)
         # Anything still chasing the dead unit re-picks next tick.
         for other in self.units:
             if other.target_uid == unit.uid:
@@ -1355,6 +1470,7 @@ class CombatSimulator:
             ticks=self.tick_index,
             log=self.log,
             timed_out=timed_out,
+            player_health_earned=(self.player_health_earned[0], self.player_health_earned[1]),
         )
 
     # -- effect triggers --------------------------------------------------
@@ -1406,6 +1522,8 @@ class CombatSimulator:
         unit: UnitInstance | None = None,
         target: UnitInstance | None = None,
         amount: float = 0.0,
+        is_crit: bool = False,
+        carried_only: bool = True,
     ) -> list[float]:
         """Run every active trait's hook for ``trigger`` on one team.
 
@@ -1416,7 +1534,7 @@ class CombatSimulator:
         out: list[float] = []
         state = self.trait_states[team]
         living = self.living(team)
-        carried = unit_traits(unit) if unit is not None else None
+        carried = unit_traits(unit) if unit is not None and carried_only else None
 
         for trait_id, breakpoint_ in sorted(state.active.items()):
             if carried is not None and trait_id not in carried:
@@ -1438,12 +1556,40 @@ class CombatSimulator:
                 unit=unit,
                 target=target,
                 amount=amount,
+                is_crit=is_crit,
             )
             for fn in hooks:
                 result = fn(ctx)
                 if isinstance(result, (int, float)) and not isinstance(result, bool):
                     out.append(float(result))
         return out
+
+    def _fire_unit_trait_triggers(
+        self,
+        unit: UnitInstance,
+        trigger: EffectTrigger,
+        target: UnitInstance | None = None,
+        amount: float = 0.0,
+        is_crit: bool = False,
+    ) -> None:
+        """Run the team's trait hooks for one unit's attack, hit or takedown.
+
+        Every active trait on the unit's team is asked, not only the traits
+        the unit carries: Solar's "your champions deal bonus magic damage"
+        reaches non-Solars, so a member-only hook checks membership itself
+        (doc 99 entry 161.16). Cached per fight, since active traits are fixed.
+        """
+        key = (unit.team, trigger)
+        hooked = self._unit_trigger_traits.get(key)
+        if hooked is None:
+            active = self.trait_states[unit.team].active
+            hooked = [t for t in sorted(active) if trait_effects.trait_hooks_for(t, trigger)]
+            self._unit_trigger_traits[key] = hooked
+        if hooked:
+            self._fire_trait_triggers(
+                unit.team, trigger, unit=unit, target=target, amount=amount,
+                is_crit=is_crit, carried_only=False,
+            )
 
     def _damage_multiplier_from_items(
         self, source: UnitInstance, target: UnitInstance
