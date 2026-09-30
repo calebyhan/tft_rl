@@ -171,6 +171,7 @@ class TraitContext:
     unit: "UnitInstance | None" = None
     target: "UnitInstance | None" = None
     amount: float = 0.0
+    is_crit: bool = False
 
     def number(self, key: str, default: float = 0.0) -> float:
         value = self.params.get(key, default)
@@ -1067,3 +1068,335 @@ def _grant_random_component(player, *, reason: str) -> None:
     index = int(player.trait_progress.get(f"{reason}_count", 0.0))
     player.trait_progress[f"{reason}_count"] = index + 1
     player.item_bag.append(components[index % len(components)])
+
+
+# =========================================================================
+# Set 18 combat traits, tranche 4b-1 (doc 99 entry 161.16)
+#
+# Param names are Riot's, recovered from their hashes by the fetcher (161.15).
+# Riot's fractions become our units at the boundary: ability power is points
+# on a base of 100, so a 0.10 AP param is +10.
+#
+# "Your team gains X. <Members> gain more" is read as members taking their own
+# value *instead of* the team's (161.15): Invoker's "1 | 3", Juggernaut's
+# "4% or 20%" and the name ``NonDefenderDefenseGain`` all say so. Brawler's
+# flat team health plus a member *percentage* is additive.
+# =========================================================================
+
+# Traits whose hook models only part of their text. `is_trait_implemented`
+# reads a registered trait as whole, so each missing half is named here and a
+# test pins the set: partial coverage is counted, never silent.
+PARTIAL_TRAITS: dict[str, str] = {
+    "DA_18_Inferno": "after-combat shop ignition is not modelled (item 4b-2)",
+    "DA_18_Solar": "the eight-3-star ascension to 4-star is not modelled",
+    "DA_18_ZyraUniqueTrait": "the increase at 6 living Zyra plants: plants are not modelled (4d)",
+}
+
+
+def _is_member(ctx) -> bool:
+    from engine.traits import unit_traits
+
+    return ctx.unit is not None and ctx.trait_id in unit_traits(ctx.unit)
+
+
+def _grant_health(units, source: str, amount: float) -> None:
+    """Flat max-health grants carry current HP with them, as percentages do."""
+    if amount <= 0:
+        return
+    _grant(units, source, {"health": amount})
+    for unit in units:
+        unit.current_hp += amount
+
+
+def _split(ctx, team_value: float, member_value: float, source: str, stat: str) -> None:
+    """Non-members take the team's value; members take their own instead."""
+    _grant(ctx.others, f"{source}_team", {stat: team_value})
+    _grant(ctx.members, source, {stat: member_value})
+
+
+@register_trait("DA_18_Brawler")
+def brawler18(ctx) -> None:
+    """Team-wide flat max health; Brawlers also gain a share of max health."""
+    _grant_health(ctx.allies, "brawler18_team", ctx.number("BrawlerTeamHealth"))
+    _grant_percent_health(ctx.members, "brawler18", ctx.number("BrawlerHealthPercent"))
+
+
+@register_trait("DA_18_Defender")
+def defender18(ctx) -> None:
+    team, own = ctx.number("NonDefenderDefenseGain"), ctx.number("DefenderDefenseGain")
+    _grant(ctx.others, "defender18_team", {"armor": team, "magic_resist": team})
+    _grant(ctx.members, "defender18", {"armor": own, "magic_resist": own})
+
+
+@register_trait("DA_18_Invoker")
+def invoker18(ctx) -> None:
+    _split(ctx, ctx.number("TeamManaRegen"), ctx.number("InvokerManaBonus"),
+           "invoker18", "mana_regen")
+
+
+@register_trait("DA_Juggernaut18")
+def juggernaut18(ctx) -> None:
+    _split(ctx, ctx.number("TeamDurability"), ctx.number("JuggernautDurability"),
+           "juggernaut18", "durability")
+
+
+@register_trait("DA_18_Spellweaver")
+def spellweaver18(ctx) -> None:
+    _split(ctx, 100.0 * ctx.number("TeamwideAP"), 100.0 * ctx.number("SpellweaverAP"),
+           "spellweaver18", "ability_power")
+
+
+@register_trait("DA_18_Spellweaver", EffectTrigger.ON_CAST)
+def spellweaver18_per_cast(ctx) -> None:
+    """Each Spellweaver cast adds ability power for the rest of combat."""
+    if ctx.unit is not None:
+        _grant([ctx.unit], "spellweaver18_cast", {"ability_power": 100.0 * ctx.number("APPerCast")})
+
+
+@register_trait("DA_18_Adaptor")
+def adaptor18(ctx) -> None:
+    """Attack damage or ability power, whichever the Adaptor has more of.
+
+    Compared as bonus percentages over each stat's base. A tie -- any Adaptor
+    with no items -- goes to attack damage: an unverified reading (161.15).
+    """
+    gain = ctx.number("ADAPGain")
+    for unit in ctx.members:
+        stats = unit.derived_stats()
+        base_ad = unit.champion.stats.attack_damage_at(unit.star_level) or 1.0
+        ad_bonus = stats.attack_damage / base_ad - 1.0
+        ap_bonus = (stats.ability_power - 100.0) / 100.0
+        if ap_bonus > ad_bonus:
+            _grant([unit], "adaptor18", {"ability_power": 100.0 * gain})
+        else:
+            _grant([unit], "adaptor18", {"attack_damage_pct": gain})
+
+
+@register_trait("DA_18_Battlemage", EffectTrigger.PERIODIC)
+def monolith(ctx) -> None:
+    """Armor and magic resist for each enemy currently targeting the Monolith."""
+    per_enemy = ctx.number("Resists")
+    enemies = ctx.sim.living(1 - ctx.team)
+    for unit in ctx.members:
+        count = sum(1 for e in enemies if e.target_uid == unit.uid)
+        if unit.counters.get("monolith_targeters") == count:
+            continue
+        unit.counters["monolith_targeters"] = count
+        _replace_status(unit, "monolith")
+        _grant([unit], "monolith", {"armor": per_enemy * count, "magic_resist": per_enemy * count})
+
+
+@register_trait("DA_18_Hunter")
+def hunter18(ctx) -> None:
+    _grant(ctx.members, "hunter18", {"attack_damage_pct": ctx.number("HunterAD")})
+
+
+@register_trait("DA_18_Hunter", EffectTrigger.PERIODIC)
+def hunter18_focus(ctx) -> None:
+    """Damage amp once a Hunter has held the same target for long enough."""
+    hold = ctx.number("HunterDuration")
+    amp = ctx.number("DamageAmp")
+    for unit in ctx.members:
+        target = unit.target_uid if unit.target_uid is not None else -1
+        if unit.counters.get("hunter_target") != target:
+            unit.counters["hunter_target"] = target
+            unit.counters["hunter_since"] = ctx.sim.t
+            _replace_status(unit, "hunter18_amp")
+            continue
+        held = any(s.source == "hunter18_amp" for s in unit.status_effects)
+        if target != -1 and not held and ctx.sim.t - unit.counters["hunter_since"] >= hold:
+            _grant([unit], "hunter18_amp", {"damage_amp": amp})
+
+
+@register_trait("DA_18_Lunar")
+def lunar(ctx) -> None:
+    """Lunars and allies adjacent to one gain AS and AP; Lunars gain more."""
+    from engine.hexgrid import distance
+
+    bonus = {"attack_speed_pct": ctx.number("AttackSpeed"),
+             "ability_power": 100.0 * ctx.number("AbilityPower")}
+    scale = 1.0 + ctx.number("LunarMultiplier")
+    _grant(ctx.members, "lunar", {k: v * scale for k, v in bonus.items()})
+    spots = [u.position for u in ctx.members if u.position is not None]
+    adjacent = [u for u in ctx.others
+                if u.position is not None and any(distance(u.position, s) == 1 for s in spots)]
+    _grant(adjacent, "lunar_adjacent", bonus)
+
+
+@register_trait("DA_18_Rapidfire")
+def rapidfire18(ctx) -> None:
+    _grant(ctx.allies, "rapidfire18_team", {"attack_speed_pct": ctx.number("TeamAS")})
+
+
+@register_trait("DA_18_Rapidfire", EffectTrigger.ON_ATTACK)
+def rapidfire18_stack(ctx) -> None:
+    """Each attack a Rapidfire champion lands adds a stack, up to the cap."""
+    if not _is_member(ctx):
+        return
+    cap = int(ctx.number("MaxStacks"))
+    stacks = sum(1 for s in ctx.unit.status_effects if s.source == "rapidfire18")
+    if stacks < cap:
+        _grant([ctx.unit], "rapidfire18", {"attack_speed_pct": ctx.number("ASperAttack")})
+
+
+@register_trait("DA_18_Slayer")
+def ravager(ctx) -> None:
+    _grant(ctx.members, "ravager", {"omnivamp": ctx.number("Omnivamp")})
+
+
+@register_trait("DA_18_Slayer", EffectTrigger.DAMAGE_MODIFIER)
+def ravager_bonus_damage(ctx) -> float | None:
+    """Bonus damage, doubled against a target below the health threshold."""
+    bonus = ctx.number("BonusDamagePercentBase")
+    if ctx.target is None or bonus <= 0:
+        return None
+    if ctx.target.health_fraction < ctx.number("EnemyHealthThreshold"):
+        bonus *= 2.0
+    return 1.0 + bonus
+
+
+def _reduce_resist(ctx, source: str, stat: str, fraction: float, duration: float) -> None:
+    from engine.stats import StatBonuses
+    from engine.unit import StatusEffect
+
+    target = ctx.target
+    if any(s.source == source for s in target.status_effects):
+        return
+    ctx.sim.apply_status(
+        target,
+        StatusEffect(source, remaining=duration or None,
+                     bonuses=StatBonuses({stat: -getattr(target.derived_stats(), stat) * fraction})),
+    )
+
+
+@register_trait("DA_18_Caustic", EffectTrigger.ON_HIT)
+def caustic(ctx) -> None:
+    """Caustic damage Shreds and Sunders; a second application does not stack."""
+    if not _is_member(ctx) or ctx.target is None or not ctx.target.alive:
+        return
+    fraction = ctx.number("ShredPercent") / 100.0
+    if fraction <= 0:
+        return
+    duration = ctx.number("ShredDuration")
+    _reduce_resist(ctx, "caustic_sunder", "armor", fraction, duration)
+    _reduce_resist(ctx, "caustic_shred", "magic_resist", fraction, duration)
+
+
+@register_trait("DA_18_Executioner")
+def executioner(ctx) -> None:
+    _grant(ctx.members, "executioner", {"crit_chance": ctx.number("CritChance")}, precision=True)
+
+
+@register_trait("DA_18_Executioner", EffectTrigger.ON_HIT)
+def executioner_bleed(ctx) -> None:
+    """From 3: a critical strike bleeds for a share of its damage over time.
+
+    What triggers the bleed, and what it is a share of, is unverified: read
+    as a crit's post-mitigation damage, the trait's own currency (161.15).
+    """
+    share = ctx.number("BonusBleedPercent")
+    if share <= 0 or not ctx.is_crit or not _is_member(ctx):
+        return
+    if ctx.target is None or not ctx.target.alive:
+        return
+    ctx.sim.apply_bleed(ctx.unit, ctx.target, share * ctx.amount,
+                        ctx.number("BleedDuration"), source_label="executioner_bleed")
+
+
+@register_trait("DA_18_Inferno", EffectTrigger.ON_HIT)
+def inferno(ctx) -> None:
+    """Inferno damage Burns and Wounds; the Burn stacks with other Burns."""
+    if not _is_member(ctx) or ctx.target is None or not ctx.target.alive:
+        return
+    duration = ctx.number("Duration")
+    ctx.sim.apply_burn(ctx.unit, ctx.target, ctx.number("HPBurnPerSecond") / 100.0, duration,
+                       source_label="inferno_burn", stacks=True)
+    ctx.sim.apply_grievous_wounds(ctx.target, ctx.number("WoundPercent") / 100.0, duration,
+                                  source_label="inferno_wound")
+
+
+@register_trait("DA_18_Vanguard")
+def vanguard18(ctx) -> None:
+    for unit in ctx.members:
+        ctx.sim.apply_shield(unit, unit.derived_stats().max_health * ctx.number("MaxHealthShield"),
+                             duration=ctx.number("ShieldDuration") or None, source_label="vanguard18")
+
+
+@register_trait("DA_18_Vanguard", EffectTrigger.PERIODIC)
+def vanguard18_threshold(ctx) -> None:
+    """A second shield below the threshold, once; at 6, durability while shielded."""
+    durability = ctx.number("DurabilityIncrease")
+    threshold = ctx.number("HealthThreshold")
+    for unit in ctx.members:
+        if (threshold > 0 and unit.health_fraction <= threshold
+                and _fires_once(unit, "vanguard18_threshold")):
+            ctx.sim.apply_shield(
+                unit, unit.derived_stats().max_health * ctx.number("MaxHealthShield"),
+                duration=ctx.number("ShieldDuration") or None, source_label="vanguard18")
+        if durability <= 0:
+            continue
+        held = any(s.source == "vanguard18_durability" for s in unit.status_effects)
+        if unit.shield_amount > 0 and not held:
+            _grant([unit], "vanguard18_durability", {"durability": durability})
+        elif unit.shield_amount <= 0 and held:
+            _replace_status(unit, "vanguard18_durability")
+
+
+@register_trait("DA_FloraFatalis18", EffectTrigger.ON_TAKEDOWN)
+def flora_fatalis(ctx) -> None:
+    """A member's takedown grants it mana; from 2, heals the lowest-health ally."""
+    if not _is_member(ctx):
+        return
+    ctx.sim.grant_mana(ctx.unit, ctx.number("Mana"), reason="flora_fatalis")
+    share = ctx.number("PercentHeal")
+    if share > 0 and ctx.allies:
+        lowest = min(ctx.allies, key=lambda u: (u.health_fraction, u.uid))
+        ctx.sim.heal(lowest, share * lowest.derived_stats().max_health, source_label="flora_fatalis")
+
+
+@register_trait("DA_18_ZyraUniqueTrait")
+def thornmaiden(ctx) -> None:
+    """Team durability. The increase at 6 living plants needs plants (partial)."""
+    _grant(ctx.allies, "thornmaiden", {"durability": ctx.number("BaseDurability")})
+
+
+@register_trait("DA_18_Solar")
+def solar(ctx) -> None:
+    """A team shield and bonus magic damage, both growing per unique 3-star.
+
+    From ``NumThreeStarThreshold1`` 3-stars the team also gains AS and
+    resists; from ``Threshold2`` part of the bonus becomes true damage. The
+    ascension at ``Threshold3`` is not modelled (``PARTIAL_TRAITS``).
+    """
+    three_stars = len({u.champion.id for u in ctx.allies if u.star_level >= 3})
+    growth = ctx.number("PercentIncreasePer3Star") * three_stars
+    ratio = ctx.number("ShieldRatio") + growth
+    for unit in ctx.allies:
+        ctx.sim.apply_shield(unit, unit.derived_stats().max_health * ratio, source_label="solar")
+        unit.counters["solar_magic"] = ctx.number("BonusMagicDamage") + growth
+        unit.counters["solar_true"] = (
+            ctx.number("Threshold2TrueDamageConversion")
+            if three_stars >= ctx.number("NumThreeStarThreshold2", float("inf")) else 0.0)
+    if three_stars >= ctx.number("NumThreeStarThreshold1", float("inf")):
+        resist = ctx.number("Threshold1ArmorMagicResist")
+        _grant(ctx.allies, "solar_threshold", {
+            "attack_speed_pct": ctx.number("Threshold1AttackSpeed"),
+            "armor": resist, "magic_resist": resist})
+
+
+@register_trait("DA_18_Solar", EffectTrigger.ON_HIT)
+def solar_bonus_damage(ctx) -> None:
+    """Any ally's damage adds a share as magic damage, part of it true later."""
+    from engine.combat import DamageType
+
+    share = ctx.unit.counters.get("solar_magic", 0.0) if ctx.unit is not None else 0.0
+    if share <= 0 or ctx.target is None or not ctx.target.alive or ctx.amount <= 0:
+        return
+    bonus = share * ctx.amount
+    true_part = bonus * ctx.unit.counters.get("solar_true", 0.0)
+    if bonus - true_part > 0:
+        ctx.sim.deal_damage(ctx.unit, ctx.target, bonus - true_part, DamageType.MAGIC,
+                            source_label="solar", trigger_effects=False, can_crit=False)
+    if true_part > 0 and ctx.target.alive:
+        ctx.sim.deal_damage(ctx.unit, ctx.target, true_part, DamageType.TRUE,
+                            source_label="solar_true", trigger_effects=False, can_crit=False)
