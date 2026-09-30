@@ -258,6 +258,14 @@ heterogeneity test rejects. (§160: 160.140, 160.142, 160.144)
 > its uncertainty; it has low power for 0.3 effects. The fixed τ = 0.170 prior
 > is retired forward. The consequences above still hold.
 
+**30. A mutant can outlive its restore.** Python validates cached bytecode by
+the source's size and whole-second mtime. A mutant of the *same length*,
+restored within the same second, keeps executing from `__pycache__`: the
+restored file is correct, and the code that runs is the mutant. A correct
+test then fails for no visible reason, or a later mutation run measures the
+wrong code. Run mutants with `PYTHONDONTWRITEBYTECODE=1`, and when a test
+fails right after a mutation run, disassemble before debugging. (§161.14)
+
 ---
 
 ## Index
@@ -3395,6 +3403,9 @@ is.
 | Per-combat counters and marks | Kindred, Caitlyn, Vex, Sona, Riven, Master Yi, Fiora, Shen |
 | Lucky rolls (`lucky_roll`) | Fateweaver, Caitlyn, Twisted Fate |
 | Between-rounds trait hooks | Anima, Oracle, Factory New, Timebreaker, Divine Duelist, Commander |
+
+> **Qualified by entry 161.14.** Divine Duelist's hook reads
+> `player_damage_dealt`, which nothing writes, so it has never healed.
 
 An untargetable unit is skipped by target selection but still occupies its hex
 and still takes area damage, which is TFT's behaviour. Counters and marks are
@@ -23672,4 +23683,107 @@ a new gap; fewer fails until the constant is lowered.
 - Spirit Visage `{cd951938}` = 0.08: possibly the unmapped "Damage
   Reduction" label. No hook reads it.
 - 161.12's other open items, except the stale passives, which are now closed.
+
+### 161.14 Emblem passives: eight modelled; mutation testing's stale bytecode
+
+This completes item 4a apart from Sprykin. **Eight of the nine emblem
+passives 161.13 counted are modelled. Sprykin's needs its trait's BFF (item
+4b) and stays counted.**
+
+**Magnitudes.** The builder's `EMBLEM_PASSIVES` turns each passive's text
+into parameters. Each value must also be printed in vntft's 18.2 text, or it
+is skipped with a warning; none was skipped. Hunter's 18%⇒15% goes in
+`EMBLEM_DELTAS`, as 161.11 sourced it. CDragon stubs Set 18's variables, so
+**the parameter names are ours, not Riot's.** That is a deviation from the
+names-verbatim rule in `effects.py`, forced by the source.
+
+The fetcher now keeps an emblem's leftover variables as params. **A Set 17
+finding:** 11 of Set 17's 16 emblems also carried passive variables, among
+them `PercentHPAttack` and `ManaSharePercent`. The fetcher dropped them as
+"emblems take no params", so every Set 17 emblem was only its stats and
+trait. That is one more reason the Set 17 baselines were a simplified game.
+`data/` was not refetched, so nothing Set 17 changes here.
+
+**Engine.** Three triggers were added, `ON_TAKEDOWN`, `ON_ALLY_CAST` and
+`ON_HEALED`. An item's `ON_CAST` now fires on its caster. Casting itself did
+not change. There are two primitives:
+
+- `CombatSimulator.execute` kills through shields and durability;
+- `player_health_earned` is carried on `CombatResult`, and the match pays it
+  after PvP and ghost fights, never after creep rounds.
+  `PlayerState.gain_hp` is capped at starting health and never revives an
+  eliminated player.
+
+| emblem | hook | reading, **unverified** where marked |
+|---|---|---|
+| Brawler | on attack | 2.5% of holder max HP, magic |
+| Rapidfire | on attack | 1% of target max HP, true |
+| Executioner | on hit | execute below 8% |
+| Hunter | on takedown | +15% AD per takedown, stacking; **kills only, no assists** |
+| Invoker | on cast | AP += 8% of mana spent, stacking |
+| Spellweaver | on ally cast | +2 mana |
+| Ravager | on healed | +3% amp per *full* 300 restored (**stepwise, unverified**) |
+| Vanguard | periodic | +1 player HP at 22 s alive; **a shorter fight earns nothing** |
+
+Brawler and Rapidfire say "Attacks", so they hang on `ON_ATTACK`. `ON_HIT`
+fires for spell damage too, and a test pins that difference.
+
+**A defect the smoke run found.** Over 20 Set 18 games, 47 of 48 item
+behaviours fired. Invoker never did. An unimplemented ability returned
+before any cast dispatch, so on 55 of 65 Set 18 champions a cast spent its
+mana and no item saw it. Ionic Spark already counted those casts. The cast
+dispatch now runs on the skipped path as well. After the fix, **48 of 48
+fired.**
+
+**Cost.** The smoke test took 32.0 s and 31.9 s with the new dispatch,
+against 31.9 s and 32.2 s without it. That is n=2 per arm on Set 17 data, so
+it measures the dispatch overhead only. The difference is not measurable.
+
+**Tests.** `tests/test_emblem_passives.py` has 17 tests. Each drives the
+passive through the simulator's own entry points against Set 18 data. Two
+are match-level, with a fixed `CombatResult`. The dataset gate now counts
+emblems with passive text and no hook, and pins that count at exactly 1.
+Another test fails on any modelled emblem that lacks parameters.
+
+**Mutations: 23 were run and all 23 are killed.** Two survived the first
+pass, and each exposed a gap in a test:
+
+- E1, Brawler reading the *target's* health, survived because a 1-star
+  holder's 700 plus the emblem's 150 equals the enemy's 850. The test now
+  uses a 2-star holder and asserts the two differ.
+- E19, the result dropping the earned health, survived because no test
+  looked at `_finish`. One now does.
+
+A mutant that is equivalent by design was also found before it could mislead:
+the caster's own mana lock makes a Spellweaver firing on its own cast
+invisible. That test now records the dispatch directly.
+
+**A process failure, recorded as one: stale bytecode.** After the mutation
+run, the Brawler test failed on the restored, correct source. The *E1 mutant*
+was still executing. E1 replaced `ctx.source` with `ctx.target`, which is
+the same length, and the restore landed in the same second. Python validates
+a `.pyc` by source size and whole-second mtime, so it kept the mutant's
+bytecode.
+
+A mutant that survives this way can make a correct file fail, or a broken
+one pass. The drivers now run every mutant with `PYTHONDONTWRITEBYTECODE=1`.
+Both mutation sets, 161.13's and this one, were re-run clean, with every
+mutant killed. In 161.13 only B2 (`d.new`⇒`d.old`) had the same length, and
+the builder was edited afterwards, so its conclusions stand. See lesson 30.
+
+A second lapse: my scratch coverage script wrote its report to
+`data/coverage.json`. It was moved out before anything read it, the script
+now writes to the scratchpad, and `data/config.json` was never touched.
+
+**Still open:**
+
+- Sprykin (item 4b).
+- Unverified readings: Hunter's assists, Ravager's steps, and Vanguard's
+  shorter fights.
+- **Divine Duelist (Set 17) has been inert all along.** It reads
+  `trait_progress["player_damage_dealt"]`, which nothing in the repository
+  writes. Entry 35.3 lists it as implemented. This was found here and
+  not fixed, because it is a Set 17 trait.
+- 161.13's Giant Slayer, Red Buff, Spirit Visage and Brawler/"Bruiser"
+  items.
 
