@@ -70,21 +70,29 @@ def test_trait_id_is_parsed_out_of_the_breakpoint_effect_id():
     assert trait_id_of(None) is None
 
 
-def test_every_registered_trait_exists_in_the_data(data):
+@pytest.fixture(scope="module")
+def both_sets(data):
+    """Set 17 and Set 18 are both live until 161.7's gate swaps `data/`, and
+    each registers hooks, so registration is checked against their union."""
+    return [data, load_all(REAL_DATA_DIR / "set18")]
+
+
+def test_every_registered_trait_exists_in_the_data(both_sets):
     """A hook on a trait id no board can field is dead code that looks alive."""
-    unknown = set(TRAIT_HOOKS) - set(data.traits)
+    unknown = set(TRAIT_HOOKS) - {t for d in both_sets for t in d.traits}
     assert not unknown, f"registered but absent from data: {unknown}"
 
 
-def test_breakpoint_effect_ids_resolve_to_registered_traits(data):
+def test_breakpoint_effect_ids_resolve_to_registered_traits(both_sets):
     """Guards against the tier-suffix parser silently mismatching."""
     implemented = set(TRAIT_HOOKS)
     resolved = set()
-    for trait in data.traits.values():
-        for bp in trait.breakpoints:
-            parsed = trait_id_of(bp.effect_id)
-            if parsed in implemented:
-                resolved.add(parsed)
+    for d in both_sets:
+        for trait in d.traits.values():
+            for bp in trait.breakpoints:
+                parsed = trait_id_of(bp.effect_id)
+                if parsed in implemented:
+                    resolved.add(parsed)
     assert resolved == implemented, f"never resolved: {implemented - resolved}"
 
 
