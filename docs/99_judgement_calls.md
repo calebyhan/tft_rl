@@ -23787,3 +23787,106 @@ now writes to the scratchpad, and `data/config.json` was never touched.
 - 161.13's Giant Slayer, Red Buff, Spirit Visage and Brawler/"Bruiser"
   items.
 
+### 161.15 Traits, data (4b-0): Riot's names recovered, tiers made cumulative, numbers dated by the notes
+
+This is the first tranche of item 4b. It is data only, and no engine file
+changed. 4b is split into three tranches:
+
+- **4b-0**, the data;
+- **4b-1**, 18 combat traits;
+- **4b-2**, the systems traits: Wisps, Essence, plants, blessings, Riftbeast,
+  Rival, the BFF, bounties, Blackthorn's sacrifice, Fae's pixies, Old Growth,
+  Summoner and Attuned.
+
+**Hashed names are recoverable.** Riot's `{xxxxxxxx}` variable keys are the
+32-bit FNV-1a hash of the lower-cased variable name. A trait's own
+description still prints that name (`@HunterAD*100@`), so hashing every name
+it prints recovers them exactly. On Set 18 this recovered **193 of 203**
+trait variable entries. The rest are Elderwood's two variables, which its
+text never names. The fetcher does this from Set 18 onwards; Set 17's
+shipped Voyager hook reads a hashed key, so a Set 17 refetch stays as it
+was.
+
+The same method would recover item keys such as Giant Slayer's
+`{abb9f4ce}`. Items were left alone, because their Set 17 hooks read the
+hashed keys.
+
+**Breakpoints are made cumulative for Set 18.** CDragon ships only the
+variables a tier *changes*, and the engine applies only the highest tier's
+params. A 3-Executioner board would therefore have lost the 2-unit crit that
+its text says carries on ("Additionally"). Each tier now inherits what the
+tiers below it set.
+
+**CDragon's trait numbers are a mixed, older snapshot.** The official 18.2
+and 18.3 notes were read directly. Search summaries were not trusted: one
+gave Invoker as "9 ⇒ 8" where CDragon already has 8. Some 18.2 changes are in
+the snapshot: Hunter's 3 s, Blackthorn's health and Solar's 8%. Others are
+not: Rapidfire's 9/15, and Solar's resists at 15 against the notes' 12. None
+of 18.3's are in it. Invoker's 2/3/5/8 matches neither 18.2's 3/4/6/9 nor
+18.3's 3/4/6/8.
+
+The builder's `TRAIT_DELTAS` has **14 values**. Each is the notes' value,
+also printed in tftraits' 18.3 tier text:
+
+| trait | variable | CDragon | now | notes |
+|---|---|---|---|---|
+| Hunter | HunterAD 4 / 5 | 0.45 / 0.65 | 0.40 / 0.60 | 18.3 |
+| Rapidfire | ASperAttack 4 / 5 | 0.09 / 0.15 | 0.08 / 0.12 | 18.2 |
+| Coven | EssencePerLoss 3 / 4 / 5 | 18 / 25 / 32 | 22 / 28 / 35 | 18.3 |
+| Defender | DefenderDefenseGain 6 | 120 | 115 | 18.3 |
+| Inferno | HPBurnPerSecond 5 / 7 | 3.5 / 4.5 | 3 / 4 | 18.3 |
+| Invoker | InvokerManaBonus 2 / 3 / 4 | 2 / 3 / 5 | 3 / 4 / 6 | 18.3 |
+| Solar | Threshold1ArmorMagicResist | 15 | 12 | 18.2 |
+
+The fetcher applies a delta only if CDragon still holds the delta's `old`
+value, and it applies them before inheritance. **Three disagreements are
+kept at CDragon's value and travel with the data as `disputed`:**
+
+- Juggernaut's 4-unit team durability, 0.06 against tftraits' 4%;
+- Blackthorn's 4-unit multiplier, 0.3 against 0%. The 18.3 notes themselves
+  say its tooltip "displays incorrect stats".
+- Sprykin's 5-unit ratio, 0.5 against 0%.
+
+**A correction to 161.11: vntft is not a pure 18.2 snapshot.** Its Brawler
+Emblem shows 2.5%, which is the 18.3 value; 18.2 had 2%. The two 18.3 emblem
+deltas already applied each required the old value to be present, so
+neither was applied twice.
+
+**Prediction and result.** Before the rebuild, the stated prediction was
+that only `traits.json` would change. It was the only file that changed.
+All 14 deltas landed, and nothing warned beyond the known Rival and Eclipse
+lines.
+
+**Tests.**
+
+- Fetcher: names are restored; an unexplained hash is kept; Set 17 keeps
+  its hashes; tiers inherit, except in Set 17; a delta lands before
+  inheritance; a delta with the wrong old value is refused.
+- Builder: a delta is applied; a delta the text does not print is skipped;
+  sources are named; `build()` is wired.
+- Dataset: every delta reached the data; only Elderwood keeps hashed names;
+  Executioner's upper tiers keep the crit.
+
+**Mutations: 9 run, 9 killed**, all with bytecode writes off (lesson 30).
+
+**Found for other items:**
+
+- **4c:** the notes re-added four 18.2 B ability changes in 18.3: Camille,
+  LeBlanc, Teemo and Ashe. They are not in `NOTE_DELTAS`. The reconciliation
+  should mark them as disagreements, but it has not been checked.
+- **4b-2:** Blackthorn's AP-sacrifice damage amp is 14% ⇒ 12% (18.3 B). The
+  sacrifice tables are not in CDragon's trait params.
+
+**Open decisions for 4b-1, stated before implementation:**
+
+- "Team gains X, members gain more" is read as members taking their own
+  value **instead of** the team's. Invoker's "1 | 3", Juggernaut's "4% or
+  20%" and the name `NonDefenderDefenseGain` support that reading.
+  Brawler's flat team health plus a percentage is additive, because the two
+  are different kinds of stat.
+- Executioner's bleed is not specified by any source found. It will be read
+  as a share of a critical strike's damage, dealt over 3 s, and flagged
+  unverified.
+- Adaptor's "whichever is higher" with no items is a tie, and it will be
+  broken toward AD, flagged unverified.
+
