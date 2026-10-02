@@ -23890,3 +23890,89 @@ lines.
 - Adaptor's "whichever is higher" with no items is a tie, and it will be
   broken toward AD, flagged unverified.
 
+### 161.16 Traits, 4b-1: eighteen combat traits
+
+**18 of 35 Set 18 traits now have hooks.** Three of them are partial, and
+that is named in code and pinned by a test. The other 17 are the systems
+traits of 4b-2.
+
+| trait | modelled |
+|---|---|
+| Brawler | team flat health, plus a member share of max health |
+| Defender, Invoker, Juggernaut, Spellweaver | team value; members take their own **instead** (161.15) |
+| Spellweaver | + AP per cast, including casts of unimplemented abilities |
+| Adaptor | AD or AP, whichever bonus is higher; **a tie goes to AD, unverified** |
+| Monolith | resists per enemy currently targeting it |
+| Hunter | AD, plus amp after holding a target `HunterDuration` s; a swap resets it |
+| Lunar | AS and AP to members ×(1+`LunarMultiplier`) and to allies adjacent at combat start |
+| Rapidfire | team AS, plus a member stack per landed attack up to `MaxStacks` |
+| Ravager | omnivamp, plus bonus damage, doubled below the enemy health threshold |
+| Caustic | shred and sunder on hit, not stacking |
+| Executioner | Precision and crit; from 3, **a crit bleeds a share of its damage over 3 s (unverified)** |
+| Inferno | burn that stacks with other burns, and a wound (**partial:** no shop ignition) |
+| Vanguard | combat-start shield, a second once below the threshold, durability while shielded at 6 |
+| Flora Fatalis | mana on takedown; from 2, heals the lowest-health ally |
+| Solar | team shield and bonus magic damage, both +1% per unique 3-star; AS and resists from 3; a true share from 5 (**partial:** no 4-star ascension at 8) |
+| Thornmaiden | team durability (**partial:** the 6-plant increase needs plants, 4d) |
+
+**Engine.**
+
+- **Per-unit trait triggers** now fire on a landed attack, a hit and a
+  takedown. They ask every active trait on the team, not only the traits the
+  unit carries: "Your champions deal bonus magic damage" reaches
+  non-Solars, so member-only hooks check membership themselves. The hooked
+  traits are cached per fight, so a board without them pays one dict
+  lookup.
+- **Trait `ON_CAST` fires on skipped casts too**, as the item cast dispatch
+  already did (161.14). Set 17's Replicator re-runs the ability's own hooks,
+  and an unimplemented ability has none, so its behaviour is unchanged.
+- **A second store for damage-over-time that stacks**, keyed (target,
+  slot), holds Inferno's burn and Executioner's bleeds. `sim.burns` is
+  untouched, and three existing tests read it.
+
+**A pre-existing engine bug, found and fixed: DoT ticks could crit.** A burn
+tick is dealt in its source's name with a non-attack label. The Precision
+rule read that label as ability damage, so an Infinity Edge holder's
+Morellonomicon burn could crit. That applied to Set 17 as well. The Set 18
+bleed test found it: 30 expected, and 34 dealt, because one tick crit at
+×1.4. `deal_damage(can_crit=False)` now covers ticks and Solar's rider.
+There is a regression test, and it failed before the fix. Other on-hit
+riders, such as the item and emblem riders, can still crit under
+Precision. That is recorded as open, not fixed.
+
+**Tests.** `tests/test_set18_traits.py` has 25 tests. Every expectation is
+derived from the tier's own params, and each change is compared against a
+non-member or a trait-free twin. Two first failures were test pollution, not
+defects, and are recorded as such:
+
+- a Lunar test board also activated Spellweaver, so it is now measured on
+  Lunar's own statuses;
+- the bleed was compared with HP lost rather than the hit's post-amp
+  amount.
+
+`test_trait_effects`' two registration checks now run against the union of
+the Set 17 and Set 18 datasets, since both register hooks until the 161.7
+gate.
+
+**Games.** In 20 Set 18 smoke games, all 18 traits fired and every
+invariant held. The Set 17 smoke test took 31.3 s, against about 32 s
+before, so the new dispatch has no measurable cost.
+
+**Mutations: 28 run, 28 killed**, all with bytecode writes off. Two
+survived the first pass and exposed test gaps:
+
+- T8, Hunter ignoring its hold time, survived because no check came
+  mid-hold;
+- T21, Solar's true conversion, survived because nothing reached 5
+  3-stars.
+
+**Still open:**
+
+- 4b-2: Blossom, Coven, Elderwood, Greenfather, Primal, Riftbeast, Rival,
+  Sprykin, Avatar, Apex Predator, Bounty Seeker, Emerald Aspect,
+  Blackthorn, Fae, Old Growth, Summoner and Attuned.
+- The partial halves: Inferno's ignition, Solar's ascension, and
+  Thornmaiden's plants.
+- Unverified readings: "instead", Adaptor's tie, and Executioner's bleed
+  trigger.
+- Item and emblem on-hit riders can still crit under Precision.
